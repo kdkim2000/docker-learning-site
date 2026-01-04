@@ -1,0 +1,2982 @@
+{
+  "meta": {
+    "id": "chapter12",
+    "number": 12,
+    "title": "Chapter 12. Docker CI (Continuous Integration)",
+    "description": "",
+    "phase": "master",
+    "objectives": [
+      "CI/CD 파이프라인 개념과 Docker 통합 이해",
+      "GitHub Actions를 활용한 자동화 워크플로우 작성",
+      "Docker 이미지 자동 빌드 및 레지스트리 푸시",
+      "Matrix 빌드와 병렬 실행 전략",
+      "시크릿 관리와 보안 베스트 프랙티스"
+    ]
+  },
+  "sections": [
+    {
+      "id": "chapter12-section-1",
+      "level": 2,
+      "title": "목차",
+      "anchor": "목차",
+      "content": [
+        {
+          "id": "chapter12-block-1",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Clip 1. CI/CD 개념 이해"
+              },
+              {
+                "text": "Clip 2. Docker CI 동작 흐름"
+              },
+              {
+                "text": "Clip 3. GitHub Actions 개요"
+              },
+              {
+                "text": "Clip 4. Workflow 기본 구조"
+              },
+              {
+                "text": "Clip 5. Event 트리거와 Matrix 전략"
+              },
+              {
+                "text": "Clip 6. [실습] GitHub Actions Demo"
+              },
+              {
+                "text": "Clip 7. [실습] Docker CI 환경 준비"
+              },
+              {
+                "text": "Clip 8. [실습] Docker Hub 연동"
+              },
+              {
+                "text": "Clip 9. [실습] Docker CI Workflow 작성"
+              },
+              {
+                "text": "Clip 10. [실습] CI 동작 확인 및 자동 배포"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-2",
+      "level": 2,
+      "title": "1. CI/CD 개념 이해",
+      "anchor": "1-cicd-개념-이해",
+      "content": [
+        {
+          "id": "chapter12-block-3",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "CI/CD의 기본 개념과 Docker 기반 CI의 필요성 이해하기"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-3",
+      "level": 3,
+      "title": "1.1 CI/CD 개요",
+      "anchor": "11-cicd-개요",
+      "content": [
+        {
+          "id": "chapter12-block-4",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter12-diagram-1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-4",
+      "level": 3,
+      "title": "1.2 CI (Continuous Integration, 지속적 통합)",
+      "anchor": "12-ci-continuous-integration-지속적-통합",
+      "content": [
+        {
+          "id": "chapter12-block-5",
+          "type": "table",
+          "data": {
+            "tableId": "chapter12-table-5"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-5",
+      "level": 3,
+      "title": "1.3 CD (Continuous Delivery / Deployment)",
+      "anchor": "13-cd-continuous-delivery-deployment",
+      "content": [
+        {
+          "id": "chapter12-block-6",
+          "type": "table",
+          "data": {
+            "tableId": "chapter12-table-6"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-6",
+      "level": 3,
+      "title": "1.4 Docker CI의 필요성",
+      "anchor": "14-docker-ci의-필요성",
+      "content": [
+        {
+          "id": "chapter12-block-7",
+          "type": "text",
+          "data": {
+            "markdown": "전통적인 CI와 Docker CI의 차이:"
+          }
+        },
+        {
+          "id": "chapter12-block-8",
+          "type": "table",
+          "data": {
+            "tableId": "chapter12-table-8"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-7",
+      "level": 2,
+      "title": "2. Docker CI 동작 흐름",
+      "anchor": "2-docker-ci-동작-흐름",
+      "content": [
+        {
+          "id": "chapter12-block-10",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "Docker 기반 CI 파이프라인의 전체 흐름 이해하기"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-8",
+      "level": 3,
+      "title": "2.1 Docker CI 아키텍처",
+      "anchor": "21-docker-ci-아키텍처",
+      "content": [
+        {
+          "id": "chapter12-block-11",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter12-diagram-2"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-9",
+      "level": 3,
+      "title": "2.2 Docker CI 단계별 설명",
+      "anchor": "22-docker-ci-단계별-설명",
+      "content": [
+        {
+          "id": "chapter12-block-12",
+          "type": "table",
+          "data": {
+            "tableId": "chapter12-table-12"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-10",
+      "level": 3,
+      "title": "2.3 Docker CI 구성 요소",
+      "anchor": "23-docker-ci-구성-요소",
+      "content": [
+        {
+          "id": "chapter12-block-13",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter12-diagram-3"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-11",
+      "level": 2,
+      "title": "3. GitHub Actions 개요",
+      "anchor": "3-github-actions-개요",
+      "content": [
+        {
+          "id": "chapter12-block-15",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "GitHub에서 제공하는 CI/CD 자동화 도구 이해하기"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-12",
+      "level": 3,
+      "title": "3.1 GitHub Actions란?",
+      "anchor": "31-github-actions란",
+      "content": [
+        {
+          "id": "chapter12-block-16",
+          "type": "text",
+          "data": {
+            "markdown": "GitHub Actions는 GitHub에서 제공하는 CI/CD 자동화 플랫폼으로, 코드 저장소에서 직접 빌드, 테스트, 배포 워크플로우를 자동화할 수 있다."
+          }
+        },
+        {
+          "id": "chapter12-block-17",
+          "type": "text",
+          "data": {
+            "markdown": "주요 특징:"
+          }
+        },
+        {
+          "id": "chapter12-block-18",
+          "type": "table",
+          "data": {
+            "tableId": "chapter12-table-18"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-13",
+      "level": 3,
+      "title": "3.2 GitHub Actions 핵심 개념",
+      "anchor": "32-github-actions-핵심-개념",
+      "content": [
+        {
+          "id": "chapter12-block-19",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter12-diagram-4"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-14",
+      "level": 3,
+      "title": "3.3 주요 개념 상세",
+      "anchor": "33-주요-개념-상세",
+      "content": [
+        {
+          "id": "chapter12-block-20",
+          "type": "table",
+          "data": {
+            "tableId": "chapter12-table-20"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-15",
+      "level": 2,
+      "title": "4. Workflow 기본 구조",
+      "anchor": "4-workflow-기본-구조",
+      "content": [
+        {
+          "id": "chapter12-block-22",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "GitHub Actions Workflow YAML 파일 구조 이해하기"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-16",
+      "level": 3,
+      "title": "4.1 기본 Workflow 구조",
+      "anchor": "41-기본-workflow-구조",
+      "content": [
+        {
+          "id": "chapter12-block-23",
+          "type": "code",
+          "data": {
+            "language": "yaml",
+            "code": "# 워크플로우 이름\nname: My CI Workflow\n\n# 트리거 이벤트\non:\n  push:\n    branches: [ main, master ]\n  pull_request:\n    branches: [ main ]\n\n# 작업 정의\njobs:\n  # Job 이름\n  build:\n    # 실행 환경\n    runs-on: ubuntu-latest\n\n    # 실행 단계\n    steps:\n      # Step 1: 코드 체크아웃\n      - name: Checkout code\n        uses: actions/checkout@v3\n\n      # Step 2: 빌드 실행\n      - name: Build\n        run: echo \"Building...\"\n\n      # Step 3: 테스트 실행\n      - name: Test\n        run: echo \"Testing...\"",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-17",
+      "level": 3,
+      "title": "4.2 Workflow 파일 위치",
+      "anchor": "42-workflow-파일-위치",
+      "content": [
+        {
+          "id": "chapter12-block-24",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter12-diagram-5"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-18",
+      "level": 3,
+      "title": "4.3 주요 키워드 설명",
+      "anchor": "43-주요-키워드-설명",
+      "content": [
+        {
+          "id": "chapter12-block-25",
+          "type": "table",
+          "data": {
+            "tableId": "chapter12-table-25"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-19",
+      "level": 3,
+      "title": "4.4 간단한 예제",
+      "anchor": "44-간단한-예제",
+      "content": [
+        {
+          "id": "chapter12-block-26",
+          "type": "code",
+          "data": {
+            "language": "yaml",
+            "code": "name: Simple CI\n\non:\n  push:\n    branches: [ main ]\n\njobs:\n  hello:\n    runs-on: ubuntu-latest\n    steps:\n      - name: Say Hello\n        run: echo \"Hello, GitHub Actions!\"\n\n      - name: Show Date\n        run: date\n\n      - name: List Files\n        run: ls -la",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-20",
+      "level": 2,
+      "title": "5. Event 트리거와 Matrix 전략",
+      "anchor": "5-event-트리거와-matrix-전략",
+      "content": [
+        {
+          "id": "chapter12-block-28",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "다양한 트리거 조건과 병렬 테스트 전략 이해하기"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-21",
+      "level": 3,
+      "title": "5.1 Event 트리거 종류",
+      "anchor": "51-event-트리거-종류",
+      "content": [
+        {
+          "id": "chapter12-block-29",
+          "type": "table",
+          "data": {
+            "tableId": "chapter12-table-29"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-22",
+      "level": 3,
+      "title": "5.2 Push / Pull Request 트리거",
+      "anchor": "52-push-pull-request-트리거",
+      "content": [
+        {
+          "id": "chapter12-block-30",
+          "type": "code",
+          "data": {
+            "language": "yaml",
+            "code": "on:\n  push:\n    branches:\n      - main\n      - master\n      - 'release/**'    # release/로 시작하는 모든 브랜치\n    tags:\n      - 'v*'            # v로 시작하는 모든 태그\n\n  pull_request:\n    branches:\n      - main\n    types:\n      - opened\n      - synchronize\n      - reopened",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-23",
+      "level": 3,
+      "title": "5.3 Path 조건 (특정 파일 변경 시만 실행)",
+      "anchor": "53-path-조건-특정-파일-변경-시만-실행",
+      "content": [
+        {
+          "id": "chapter12-block-31",
+          "type": "code",
+          "data": {
+            "language": "yaml",
+            "code": "on:\n  push:\n    branches: [ main ]\n    paths:\n      - 'src/**'        # src 폴더 내 파일 변경 시\n      - '**.js'         # 모든 JS 파일 변경 시\n      - 'Dockerfile'    # Dockerfile 변경 시\n    paths-ignore:\n      - 'docs/**'       # docs 폴더는 무시\n      - '**.md'         # 마크다운 파일 무시",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-24",
+      "level": 3,
+      "title": "5.4 Schedule (Cron 표현식)",
+      "anchor": "54-schedule-cron-표현식",
+      "content": [
+        {
+          "id": "chapter12-block-32",
+          "type": "code",
+          "data": {
+            "language": "yaml",
+            "code": "on:\n  schedule:\n    # 매일 자정 (UTC) 실행\n    - cron: '0 0 * * *'\n\n    # 매주 월요일 오전 9시 (UTC) 실행\n    - cron: '0 9 * * 1'\n\n    # 매시간 30분에 실행\n    - cron: '30 * * * *'",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter12-block-33",
+          "type": "text",
+          "data": {
+            "markdown": "Cron 표현식:"
+          }
+        },
+        {
+          "id": "chapter12-block-34",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter12-diagram-6"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-25",
+      "level": 3,
+      "title": "5.5 Matrix 전략 (병렬 테스트)",
+      "anchor": "55-matrix-전략-병렬-테스트",
+      "content": [
+        {
+          "id": "chapter12-block-35",
+          "type": "text",
+          "data": {
+            "markdown": "여러 환경에서 동시에 테스트를 실행할 수 있다."
+          }
+        },
+        {
+          "id": "chapter12-block-36",
+          "type": "code",
+          "data": {
+            "language": "yaml",
+            "code": "jobs:\n  test:\n    runs-on: ubuntu-latest\n    strategy:\n      matrix:\n        node-version: [14.x, 16.x, 18.x]\n        os: [ubuntu-latest, windows-latest]\n\n    steps:\n      - uses: actions/checkout@v3\n\n      - name: Use Node.js ${{ matrix.node-version }}\n        uses: actions/setup-node@v3\n        with:\n          node-version: ${{ matrix.node-version }}\n\n      - run: npm install\n      - run: npm test",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter12-block-37",
+          "type": "text",
+          "data": {
+            "markdown": "Matrix 실행 결과:"
+          }
+        },
+        {
+          "id": "chapter12-block-38",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter12-diagram-7"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-26",
+      "level": 2,
+      "title": "6. [실습] GitHub Actions Demo",
+      "anchor": "6-실습-github-actions-demo",
+      "content": [
+        {
+          "id": "chapter12-block-40",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "간단한 GitHub Actions 워크플로우 생성 및 실행"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-27",
+      "level": 3,
+      "title": "6.1 Demo 워크플로우 작성",
+      "anchor": "61-demo-워크플로우-작성",
+      "content": [
+        {
+          "id": "chapter12-block-41",
+          "type": "text",
+          "data": {
+            "markdown": "GitHub 저장소에서 .github/workflows/demo.yml 파일 생성:"
+          }
+        },
+        {
+          "id": "chapter12-block-42",
+          "type": "code",
+          "data": {
+            "language": "yaml",
+            "code": "name: GitHub Actions Demo\n\non:\n  push:\n    branches: [ main, master ]\n  workflow_dispatch:  # 수동 실행 가능\n\njobs:\n  demo-job:\n    runs-on: ubuntu-latest\n\n    steps:\n      - name: Print Event Info\n        run: |\n          echo \"Event name: ${{ github.event_name }}\"\n          echo \"Repository: ${{ github.repository }}\"\n          echo \"Branch: ${{ github.ref }}\"\n          echo \"Commit SHA: ${{ github.sha }}\"\n\n      - name: Print Runner Info\n        run: |\n          echo \"Runner OS: ${{ runner.os }}\"\n          echo \"Runner Arch: ${{ runner.arch }}\"\n\n      - name: Checkout Code\n        uses: actions/checkout@v3\n\n      - name: List Files\n        run: |\n          echo \"=== Repository Files ===\"\n          ls -la\n\n      - name: Print Environment\n        run: |\n          echo \"=== Environment Variables ===\"\n          env | sort",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-28",
+      "level": 3,
+      "title": "6.2 워크플로우 실행 확인",
+      "anchor": "62-워크플로우-실행-확인",
+      "content": [
+        {
+          "id": "chapter12-block-43",
+          "type": "list",
+          "data": {
+            "ordered": true,
+            "items": [
+              {
+                "text": "GitHub 저장소 → Actions 탭 이동"
+              },
+              {
+                "text": "워크플로우 실행 상태 확인"
+              },
+              {
+                "text": "Job 로그 확인"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter12-block-44",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter12-diagram-8"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-29",
+      "level": 3,
+      "title": "6.3 Context 변수",
+      "anchor": "63-context-변수",
+      "content": [
+        {
+          "id": "chapter12-block-45",
+          "type": "text",
+          "data": {
+            "markdown": "GitHub Actions에서 사용 가능한 주요 Context:"
+          }
+        },
+        {
+          "id": "chapter12-block-46",
+          "type": "table",
+          "data": {
+            "tableId": "chapter12-table-46"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-30",
+      "level": 2,
+      "title": "7. [실습] Docker CI 환경 준비",
+      "anchor": "7-실습-docker-ci-환경-준비",
+      "content": [
+        {
+          "id": "chapter12-block-48",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "Node.js 애플리케이션으로 Docker CI 환경 구성하기"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-31",
+      "level": 3,
+      "title": "7.1 프로젝트 구조 준비",
+      "anchor": "71-프로젝트-구조-준비",
+      "content": [
+        {
+          "id": "chapter12-block-49",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ mkdir -p ~/fastcampus/ch12/nodejs-ci && cd $_\nkevin@hostos1:~/fastcampus/ch12/nodejs-ci$ pwd\n/home/kevin/fastcampus/ch12/nodejs-ci",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-32",
+      "level": 3,
+      "title": "7.2 Node.js 애플리케이션 작성",
+      "anchor": "72-nodejs-애플리케이션-작성",
+      "content": [
+        {
+          "id": "chapter12-block-50",
+          "type": "text",
+          "data": {
+            "markdown": "package.json:"
+          }
+        },
+        {
+          "id": "chapter12-block-51",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch12/nodejs-ci$ vi package.json",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter12-block-52",
+          "type": "code",
+          "data": {
+            "language": "json",
+            "code": "{\n  \"name\": \"nodejs-ci-demo\",\n  \"version\": \"1.0.0\",\n  \"description\": \"FastCampus Docker CI Demo\",\n  \"main\": \"server.js\",\n  \"scripts\": {\n    \"start\": \"node server.js\",\n    \"test\": \"echo \\\"Running tests...\\\" && exit 0\"\n  },\n  \"dependencies\": {\n    \"express\": \"^4.18.2\"\n  }\n}",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter12-block-53",
+          "type": "text",
+          "data": {
+            "markdown": "server.js:"
+          }
+        },
+        {
+          "id": "chapter12-block-54",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch12/nodejs-ci$ vi server.js",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter12-block-55",
+          "type": "code",
+          "data": {
+            "language": "javascript",
+            "code": "const express = require('express');\nconst path = require('path');\nconst app = express();\nconst PORT = process.env.PORT || 3000;\n\napp.use(express.static('public'));\n\napp.get('/', (req, res) => {\n    res.sendFile(path.join(__dirname, 'public', 'index.html'));\n});\n\napp.get('/health', (req, res) => {\n    res.json({ status: 'healthy', version: '1.0.0' });\n});\n\napp.get('/api/info', (req, res) => {\n    res.json({\n        app: 'FastCampus Docker CI Demo',\n        version: '1.0.0',\n        hostname: require('os').hostname(),\n        timestamp: new Date().toISOString()\n    });\n});\n\napp.listen(PORT, () => {\n    console.log(`Server running on port ${PORT}`);\n});",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter12-block-56",
+          "type": "text",
+          "data": {
+            "markdown": "public/index.html:"
+          }
+        },
+        {
+          "id": "chapter12-block-57",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch12/nodejs-ci$ mkdir public\nkevin@hostos1:~/fastcampus/ch12/nodejs-ci$ vi public/index.html",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter12-block-58",
+          "type": "code",
+          "data": {
+            "language": "html",
+            "code": "<!DOCTYPE html>\n<html>\n<head>\n    <title>FastCampus Docker CI</title>\n    <style>\n        body {\n            font-family: Arial, sans-serif;\n            display: flex;\n            justify-content: center;\n            align-items: center;\n            height: 100vh;\n            margin: 0;\n            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n            color: white;\n        }\n        .container {\n            text-align: center;\n            padding: 40px;\n            background: rgba(255,255,255,0.1);\n            border-radius: 10px;\n        }\n        h1 { font-size: 2.5em; margin-bottom: 10px; }\n        p { font-size: 1.2em; }\n        .version {\n            margin-top: 20px;\n            padding: 10px;\n            background: rgba(0,0,0,0.2);\n            border-radius: 5px;\n        }\n    </style>\n</head>\n<body>\n    <div class=\"container\">\n        <h1>Welcome to FastCampus</h1>\n        <p>Node.js App using Docker CI v1.0</p>\n        <div class=\"version\">\n            Built with GitHub Actions + Docker\n        </div>\n    </div>\n</body>\n</html>",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-33",
+      "level": 3,
+      "title": "7.3 Dockerfile 작성",
+      "anchor": "73-dockerfile-작성",
+      "content": [
+        {
+          "id": "chapter12-block-59",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch12/nodejs-ci$ vi Dockerfile",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter12-block-60",
+          "type": "code",
+          "data": {
+            "language": "dockerfile",
+            "code": "FROM node:18-alpine\n\nLABEL maintainer=\"fastcampus\"\nLABEL description=\"Docker CI Demo Application\"\n\nWORKDIR /app\n\nCOPY package*.json ./\n\nRUN npm install --production\n\nCOPY . .\n\nEXPOSE 3000\n\nHEALTHCHECK --interval=30s --timeout=3s \\\n  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1\n\nCMD [\"npm\", \"start\"]",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-34",
+      "level": 3,
+      "title": "7.4 .dockerignore 작성",
+      "anchor": "74-dockerignore-작성",
+      "content": [
+        {
+          "id": "chapter12-block-61",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch12/nodejs-ci$ vi .dockerignore",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter12-block-62",
+          "type": "code",
+          "data": {
+            "language": "text",
+            "code": "node_modules\nnpm-debug.log\n.git\n.gitignore\n.github\nDockerfile\n.dockerignore\nREADME.md",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-35",
+      "level": 3,
+      "title": "7.5 로컬 빌드 테스트",
+      "anchor": "75-로컬-빌드-테스트",
+      "content": [
+        {
+          "id": "chapter12-block-63",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch12/nodejs-ci$ docker build -t nodejs-ci:v1.0 --no-cache .\nSending build context to Docker daemon  5.632kB\nStep 1/9 : FROM node:18-alpine\n...\nSuccessfully built abc123def456\nSuccessfully tagged nodejs-ci:v1.0\n\nkevin@hostos1:~/fastcampus/ch12/nodejs-ci$ docker run -d -p 3001:3000 --name nodejs-ci-test nodejs-ci:v1.0\ndef456ghi789...\n\nkevin@hostos1:~/fastcampus/ch12/nodejs-ci$ curl localhost:3001/health\n{\"status\":\"healthy\",\"version\":\"1.0.0\"}\n\nkevin@hostos1:~/fastcampus/ch12/nodejs-ci$ curl localhost:3001/api/info\n{\"app\":\"FastCampus Docker CI Demo\",\"version\":\"1.0.0\",\"hostname\":\"def456ghi789\",\"timestamp\":\"2023-06-25T10:00:00.000Z\"}\n\n# 테스트 후 정리\nkevin@hostos1:~/fastcampus/ch12/nodejs-ci$ docker stop nodejs-ci-test && docker rm nodejs-ci-test",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-36",
+      "level": 2,
+      "title": "8. [실습] Docker Hub 연동",
+      "anchor": "8-실습-docker-hub-연동",
+      "content": [
+        {
+          "id": "chapter12-block-65",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "GitHub 저장소와 Docker Hub 연동 설정"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-37",
+      "level": 3,
+      "title": "8.1 Docker Hub 로그인 확인",
+      "anchor": "81-docker-hub-로그인-확인",
+      "content": [
+        {
+          "id": "chapter12-block-66",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch12/nodejs-ci$ docker login\nLogin with your Docker ID to push and pull images from Docker Hub.\nUsername: <your-username>\nPassword:\nLogin Succeeded",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-38",
+      "level": 3,
+      "title": "8.2 이미지 태그 및 Push",
+      "anchor": "82-이미지-태그-및-push",
+      "content": [
+        {
+          "id": "chapter12-block-67",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 이미지 태그\nkevin@hostos1:~/fastcampus/ch12/nodejs-ci$ docker tag nodejs-ci:v1.0 <username>/nodejs-ci:v1.0\n\n# Docker Hub에 Push\nkevin@hostos1:~/fastcampus/ch12/nodejs-ci$ docker push <username>/nodejs-ci:v1.0\nThe push refers to repository [docker.io/<username>/nodejs-ci]\n...\nv1.0: digest: sha256:abc123... size: 1234",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-39",
+      "level": 3,
+      "title": "8.3 Git 저장소 구성",
+      "anchor": "83-git-저장소-구성",
+      "content": [
+        {
+          "id": "chapter12-block-68",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# Git 초기화\nkevin@hostos1:~/fastcampus/ch12/nodejs-ci$ git init\nInitialized empty Git repository in /home/kevin/fastcampus/ch12/nodejs-ci/.git/\n\n# .gitignore 작성\nkevin@hostos1:~/fastcampus/ch12/nodejs-ci$ vi .gitignore",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter12-block-69",
+          "type": "code",
+          "data": {
+            "language": "text",
+            "code": "node_modules/\nnpm-debug.log\n.env\n*.log",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter12-block-70",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 파일 추가 및 커밋\nkevin@hostos1:~/fastcampus/ch12/nodejs-ci$ git add .\nkevin@hostos1:~/fastcampus/ch12/nodejs-ci$ git commit -m \"Initial commit: FastCampus Docker CI\"\n\n# GitHub 원격 저장소 연결\nkevin@hostos1:~/fastcampus/ch12/nodejs-ci$ git remote add origin https://github.com/<username>/docker-ci.git\n\n# Push (Personal Access Token 사용)\nkevin@hostos1:~/fastcampus/ch12/nodejs-ci$ git branch -M main\nkevin@hostos1:~/fastcampus/ch12/nodejs-ci$ git push -u origin main\nUsername: <username>\nPassword: <personal-access-token>",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-40",
+      "level": 3,
+      "title": "8.4 GitHub Personal Access Token 생성",
+      "anchor": "84-github-personal-access-token-생성",
+      "content": [
+        {
+          "id": "chapter12-block-71",
+          "type": "list",
+          "data": {
+            "ordered": true,
+            "items": [
+              {
+                "text": "GitHub → Settings → Developer settings → Personal access tokens"
+              },
+              {
+                "text": "Generate new token (classic) 선택"
+              },
+              {
+                "text": "권한 설정:repo (Full control of private repositories)workflow (Update GitHub Action workflows)"
+              },
+              {
+                "text": "Token 생성 후 복사 (다시 볼 수 없음)"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-41",
+      "level": 3,
+      "title": "8.5 GitHub Secrets 설정",
+      "anchor": "85-github-secrets-설정",
+      "content": [
+        {
+          "id": "chapter12-block-72",
+          "type": "text",
+          "data": {
+            "markdown": "GitHub 저장소에서 Docker Hub 인증 정보를 안전하게 저장:"
+          }
+        },
+        {
+          "id": "chapter12-block-73",
+          "type": "list",
+          "data": {
+            "ordered": true,
+            "items": [
+              {
+                "text": "GitHub 저장소 → Settings → Secrets and variables → Actions"
+              },
+              {
+                "text": "New repository secret 클릭"
+              },
+              {
+                "text": "다음 시크릿 추가:"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter12-block-74",
+          "type": "table",
+          "data": {
+            "tableId": "chapter12-table-74"
+          }
+        },
+        {
+          "id": "chapter12-block-75",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter12-diagram-9"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-42",
+      "level": 2,
+      "title": "9. [실습] Docker CI Workflow 작성",
+      "anchor": "9-실습-docker-ci-workflow-작성",
+      "content": [
+        {
+          "id": "chapter12-block-77",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "Docker 이미지 빌드 및 Push를 자동화하는 Workflow 작성"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-43",
+      "level": 3,
+      "title": "9.1 Workflow 디렉토리 생성",
+      "anchor": "91-workflow-디렉토리-생성",
+      "content": [
+        {
+          "id": "chapter12-block-78",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch12/nodejs-ci$ mkdir -p .github/workflows",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-44",
+      "level": 3,
+      "title": "9.2 Docker CI Workflow 작성",
+      "anchor": "92-docker-ci-workflow-작성",
+      "content": [
+        {
+          "id": "chapter12-block-79",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch12/nodejs-ci$ vi .github/workflows/docker-ci.yml",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter12-block-80",
+          "type": "code",
+          "data": {
+            "language": "yaml",
+            "code": "name: Docker CI - Build and Push\n\non:\n  push:\n    branches:\n      - main\n      - master\n    tags:\n      - 'v*'\n  pull_request:\n    branches:\n      - main\n\nenv:\n  DOCKER_IMAGE: ${{ secrets.DOCKER_HUB_USERNAME }}/nodejs-ci\n\njobs:\n  build-and-push:\n    runs-on: ubuntu-latest\n\n    steps:\n      # Step 1: 코드 체크아웃\n      - name: Checkout code\n        uses: actions/checkout@v3\n\n      # Step 2: Docker 메타데이터 설정\n      - name: Docker metadata\n        id: meta\n        uses: docker/metadata-action@v4\n        with:\n          images: ${{ env.DOCKER_IMAGE }}\n          tags: |\n            type=ref,event=branch\n            type=ref,event=pr\n            type=semver,pattern={{version}}\n            type=semver,pattern={{major}}.{{minor}}\n            type=sha,prefix=sha-\n\n      # Step 3: QEMU 설정 (멀티 아키텍처 빌드용)\n      - name: Set up QEMU\n        uses: docker/setup-qemu-action@v2\n\n      # Step 4: Docker Buildx 설정\n      - name: Set up Docker Buildx\n        uses: docker/setup-buildx-action@v2\n\n      # Step 5: Docker Hub 로그인\n      - name: Login to Docker Hub\n        if: github.event_name != 'pull_request'\n        uses: docker/login-action@v2\n        with:\n          username: ${{ secrets.DOCKER_HUB_USERNAME }}\n          password: ${{ secrets.DOCKER_HUB_PASSWORD }}\n\n      # Step 6: Docker 이미지 빌드 및 Push\n      - name: Build and push Docker image\n        uses: docker/build-push-action@v4\n        with:\n          context: .\n          push: ${{ github.event_name != 'pull_request' }}\n          tags: ${{ steps.meta.outputs.tags }}\n          labels: ${{ steps.meta.outputs.labels }}\n          cache-from: type=gha\n          cache-to: type=gha,mode=max\n\n      # Step 7: 이미지 정보 출력\n      - name: Image digest\n        run: echo ${{ steps.meta.outputs.digest }}",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-45",
+      "level": 3,
+      "title": "9.3 Workflow 구성 요소 설명",
+      "anchor": "93-workflow-구성-요소-설명",
+      "content": [
+        {
+          "id": "chapter12-block-81",
+          "type": "table",
+          "data": {
+            "tableId": "chapter12-table-81"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-46",
+      "level": 3,
+      "title": "9.4 태그 전략",
+      "anchor": "94-태그-전략",
+      "content": [
+        {
+          "id": "chapter12-block-82",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter12-diagram-10"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-47",
+      "level": 3,
+      "title": "9.5 Workflow 파일 커밋",
+      "anchor": "95-workflow-파일-커밋",
+      "content": [
+        {
+          "id": "chapter12-block-83",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch12/nodejs-ci$ git add .github/\nkevin@hostos1:~/fastcampus/ch12/nodejs-ci$ git commit -m \"Add Docker CI workflow\"\nkevin@hostos1:~/fastcampus/ch12/nodejs-ci$ git push",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-48",
+      "level": 2,
+      "title": "10. [실습] CI 동작 확인 및 자동 배포",
+      "anchor": "10-실습-ci-동작-확인-및-자동-배포",
+      "content": [
+        {
+          "id": "chapter12-block-85",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "코드 변경 시 자동 빌드 및 배포 확인"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-49",
+      "level": 3,
+      "title": "10.1 소스 코드 변경",
+      "anchor": "101-소스-코드-변경",
+      "content": [
+        {
+          "id": "chapter12-block-86",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch12/nodejs-ci$ vi public/index.html",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter12-block-87",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter12-diagram-11"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-50",
+      "level": 3,
+      "title": "10.2 변경사항 커밋 및 Push",
+      "anchor": "102-변경사항-커밋-및-push",
+      "content": [
+        {
+          "id": "chapter12-block-88",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch12/nodejs-ci$ git add .\nkevin@hostos1:~/fastcampus/ch12/nodejs-ci$ git commit -m \"Update to v2.0 - Docker CI test\"\nkevin@hostos1:~/fastcampus/ch12/nodejs-ci$ git push",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-51",
+      "level": 3,
+      "title": "10.3 GitHub Actions 실행 확인",
+      "anchor": "103-github-actions-실행-확인",
+      "content": [
+        {
+          "id": "chapter12-block-89",
+          "type": "text",
+          "data": {
+            "markdown": "GitHub 저장소 → Actions 탭에서 워크플로우 실행 상태 확인:"
+          }
+        },
+        {
+          "id": "chapter12-block-90",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter12-diagram-12"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-52",
+      "level": 3,
+      "title": "10.4 Docker Hub 확인",
+      "anchor": "104-docker-hub-확인",
+      "content": [
+        {
+          "id": "chapter12-block-91",
+          "type": "text",
+          "data": {
+            "markdown": "Docker Hub에서 새 이미지 확인:"
+          }
+        },
+        {
+          "id": "chapter12-block-92",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 새 이미지 Pull\nkevin@hostos1:~$ docker pull <username>/nodejs-ci:main\nmain: Pulling from <username>/nodejs-ci\n...\nDigest: sha256:xyz789...\nStatus: Downloaded newer image for <username>/nodejs-ci:main\n\n# 컨테이너 실행\nkevin@hostos1:~$ docker run -d -p 3001:3000 --name nodejs-ci-v2 <username>/nodejs-ci:main\n\n# 확인\nkevin@hostos1:~$ curl localhost:3001\n<!DOCTYPE html>\n<html>\n...\n<p>Node.js App using Docker CI v2.0</p>\n...",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-53",
+      "level": 3,
+      "title": "10.5 태그 기반 배포 (버전 릴리스)",
+      "anchor": "105-태그-기반-배포-버전-릴리스",
+      "content": [
+        {
+          "id": "chapter12-block-93",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 버전 태그 생성\nkevin@hostos1:~/fastcampus/ch12/nodejs-ci$ git tag v2.0.0\nkevin@hostos1:~/fastcampus/ch12/nodejs-ci$ git push origin v2.0.0",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter12-block-94",
+          "type": "text",
+          "data": {
+            "markdown": "태그 Push 시 자동으로:"
+          }
+        },
+        {
+          "id": "chapter12-block-95",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "<username>/nodejs-ci:2.0.0"
+              },
+              {
+                "text": "<username>/nodejs-ci:2.0"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter12-block-96",
+          "type": "text",
+          "data": {
+            "markdown": "이미지가 생성되어 Docker Hub에 Push됨"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-54",
+      "level": 3,
+      "title": "10.6 CI 결과 확인 명령어",
+      "anchor": "106-ci-결과-확인-명령어",
+      "content": [
+        {
+          "id": "chapter12-block-97",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# Docker Hub에서 이미지 태그 확인\nkevin@hostos1:~$ docker search <username>/nodejs-ci\n\n# 특정 버전 Pull\nkevin@hostos1:~$ docker pull <username>/nodejs-ci:2.0.0\n\n# 이미지 정보 확인\nkevin@hostos1:~$ docker inspect <username>/nodejs-ci:2.0.0 | grep -A5 Labels",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-55",
+      "level": 2,
+      "title": "요약",
+      "anchor": "요약",
+      "content": []
+    },
+    {
+      "id": "chapter12-section-56",
+      "level": 3,
+      "title": "핵심 개념",
+      "anchor": "핵심-개념",
+      "content": [
+        {
+          "id": "chapter12-block-99",
+          "type": "list",
+          "data": {
+            "ordered": true,
+            "items": [
+              {
+                "text": "CI/CD 개념CI: 지속적 통합 (빌드, 테스트 자동화)CD: 지속적 전달/배포 (배포 자동화)Docker CI: 컨테이너 이미지 빌드/배포 자동화"
+              },
+              {
+                "text": "GitHub Actions 구성Workflow: 자동화 전체 과정Event: 실행 트리거Job: 실행 단위Step: 개별 작업 단계"
+              },
+              {
+                "text": "Docker CI 파이프라인코드 Push → Workflow 실행 → 이미지 빌드 → Registry Push"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-57",
+      "level": 3,
+      "title": "주요 명령어 정리",
+      "anchor": "주요-명령어-정리",
+      "content": [
+        {
+          "id": "chapter12-block-100",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# Git 관련\ngit init\ngit add .\ngit commit -m \"message\"\ngit push origin main\ngit tag v1.0.0\ngit push origin v1.0.0\n\n# Docker 관련\ndocker build -t <image>:<tag> .\ndocker push <image>:<tag>\ndocker pull <image>:<tag>\ndocker run -d -p <host>:<container> <image>\n\n# Docker Hub 로그인\ndocker login",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-58",
+      "level": 3,
+      "title": "Workflow YAML 구조",
+      "anchor": "workflow-yaml-구조",
+      "content": [
+        {
+          "id": "chapter12-block-101",
+          "type": "code",
+          "data": {
+            "language": "yaml",
+            "code": "name: Docker CI\non:\n  push:\n    branches: [main]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v3\n      - uses: docker/login-action@v2\n      - uses: docker/build-push-action@v4",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-59",
+      "level": 2,
+      "title": "체크리스트 (통과 필수)",
+      "anchor": "체크리스트-통과-필수",
+      "content": [
+        {
+          "id": "chapter12-block-103",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "CI/CD의 개념과 차이점을 설명할 수 있다"
+              },
+              {
+                "text": "Docker CI의 동작 흐름을 이해하고 설명할 수 있다"
+              },
+              {
+                "text": "GitHub Actions의 핵심 개념 (Workflow, Event, Job, Step)을 이해한다"
+              },
+              {
+                "text": "Workflow YAML 파일의 기본 구조를 작성할 수 있다"
+              },
+              {
+                "text": "Event 트리거 (push, pull_request, schedule)를 설정할 수 있다"
+              },
+              {
+                "text": "GitHub Secrets를 설정하고 Workflow에서 사용할 수 있다"
+              },
+              {
+                "text": "Docker 이미지 빌드 및 Push Workflow를 작성할 수 있다"
+              },
+              {
+                "text": "코드 변경 시 자동으로 CI가 실행되는 것을 확인할 수 있다"
+              },
+              {
+                "text": "Docker Hub에 이미지가 자동으로 Push되는 것을 확인할 수 있다"
+              },
+              {
+                "text": "태그 기반 버전 배포를 수행할 수 있다"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter12-section-60",
+      "level": 2,
+      "title": "다음 챕터 예고",
+      "anchor": "다음-챕터-예고",
+      "content": []
+    },
+    {
+      "id": "chapter12-section-61",
+      "level": 3,
+      "title": "Chapter 13. Docker CD (Continuous Deployment)",
+      "anchor": "chapter-13-docker-cd-continuous-deployment",
+      "content": [
+        {
+          "id": "chapter12-block-105",
+          "type": "text",
+          "data": {
+            "markdown": "다음 장에서는:"
+          }
+        },
+        {
+          "id": "chapter12-block-106",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "CD 파이프라인 구성"
+              },
+              {
+                "text": "Kubernetes 연동 배포"
+              },
+              {
+                "text": "ArgoCD를 활용한 GitOps"
+              },
+              {
+                "text": "Blue/Green, Canary 배포 전략"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter12-block-107",
+          "type": "text",
+          "data": {
+            "markdown": "를 실습 중심으로 다룹니다."
+          }
+        }
+      ]
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "chapter12-diagram-1",
+      "type": "tree",
+      "asciiOriginal": "┌───────────────────────────────────────────────────────────────────┐\n│                        CI/CD 파이프라인                           │\n├───────────────────────────────────────────────────────────────────┤\n│                                                                   │\n│   ┌─────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐        │\n│   │  Code   │ →  │  Build  │ →  │  Test   │ →  │ Deploy  │        │\n│   │ Commit  │    │         │    │         │    │         │        │\n│   └─────────┘    └─────────┘    └─────────┘    └─────────┘        │\n│        │                                            │             │\n│        └──────────── CI ────────────┘               │             │\n│                                                     │             │\n│        └────────────────── CD ──────────────────────┘             │\n│                                                                   │\n│   CI (Continuous Integration)    CD (Continuous Delivery/Deploy)  │\n│   - 코드 통합                    - 배포 자동화                    │\n│   - 자동 빌드                    - 운영 환경 반영                 │\n│   - 자동 테스트                  - 롤백 전략                      │\n│                                                                   │\n└───────────────────────────────────────────────────────────────────┘",
+      "mermaidCode": "flowchart LR\n    subgraph Dev[\"👨‍💻 Development\"]\n        Code[\"📝 Code\"]\n        Commit[\"📤 Commit\"]\n    end\n\n    subgraph CI[\"🔄 CI\"]\n        Build[\"🔨 Build\"]\n        Test[\"🧪 Test\"]\n        Push[\"📦 Push to Registry\"]\n    end\n\n    subgraph CD[\"🚀 CD\"]\n        Deploy[\"🎯 Deploy\"]\n        Run[\"▶️ Run\"]\n    end\n\n    Code --> Commit\n    Commit --> Build\n    Build --> Test\n    Test --> Push\n    Push --> Deploy\n    Deploy --> Run\n\n    style Dev fill:#fef3c7,stroke:#d97706\n    style CI fill:#dbeafe,stroke:#2563eb\n    style CD fill:#dcfce7,stroke:#16a34a",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "┌───────────────────────────────────────────────────────────────────┐",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "CI/CD 파이프라인                           │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┤",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "┌─────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐        │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Code   │",
+                  "type": "branch",
+                  "targetInfo": "│  Build  │ →  │  Test   │ →  │ Deploy  │        │",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Commit  │    │         │    │         │    │         │        │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┘    └─────────┘    └─────────┘    └─────────┘        │",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-4",
+                      "label": "CI ────────────┘               │             │",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "CD ──────────────────────┘             │",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "id": "node-5",
+                  "label": "CI (Continuous Integration)    CD (Continuous Delivery/Deploy)  │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "- 코드 통합                    - 배포 자동화                    │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "- 자동 빌드                    - 운영 환경 반영                 │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "- 자동 테스트                  - 롤백 전략                      │",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "node-4",
+              "label": "┘",
+              "type": "branch",
+              "children": []
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter12-diagram-2",
+      "type": "tree",
+      "asciiOriginal": "┌────────────────────────────────────────────────────────────────────┐\n│                      Docker CI 동작 흐름                           │\n├────────────────────────────────────────────────────────────────────┤\n│                                                                    │\n│   Developer                                                        │\n│       │                                                            │\n│       │ 1. git commit & push                                       │\n│       ↓                                                            │\n│   ┌───────────────┐                                                │\n│   │    GitHub     │                                                │\n│   │  Repository   │                                                │\n│   └───────┬───────┘                                                │\n│           │                                                        │\n│           │ 2. Webhook (push event)                                │\n│           ↓                                                        │\n│   ┌───────────────┐                                                │\n│   │    GitHub     │                                                │\n│   │    Actions    │ ← 3. Workflow 실행                             │\n│   │   (CI Tool)   │                                                │\n│   └───────┬───────┘                                                │\n│           │                                                        │\n│           │ 4. docker build (Dockerfile)                           │\n│           ↓                                                        │\n│   ┌───────────────┐                                                │\n│   │ Docker Image  │                                                │\n│   │    Build      │                                                │\n│   └───────┬───────┘                                                │\n│           │                                                        │\n│           │ 5. docker push                                         │\n│           ↓                                                        │\n│   ┌───────────────┐                                                │\n│   │  Docker Hub   │                                                │\n│   │  (Registry)   │                                                │\n│   └───────┬───────┘                                                │\n│           │                                                        │\n│           │ 6. docker pull & run                                   │\n│           ↓                                                        │\n│   ┌───────────────┐                                                │\n│   │   Container   │                                                │\n│   │   (Runtime)   │                                                │\n│   └───────────────┘                                                │\n│                                                                    │\n└────────────────────────────────────────────────────────────────────┘",
+      "mermaidCode": "flowchart LR\n    subgraph Development[\"👨‍💻 개발\"]\n        Dockerfile[\"📄 Dockerfile\"]\n        AppCode[\"💻 Application<br/>+ Infra 구성\"]\n    end\n\n    subgraph Build[\"🔨 빌드\"]\n        BuildProcess[\"docker build\"]\n        Image[\"🐳 Docker Image\"]\n    end\n\n    subgraph Registry[\"📦 레지스트리\"]\n        Push[\"docker push\"]\n        Hub[\"Docker Hub\"]\n        Pull[\"docker pull\"]\n    end\n\n    subgraph Deploy[\"🚀 배포\"]\n        Run[\"docker run\"]\n        Container[\"📦 Container\"]\n        Service[\"🌐 Application<br/>서비스 제공\"]\n    end\n\n    AppCode --> Dockerfile\n    Dockerfile --> BuildProcess\n    BuildProcess --> Image\n    Image --> Push\n    Push --> Hub\n    Hub --> Pull\n    Pull --> Run\n    Run --> Container\n    Container --> Service\n\n    style Development fill:#fef3c7,stroke:#d97706\n    style Build fill:#dbeafe,stroke:#2563eb\n    style Registry fill:#e0e7ff,stroke:#6366f1\n    style Deploy fill:#dcfce7,stroke:#16a34a",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "┌────────────────────────────────────────────────────────────────────┐",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "Docker CI 동작 흐름                           │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┤",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "Developer                                                        │",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-4",
+                      "label": "1. git commit & push                                       │",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "↓                                                            │",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "id": "node-5",
+                  "label": "┌───────────────┐                                                │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "GitHub     │                                                │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Repository   │                                                │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┬───────┘                                                │",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-4",
+                      "label": "2. Webhook (push event)                                │",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "↓                                                        │",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "id": "node-5",
+                  "label": "┌───────────────┐                                                │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "GitHub     │                                                │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Actions    │ ← 3. Workflow 실행                             │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "(CI Tool)   │                                                │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┬───────┘                                                │",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-4",
+                      "label": "4. docker build (Dockerfile)                           │",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "↓                                                        │",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "id": "node-5",
+                  "label": "┌───────────────┐                                                │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Docker Image  │                                                │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Build      │                                                │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┬───────┘                                                │",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-4",
+                      "label": "5. docker push                                         │",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "↓                                                        │",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "id": "node-5",
+                  "label": "┌───────────────┐                                                │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Docker Hub   │                                                │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "(Registry)   │                                                │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┬───────┘                                                │",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-4",
+                      "label": "6. docker pull & run                                   │",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "↓                                                        │",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "id": "node-5",
+                  "label": "┌───────────────┐                                                │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Container   │                                                │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "(Runtime)   │                                                │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┘                                                │",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "node-4",
+              "label": "┘",
+              "type": "branch",
+              "children": []
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter12-diagram-3",
+      "type": "tree",
+      "asciiOriginal": "┌────────────────────────────────────────────────────────────────────┐\n│                      Docker CI 구성 요소                           │\n├────────────────────────────────────────────────────────────────────┤\n│                                                                    │\n│   ┌──────────────────┐    ┌──────────────────┐                     │\n│   │ Version Control  │    │     CI Tool      │                     │\n│   │     (GitHub)     │    │ (GitHub Actions) │                     │\n│   └──────────────────┘    └──────────────────┘                     │\n│                                                                    │\n│   ┌──────────────────┐    ┌──────────────────┐                     │\n│   │  Image Registry  │    │ Container Runtime│                     │\n│   │   (Docker Hub)   │    │    (Docker)      │                     │\n│   └──────────────────┘    └──────────────────┘                     │\n│                                                                    │\n│   DevOps 협업 구조:                                                │\n│   - Developer → Commit & Push                                      │\n│   - CI Tool   → Image Build & Push                                 │\n│   - QA/Tester → docker pull & run                                  │\n│   - Ops       → Production Deploy                                  │\n│                                                                    │\n└────────────────────────────────────────────────────────────────────┘",
+      "mermaidCode": "flowchart LR\n    subgraph Development[\"👨‍💻 개발\"]\n        Dockerfile[\"📄 Dockerfile\"]\n        AppCode[\"💻 Application<br/>+ Infra 구성\"]\n    end\n\n    subgraph Build[\"🔨 빌드\"]\n        BuildProcess[\"docker build\"]\n        Image[\"🐳 Docker Image\"]\n    end\n\n    subgraph Registry[\"📦 레지스트리\"]\n        Push[\"docker push\"]\n        Hub[\"Docker Hub\"]\n        Pull[\"docker pull\"]\n    end\n\n    subgraph Deploy[\"🚀 배포\"]\n        Run[\"docker run\"]\n        Container[\"📦 Container\"]\n        Service[\"🌐 Application<br/>서비스 제공\"]\n    end\n\n    AppCode --> Dockerfile\n    Dockerfile --> BuildProcess\n    BuildProcess --> Image\n    Image --> Push\n    Push --> Hub\n    Hub --> Pull\n    Pull --> Run\n    Run --> Container\n    Container --> Service\n\n    style Development fill:#fef3c7,stroke:#d97706\n    style Build fill:#dbeafe,stroke:#2563eb\n    style Registry fill:#e0e7ff,stroke:#6366f1\n    style Deploy fill:#dcfce7,stroke:#16a34a",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "┌────────────────────────────────────────────────────────────────────┐",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "Docker CI 구성 요소                           │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┤",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "┌──────────────────┐    ┌──────────────────┐                     │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Version Control  │    │     CI Tool      │                     │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "(GitHub)     │    │ (GitHub Actions) │                     │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┘    └──────────────────┘                     │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┌──────────────────┐    ┌──────────────────┐                     │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Image Registry  │    │ Container Runtime│                     │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "(Docker Hub)   │    │    (Docker)      │                     │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┘    └──────────────────┘                     │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "DevOps 협업 구조:                                                │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "- Developer",
+                  "type": "branch",
+                  "targetInfo": "Commit & Push                                      │",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "- CI Tool",
+                  "type": "branch",
+                  "targetInfo": "Image Build & Push                                 │",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "- QA/Tester",
+                  "type": "branch",
+                  "targetInfo": "docker pull & run                                  │",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "- Ops",
+                  "type": "branch",
+                  "targetInfo": "Production Deploy                                  │",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "node-4",
+              "label": "┘",
+              "type": "branch",
+              "children": []
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter12-diagram-4",
+      "type": "tree",
+      "asciiOriginal": "┌────────────────────────────────────────────────────────────────────┐\n│                   GitHub Actions 구성 요소                         │\n├────────────────────────────────────────────────────────────────────┤\n│                                                                    │\n│   Workflow (.github/workflows/*.yml)                               │\n│   └── 자동화 전체 과정 정의                                        │\n│                                                                    │\n│       Event (on:)                                                  │\n│       └── 실행 트리거 (push, pull_request, schedule 등)            │\n│                                                                    │\n│           Job (jobs:)                                              │\n│           └── 실행 단위 (병렬 또는 순차 실행 가능)                 │\n│                                                                    │\n│               Runner (runs-on:)                                    │\n│               └── Job 실행 환경 (ubuntu-latest, windows 등)        │\n│                                                                    │\n│                   Step (steps:)                                    │\n│                   └── Job 내부의 개별 작업 단계                    │\n│                                                                    │\n│                       Action (uses:)                               │\n│                       └── 재사용 가능한 작업 단위                  │\n│                                                                    │\n└────────────────────────────────────────────────────────────────────┘",
+      "mermaidCode": "flowchart TB\n    subgraph Matrix[\"🔄 Matrix 병렬 실행\"]\n        direction TB\n\n        subgraph Ubuntu[\"🐧 Ubuntu\"]\n            direction LR\n            U1[\"📦 Node 14.x\"]\n            U2[\"📦 Node 16.x\"]\n            U3[\"📦 Node 18.x\"]\n        end\n\n        subgraph Windows[\"🪟 Windows\"]\n            direction LR\n            W1[\"📦 Node 14.x\"]\n            W2[\"📦 Node 16.x\"]\n            W3[\"📦 Node 18.x\"]\n        end\n    end\n\n    Trigger[\"🎯 Push Event\"] --> Matrix\n    Matrix --> Result[\"✅ 총 6개 Job 병렬 실행\"]\n\n    style Matrix fill:#f8fafc,stroke:#64748b\n    style Ubuntu fill:#dbeafe,stroke:#2563eb\n    style Windows fill:#dcfce7,stroke:#16a34a\n    style Trigger fill:#fef3c7,stroke:#d97706\n    style Result fill:#ecfdf5,stroke:#059669",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "┌────────────────────────────────────────────────────────────────────┐",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "GitHub Actions 구성 요소                         │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┤",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "Workflow (.github/workflows/*.yml)                               │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "자동화 전체 과정 정의                                        │",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-4",
+                      "label": "Event (on:)                                                  │",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "실행 트리거 (push, pull_request, schedule 등)            │",
+                      "type": "branch",
+                      "children": [
+                        {
+                          "id": "node-5",
+                          "label": "Job (jobs:)                                              │",
+                          "type": "branch",
+                          "children": []
+                        },
+                        {
+                          "id": "node-6",
+                          "label": "실행 단위 (병렬 또는 순차 실행 가능)                 │",
+                          "type": "branch",
+                          "children": [
+                            {
+                              "id": "node-6",
+                              "label": "Runner (runs-on:)                                    │",
+                              "type": "branch",
+                              "children": []
+                            },
+                            {
+                              "id": "node-7",
+                              "label": "Job 실행 환경 (ubuntu-latest, windows 등)        │",
+                              "type": "branch",
+                              "children": [
+                                {
+                                  "id": "node-7",
+                                  "label": "Step (steps:)                                    │",
+                                  "type": "branch",
+                                  "children": []
+                                },
+                                {
+                                  "id": "node-8",
+                                  "label": "Job 내부의 개별 작업 단계                    │",
+                                  "type": "branch",
+                                  "children": [
+                                    {
+                                      "id": "node-8",
+                                      "label": "Action (uses:)                               │",
+                                      "type": "branch",
+                                      "children": []
+                                    },
+                                    {
+                                      "id": "node-9",
+                                      "label": "재사용 가능한 작업 단위                  │",
+                                      "type": "branch",
+                                      "children": []
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "node-9",
+              "label": "┘",
+              "type": "branch",
+              "children": []
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter12-diagram-5",
+      "type": "tree",
+      "title": "repository/",
+      "asciiOriginal": "repository/\n├── .github/\n│   └── workflows/\n│       ├── ci.yml           # CI 워크플로우\n│       ├── cd.yml           # CD 워크플로우\n│       └── test.yml         # 테스트 워크플로우\n├── src/\n├── Dockerfile\n└── README.md",
+      "mermaidCode": "flowchart TB\n    Root[\"repository/\"]\n    Root --> N0[\".github/\"]\n    Root --> N1[\"workflows/\"]\n    Root --> N2[\"ci.yml           # CI 워크플로우\"]\n    Root --> N3[\"cd.yml           # CD 워크플로우\"]\n    Root --> N4[\"test.yml         # 테스트 워크플로우\"]\n    Root --> N5[\"src/\"]\n    Root --> N6[\"Dockerfile\"]\n    Root --> N7[\"README.md\"]\n",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "repository/",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": ".github/",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "workflows/",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-4",
+                      "label": "ci.yml           # CI 워크플로우",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "cd.yml           # CD 워크플로우",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "test.yml         # 테스트 워크플로우",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "node-5",
+              "label": "src/",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "Dockerfile",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "README.md",
+              "type": "branch",
+              "children": []
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter12-diagram-6",
+      "type": "architecture",
+      "title": "* * * * *",
+      "asciiOriginal": "┌───────────── 분 (0-59)\n│ ┌───────────── 시 (0-23)\n│ │ ┌───────────── 일 (1-31)\n│ │ │ ┌───────────── 월 (1-12)\n│ │ │ │ ┌───────────── 요일 (0-6, 0=일요일)\n│ │ │ │ │\n* * * * *",
+      "mermaidCode": "flowchart LR\n    subgraph Cron[\"⏰ Cron 표현식 구조\"]\n        direction LR\n\n        M[\"*<br/>분<br/>(0-59)\"]\n        H[\"*<br/>시<br/>(0-23)\"]\n        D[\"*<br/>일<br/>(1-31)\"]\n        Mo[\"*<br/>월<br/>(1-12)\"]\n        W[\"*<br/>요일<br/>(0-6)\"]\n    end\n\n    subgraph Examples[\"📋 예시\"]\n        direction TB\n        E1[\"0 0 * * * → 매일 자정\"]\n        E2[\"0 9 * * 1 → 매주 월요일 9시\"]\n        E3[\"30 * * * * → 매시간 30분\"]\n    end\n\n    M --> H --> D --> Mo --> W\n\n    style Cron fill:#f8fafc,stroke:#64748b\n    style Examples fill:#dbeafe,stroke:#2563eb\n    style M fill:#dcfce7,stroke:#16a34a\n    style H fill:#dcfce7,stroke:#16a34a\n    style D fill:#dcfce7,stroke:#16a34a\n    style Mo fill:#dcfce7,stroke:#16a34a\n    style W fill:#dcfce7,stroke:#16a34a",
+      "data": {
+        "components": [],
+        "connections": []
+      }
+    },
+    {
+      "id": "chapter12-diagram-7",
+      "type": "tree",
+      "asciiOriginal": "┌───────────────────────────────────────────────────────────────────┐\n│                       Matrix 병렬 실행                            │\n├───────────────────────────────────────────────────────────────────┤\n│                                                                   │\n│   ┌──────────────┐ ┌──────────────┐ ┌──────────────┐              │\n│   │ Node 14.x    │ │ Node 16.x    │ │ Node 18.x    │              │\n│   │ Ubuntu       │ │ Ubuntu       │ │ Ubuntu       │              │\n│   └──────────────┘ └──────────────┘ └──────────────┘              │\n│                                                                   │\n│   ┌──────────────┐ ┌──────────────┐ ┌──────────────┐              │\n│   │ Node 14.x    │ │ Node 16.x    │ │ Node 18.x    │              │\n│   │ Windows      │ │ Windows      │ │ Windows      │              │\n│   └──────────────┘ └──────────────┘ └──────────────┘              │\n│                                                                   │\n│   총 6개의 Job이 병렬로 실행됨                                    │\n│                                                                   │\n└───────────────────────────────────────────────────────────────────┘",
+      "mermaidCode": "flowchart TB\n    subgraph Matrix[\"🔄 Matrix 병렬 실행\"]\n        direction TB\n\n        subgraph Ubuntu[\"🐧 Ubuntu\"]\n            direction LR\n            U1[\"📦 Node 14.x\"]\n            U2[\"📦 Node 16.x\"]\n            U3[\"📦 Node 18.x\"]\n        end\n\n        subgraph Windows[\"🪟 Windows\"]\n            direction LR\n            W1[\"📦 Node 14.x\"]\n            W2[\"📦 Node 16.x\"]\n            W3[\"📦 Node 18.x\"]\n        end\n    end\n\n    Trigger[\"🎯 Push Event\"] --> Matrix\n    Matrix --> Result[\"✅ 총 6개 Job 병렬 실행\"]\n\n    style Matrix fill:#f8fafc,stroke:#64748b\n    style Ubuntu fill:#dbeafe,stroke:#2563eb\n    style Windows fill:#dcfce7,stroke:#16a34a\n    style Trigger fill:#fef3c7,stroke:#d97706\n    style Result fill:#ecfdf5,stroke:#059669",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "┌───────────────────────────────────────────────────────────────────┐",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "Matrix 병렬 실행                            │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┤",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "┌──────────────┐ ┌──────────────┐ ┌──────────────┐              │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Node 14.x    │ │ Node 16.x    │ │ Node 18.x    │              │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Ubuntu       │ │ Ubuntu       │ │ Ubuntu       │              │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┘ └──────────────┘ └──────────────┘              │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┌──────────────┐ ┌──────────────┐ ┌──────────────┐              │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Node 14.x    │ │ Node 16.x    │ │ Node 18.x    │              │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Windows      │ │ Windows      │ │ Windows      │              │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┘ └──────────────┘ └──────────────┘              │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "총 6개의 Job이 병렬로 실행됨                                    │",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "node-4",
+              "label": "┘",
+              "type": "branch",
+              "children": []
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter12-diagram-8",
+      "type": "tree",
+      "asciiOriginal": "┌────────────────────────────────────────────────────────────────────┐\n│                    GitHub Actions 실행 결과                        │\n├────────────────────────────────────────────────────────────────────┤\n│                                                                    │\n│   Workflow: GitHub Actions Demo                                    │\n│   Status: ✓ Success                                                │\n│   Duration: 15s                                                    │\n│                                                                    │\n│   Jobs:                                                            │\n│   └── demo-job ✓                                                   │\n│       ├── Print Event Info ✓                                       │\n│       ├── Print Runner Info ✓                                      │\n│       ├── Checkout Code ✓                                          │\n│       ├── List Files ✓                                             │\n│       └── Print Environment ✓                                      │\n│                                                                    │\n└────────────────────────────────────────────────────────────────────┘",
+      "mermaidCode": "flowchart TB\n    subgraph Title[\"📄 Dockerfile 명령어 분류\"]\n        direction LR\n\n        subgraph Build[\"🔨 빌드 단계\"]\n            direction TB\n            FROM[\"FROM<br/>베이스 이미지\"]\n            RUN[\"RUN<br/>명령 실행\"]\n            COPY[\"COPY<br/>파일 복사\"]\n            ADD[\"ADD<br/>파일 추가\"]\n        end\n\n        subgraph Config[\"⚙️ 설정 단계\"]\n            direction TB\n            ENV[\"ENV<br/>환경 변수\"]\n            ARG[\"ARG<br/>빌드 인자\"]\n            WORKDIR[\"WORKDIR<br/>작업 디렉토리\"]\n            LABEL[\"LABEL<br/>메타데이터\"]\n            USER[\"USER<br/>실행 사용자\"]\n        end\n\n        subgraph Runtime[\"🚀 실행 단계\"]\n            direction TB\n            CMD[\"CMD<br/>기본 명령\"]\n            ENTRYPOINT[\"ENTRYPOINT<br/>진입점\"]\n            EXPOSE[\"EXPOSE<br/>포트 노출\"]\n            VOLUME[\"VOLUME<br/>볼륨 마운트\"]\n            HEALTHCHECK[\"HEALTHCHECK<br/>상태 검사\"]\n        end\n    end\n\n    style Title fill:#f8fafc,stroke:#64748b\n    style Build fill:#dbeafe,stroke:#2563eb\n    style Config fill:#fef3c7,stroke:#d97706\n    style Runtime fill:#dcfce7,stroke:#16a34a",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "┌────────────────────────────────────────────────────────────────────┐",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "GitHub Actions 실행 결과                        │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┤",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "Workflow: GitHub Actions Demo                                    │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Status: ✓ Success                                                │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Duration: 15s                                                    │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Jobs:                                                            │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "demo-job ✓                                                   │",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-4",
+                      "label": "Print Event Info ✓                                       │",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "Print Runner Info ✓                                      │",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "Checkout Code ✓                                          │",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "List Files ✓                                             │",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "Print Environment ✓                                      │",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "node-5",
+              "label": "┘",
+              "type": "branch",
+              "children": []
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter12-diagram-9",
+      "type": "tree",
+      "asciiOriginal": "┌───────────────────────────────────────────────────────────────────┐\n│                    GitHub Secrets 설정                            │\n├───────────────────────────────────────────────────────────────────┤\n│                                                                   │\n│   Repository: <username>/docker-ci                                │\n│                                                                   │\n│   Secrets:                                                        │\n│   ┌────────────────────────────────────────────────────────────┐  │\n│   │ DOCKER_HUB_USERNAME    ••••••••                            │  │\n│   │ DOCKER_HUB_PASSWORD    ••••••••                            │  │\n│   └────────────────────────────────────────────────────────────┘  │\n│                                                                   │\n│   사용: ${{ secrets.DOCKER_HUB_USERNAME }}                        │\n│         ${{ secrets.DOCKER_HUB_PASSWORD }}                        │\n│                                                                   │\n└───────────────────────────────────────────────────────────────────┘",
+      "mermaidCode": "flowchart TB\n    subgraph Secrets[\"🔐 GitHub Secrets 설정\"]\n        direction TB\n\n        Repo[\"📁 Repository: username/docker-ci\"]\n\n        subgraph SecretList[\"Secrets\"]\n            S1[\"🔑 DOCKER_HUB_USERNAME<br/>••••••••\"]\n            S2[\"🔑 DOCKER_HUB_PASSWORD<br/>••••••••\"]\n        end\n\n        subgraph Usage[\"사용 방법\"]\n            U1[\"secrets.DOCKER_HUB_USERNAME\"]\n            U2[\"secrets.DOCKER_HUB_PASSWORD\"]\n        end\n    end\n\n    Repo --> SecretList\n    SecretList --> Usage\n\n    style Secrets fill:#f8fafc,stroke:#64748b\n    style Repo fill:#dbeafe,stroke:#2563eb\n    style SecretList fill:#fee2e2,stroke:#dc2626\n    style Usage fill:#dcfce7,stroke:#16a34a",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "┌───────────────────────────────────────────────────────────────────┐",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "GitHub Secrets 설정                            │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┤",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "Repository: <username>/docker-ci                                │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Secrets:                                                        │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┌────────────────────────────────────────────────────────────┐  │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "DOCKER_HUB_USERNAME    ••••••••                            │  │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "DOCKER_HUB_PASSWORD    ••••••••                            │  │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┘  │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "사용: ${{ secrets.DOCKER_HUB_USERNAME }}                        │",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-4",
+                      "label": "${{ secrets.DOCKER_HUB_PASSWORD }}                        │",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "node-5",
+              "label": "┘",
+              "type": "branch",
+              "children": []
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter12-diagram-10",
+      "type": "tree",
+      "asciiOriginal": "┌─────────────────────────────────────────────────────────────────────┐\n│                        이미지 태그 전략                              │\n├─────────────────────────────────────────────────────────────────────┤\n│                                                                     │\n│   Event                      생성되는 태그                          │\n│   ─────────────────────────────────────────────────────────────    │\n│   push to main              → username/nodejs-ci:main              │\n│   push tag v1.2.3           → username/nodejs-ci:1.2.3             │\n│                             → username/nodejs-ci:1.2               │\n│   pull request #123         → username/nodejs-ci:pr-123 (빌드만)   │\n│   모든 push                  → username/nodejs-ci:sha-abc123       │\n│                                                                     │\n└─────────────────────────────────────────────────────────────────────┘",
+      "mermaidCode": "flowchart LR\n    subgraph Development[\"👨‍💻 개발\"]\n        Dockerfile[\"📄 Dockerfile\"]\n        AppCode[\"💻 Application<br/>+ Infra 구성\"]\n    end\n\n    subgraph Build[\"🔨 빌드\"]\n        BuildProcess[\"docker build\"]\n        Image[\"🐳 Docker Image\"]\n    end\n\n    subgraph Registry[\"📦 레지스트리\"]\n        Push[\"docker push\"]\n        Hub[\"Docker Hub\"]\n        Pull[\"docker pull\"]\n    end\n\n    subgraph Deploy[\"🚀 배포\"]\n        Run[\"docker run\"]\n        Container[\"📦 Container\"]\n        Service[\"🌐 Application<br/>서비스 제공\"]\n    end\n\n    AppCode --> Dockerfile\n    Dockerfile --> BuildProcess\n    BuildProcess --> Image\n    Image --> Push\n    Push --> Hub\n    Hub --> Pull\n    Pull --> Run\n    Run --> Container\n    Container --> Service\n\n    style Development fill:#fef3c7,stroke:#d97706\n    style Build fill:#dbeafe,stroke:#2563eb\n    style Registry fill:#e0e7ff,stroke:#6366f1\n    style Deploy fill:#dcfce7,stroke:#16a34a",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "┌─────────────────────────────────────────────────────────────────────┐",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "이미지 태그 전략                              │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┤",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "Event                      생성되는 태그                          │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "push to main",
+                  "type": "branch",
+                  "targetInfo": "username/nodejs-ci:main              │",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "push tag v1.2.3",
+                  "type": "branch",
+                  "targetInfo": "username/nodejs-ci:1.2.3             │",
+                  "children": [
+                    {
+                      "id": "node-4",
+                      "label": "→ username/nodejs-ci:1.2               │",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "id": "node-5",
+                  "label": "pull request #123",
+                  "type": "branch",
+                  "targetInfo": "username/nodejs-ci:pr-123 (빌드만)   │",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "모든 push",
+                  "type": "branch",
+                  "targetInfo": "username/nodejs-ci:sha-abc123       │",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "node-4",
+              "label": "┘",
+              "type": "branch",
+              "children": []
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter12-diagram-11",
+      "type": "network",
+      "title": "<!DOCTYPE html>",
+      "asciiOriginal": "<!DOCTYPE html>\n<html>\n<head>\n    <title>FastCampus Docker CI</title>\n    <style>\n        body {\n            font-family: Arial, sans-serif;\n            display: flex;\n            justify-content: center;\n            align-items: center;\n            height: 100vh;\n            margin: 0;\n            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n            color: white;\n        }\n        .container {\n            text-align: center;\n            padding: 40px;\n            background: rgba(255,255,255,0.1);\n            border-radius: 10px;\n        }\n        h1 { font-size: 2.5em; margin-bottom: 10px; }\n        p { font-size: 1.2em; }\n        .version {\n            margin-top: 20px;\n            padding: 10px;\n            background: rgba(0,0,0,0.2);\n            border-radius: 5px;\n        }\n    </style>\n</head>\n<body>\n    <div class=\"container\">\n        <h1>Welcome to FastCampus</h1>\n        <p>Node.js App using Docker CI v2.0</p>  <!-- 버전 변경 -->\n        <div class=\"version\">\n            Auto-deployed with GitHub Actions + Docker CI\n        </div>\n    </div>\n</body>\n</html>",
+      "mermaidCode": "flowchart TB\n    subgraph Title[\"📄 Dockerfile 명령어 분류\"]\n        direction LR\n\n        subgraph Build[\"🔨 빌드 단계\"]\n            direction TB\n            FROM[\"FROM<br/>베이스 이미지\"]\n            RUN[\"RUN<br/>명령 실행\"]\n            COPY[\"COPY<br/>파일 복사\"]\n            ADD[\"ADD<br/>파일 추가\"]\n        end\n\n        subgraph Config[\"⚙️ 설정 단계\"]\n            direction TB\n            ENV[\"ENV<br/>환경 변수\"]\n            ARG[\"ARG<br/>빌드 인자\"]\n            WORKDIR[\"WORKDIR<br/>작업 디렉토리\"]\n            LABEL[\"LABEL<br/>메타데이터\"]\n            USER[\"USER<br/>실행 사용자\"]\n        end\n\n        subgraph Runtime[\"🚀 실행 단계\"]\n            direction TB\n            CMD[\"CMD<br/>기본 명령\"]\n            ENTRYPOINT[\"ENTRYPOINT<br/>진입점\"]\n            EXPOSE[\"EXPOSE<br/>포트 노출\"]\n            VOLUME[\"VOLUME<br/>볼륨 마운트\"]\n            HEALTHCHECK[\"HEALTHCHECK<br/>상태 검사\"]\n        end\n    end\n\n    style Title fill:#f8fafc,stroke:#64748b\n    style Build fill:#dbeafe,stroke:#2563eb\n    style Config fill:#fef3c7,stroke:#d97706\n    style Runtime fill:#dcfce7,stroke:#16a34a",
+      "data": {
+        "nodes": [],
+        "connections": []
+      }
+    },
+    {
+      "id": "chapter12-diagram-12",
+      "type": "tree",
+      "asciiOriginal": "┌─────────────────────────────────────────────────────────────────────┐\n│                    GitHub Actions 실행 결과                          │\n├─────────────────────────────────────────────────────────────────────┤\n│                                                                     │\n│   Workflow: Docker CI - Build and Push                             │\n│   Trigger: push to main                                            │\n│   Status: ✓ Success                                                │\n│   Duration: 2m 15s                                                 │\n│                                                                     │\n│   Jobs:                                                            │\n│   └── build-and-push ✓                                             │\n│       ├── Checkout code ✓ (2s)                                     │\n│       ├── Docker metadata ✓ (1s)                                   │\n│       ├── Set up QEMU ✓ (5s)                                       │\n│       ├── Set up Docker Buildx ✓ (3s)                              │\n│       ├── Login to Docker Hub ✓ (2s)                               │\n│       ├── Build and push Docker image ✓ (1m 50s)                   │\n│       └── Image digest ✓ (1s)                                      │\n│                                                                     │\n└─────────────────────────────────────────────────────────────────────┘",
+      "mermaidCode": "flowchart LR\n    subgraph Development[\"👨‍💻 개발\"]\n        Dockerfile[\"📄 Dockerfile\"]\n        AppCode[\"💻 Application<br/>+ Infra 구성\"]\n    end\n\n    subgraph Build[\"🔨 빌드\"]\n        BuildProcess[\"docker build\"]\n        Image[\"🐳 Docker Image\"]\n    end\n\n    subgraph Registry[\"📦 레지스트리\"]\n        Push[\"docker push\"]\n        Hub[\"Docker Hub\"]\n        Pull[\"docker pull\"]\n    end\n\n    subgraph Deploy[\"🚀 배포\"]\n        Run[\"docker run\"]\n        Container[\"📦 Container\"]\n        Service[\"🌐 Application<br/>서비스 제공\"]\n    end\n\n    AppCode --> Dockerfile\n    Dockerfile --> BuildProcess\n    BuildProcess --> Image\n    Image --> Push\n    Push --> Hub\n    Hub --> Pull\n    Pull --> Run\n    Run --> Container\n    Container --> Service\n\n    style Development fill:#fef3c7,stroke:#d97706\n    style Build fill:#dbeafe,stroke:#2563eb\n    style Registry fill:#e0e7ff,stroke:#6366f1\n    style Deploy fill:#dcfce7,stroke:#16a34a",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "┌─────────────────────────────────────────────────────────────────────┐",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "GitHub Actions 실행 결과                          │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┤",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "Workflow: Docker CI - Build and Push                             │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Trigger: push to main                                            │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Status: ✓ Success                                                │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Duration: 2m 15s                                                 │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Jobs:                                                            │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "build-and-push ✓                                             │",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-4",
+                      "label": "Checkout code ✓ (2s)                                     │",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "Docker metadata ✓ (1s)                                   │",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "Set up QEMU ✓ (5s)                                       │",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "Set up Docker Buildx ✓ (3s)                              │",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "Login to Docker Hub ✓ (2s)                               │",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "Build and push Docker image ✓ (1m 50s)                   │",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "Image digest ✓ (1s)                                      │",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "node-5",
+              "label": "┘",
+              "type": "branch",
+              "children": []
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    }
+  ],
+  "tables": [
+    {
+      "id": "chapter12-table-1",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "특징",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "설명",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "빈번한 통합",
+          "col1": "개발자가 코드 변경사항을 자주(하루 수회) 중앙 저장소에 병합"
+        },
+        {
+          "col0": "자동 빌드",
+          "col1": "코드 변경 시 자동으로 빌드 프로세스 실행"
+        },
+        {
+          "col0": "자동 테스트",
+          "col1": "빌드 후 자동으로 단위/통합 테스트 수행"
+        },
+        {
+          "col0": "빠른 피드백",
+          "col1": "문제 발생 시 즉시 개발자에게 알림"
+        }
+      ]
+    },
+    {
+      "id": "chapter12-table-2",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "구분",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "Continuous Delivery",
+          "align": "left"
+        },
+        {
+          "key": "col2",
+          "label": "Continuous Deployment",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "의미",
+          "col1": "지속적 전달",
+          "col2": "지속적 배포"
+        },
+        {
+          "col0": "범위",
+          "col1": "배포 준비 상태까지 자동화",
+          "col2": "운영 환경까지 완전 자동 배포"
+        },
+        {
+          "col0": "승인",
+          "col1": "수동 승인 후 배포",
+          "col2": "자동 배포 (승인 불필요)"
+        },
+        {
+          "col0": "위험도",
+          "col1": "낮음",
+          "col2": "높음 (철저한 테스트 필요)"
+        }
+      ]
+    },
+    {
+      "id": "chapter12-table-3",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "항목",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "전통적 CI",
+          "align": "left"
+        },
+        {
+          "key": "col2",
+          "label": "Docker CI",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "빌드 결과물",
+          "col1": "JAR, WAR, 바이너리",
+          "col2": "Docker Image"
+        },
+        {
+          "col0": "환경 일관성",
+          "col1": "환경 차이 발생 가능",
+          "col2": "컨테이너로 일관된 환경"
+        },
+        {
+          "col0": "배포 단위",
+          "col1": "애플리케이션 파일",
+          "col2": "이미지 (앱 + 환경 포함)"
+        },
+        {
+          "col0": "의존성 관리",
+          "col1": "별도 관리 필요",
+          "col2": "이미지에 포함"
+        },
+        {
+          "col0": "롤백",
+          "col1": "복잡",
+          "col2": "이전 이미지로 간단히 복구"
+        }
+      ]
+    },
+    {
+      "id": "chapter12-table-4",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "단계",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "설명",
+          "align": "left"
+        },
+        {
+          "key": "col2",
+          "label": "도구",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "1",
+          "col1": "애플리케이션 코드 변경 (git commit & push)",
+          "col2": "Git"
+        },
+        {
+          "col0": "2",
+          "col1": "GitHub 이벤트 발생 (push / pull request)",
+          "col2": "GitHub"
+        },
+        {
+          "col0": "3",
+          "col1": "CI 도구(GitHub Actions) 실행",
+          "col2": "GitHub Actions"
+        },
+        {
+          "col0": "4",
+          "col1": "Dockerfile 기반 이미지 빌드",
+          "col2": "Docker"
+        },
+        {
+          "col0": "5",
+          "col1": "Docker Image 생성 완료",
+          "col2": "Docker"
+        },
+        {
+          "col0": "6",
+          "col1": "Docker Registry에 push",
+          "col2": "Docker Hub"
+        },
+        {
+          "col0": "7",
+          "col1": "테스트/운영 환경에서 pull & run",
+          "col2": "Docker"
+        }
+      ]
+    },
+    {
+      "id": "chapter12-table-5",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "특징",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "설명",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "통합",
+          "col1": "GitHub 저장소에 내장, 별도 설치 불필요"
+        },
+        {
+          "col0": "이벤트 기반",
+          "col1": "push, PR, schedule 등 다양한 트리거"
+        },
+        {
+          "col0": "YAML 설정",
+          "col1": ".github/workflows/*.yml 파일로 정의"
+        },
+        {
+          "col0": "무료 제공",
+          "col1": "Public 저장소 무제한, Private 제한적 무료"
+        },
+        {
+          "col0": "Marketplace",
+          "col1": "다양한 Actions 재사용 가능"
+        }
+      ]
+    },
+    {
+      "id": "chapter12-table-6",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "개념",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "설명",
+          "align": "left"
+        },
+        {
+          "key": "col2",
+          "label": "예시",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "Workflow",
+          "col1": "자동화 전체 과정",
+          "col2": "CI/CD 파이프라인"
+        },
+        {
+          "col0": "Event",
+          "col1": "워크플로우 실행 트리거",
+          "col2": "push, pull_request, schedule"
+        },
+        {
+          "col0": "Job",
+          "col1": "동일 Runner에서 실행되는 Step 집합",
+          "col2": "build, test, deploy"
+        },
+        {
+          "col0": "Runner",
+          "col1": "Job을 실행하는 서버",
+          "col2": "ubuntu-latest, self-hosted"
+        },
+        {
+          "col0": "Step",
+          "col1": "Job 내의 개별 작업",
+          "col2": "checkout, build, push"
+        },
+        {
+          "col0": "Action",
+          "col1": "재사용 가능한 작업 단위",
+          "col2": "actions/checkout@v3"
+        }
+      ]
+    },
+    {
+      "id": "chapter12-table-7",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "키워드",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "설명",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "name",
+          "col1": "워크플로우 이름 (GitHub UI에 표시)"
+        },
+        {
+          "col0": "on",
+          "col1": "트리거 이벤트 정의"
+        },
+        {
+          "col0": "jobs",
+          "col1": "실행할 작업 목록"
+        },
+        {
+          "col0": "runs-on",
+          "col1": "Runner 환경 지정"
+        },
+        {
+          "col0": "steps",
+          "col1": "실행할 단계 목록"
+        },
+        {
+          "col0": "uses",
+          "col1": "외부 Action 사용"
+        },
+        {
+          "col0": "run",
+          "col1": "쉘 명령어 실행"
+        },
+        {
+          "col0": "env",
+          "col1": "환경 변수 설정"
+        },
+        {
+          "col0": "with",
+          "col1": "Action에 전달할 파라미터"
+        }
+      ]
+    },
+    {
+      "id": "chapter12-table-8",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "이벤트",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "설명",
+          "align": "left"
+        },
+        {
+          "key": "col2",
+          "label": "사용 예",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "push",
+          "col1": "브랜치에 push 시",
+          "col2": "코드 통합 시 빌드"
+        },
+        {
+          "col0": "pull_request",
+          "col1": "PR 생성/업데이트 시",
+          "col2": "코드 리뷰 전 테스트"
+        },
+        {
+          "col0": "schedule",
+          "col1": "정해진 시간에 실행 (cron)",
+          "col2": "야간 빌드, 주기적 테스트"
+        },
+        {
+          "col0": "workflow_dispatch",
+          "col1": "수동 실행",
+          "col2": "필요 시 수동 배포"
+        },
+        {
+          "col0": "release",
+          "col1": "릴리스 생성 시",
+          "col2": "버전 배포"
+        }
+      ]
+    },
+    {
+      "id": "chapter12-table-9",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "Context",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "설명",
+          "align": "left"
+        },
+        {
+          "key": "col2",
+          "label": "예시",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "github.event_name",
+          "col1": "트리거 이벤트 이름",
+          "col2": "push, pull_request"
+        },
+        {
+          "col0": "github.repository",
+          "col1": "저장소 이름",
+          "col2": "owner/repo"
+        },
+        {
+          "col0": "github.ref",
+          "col1": "브랜치/태그 참조",
+          "col2": "refs/heads/main"
+        },
+        {
+          "col0": "github.sha",
+          "col1": "커밋 SHA",
+          "col2": "abc123..."
+        },
+        {
+          "col0": "runner.os",
+          "col1": "Runner OS",
+          "col2": "Linux"
+        },
+        {
+          "col0": "secrets.XXX",
+          "col1": "저장된 시크릿",
+          "col2": "${{ secrets.TOKEN }}"
+        }
+      ]
+    },
+    {
+      "id": "chapter12-table-10",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "Name",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "Value",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "DOCKER_HUB_USERNAME",
+          "col1": "Docker Hub 사용자명"
+        },
+        {
+          "col0": "DOCKER_HUB_PASSWORD",
+          "col1": "Docker Hub 비밀번호 또는 Access Token"
+        }
+      ]
+    },
+    {
+      "id": "chapter12-table-11",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "Step",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "Action",
+          "align": "left"
+        },
+        {
+          "key": "col2",
+          "label": "설명",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "1",
+          "col1": "actions/checkout@v3",
+          "col2": "저장소 코드 체크아웃"
+        },
+        {
+          "col0": "2",
+          "col1": "docker/metadata-action@v4",
+          "col2": "이미지 태그 자동 생성"
+        },
+        {
+          "col0": "3",
+          "col1": "docker/setup-qemu-action@v2",
+          "col2": "멀티 아키텍처 빌드 지원"
+        },
+        {
+          "col0": "4",
+          "col1": "docker/setup-buildx-action@v2",
+          "col2": "Docker Buildx 설정"
+        },
+        {
+          "col0": "5",
+          "col1": "docker/login-action@v2",
+          "col2": "Docker Hub 로그인"
+        },
+        {
+          "col0": "6",
+          "col1": "docker/build-push-action@v4",
+          "col2": "이미지 빌드 및 Push"
+        }
+      ]
+    }
+  ]
+}

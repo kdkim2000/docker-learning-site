@@ -1,0 +1,3911 @@
+{
+  "meta": {
+    "id": "chapter10",
+    "number": 10,
+    "title": "Chapter 10. Docker Compose",
+    "description": "",
+    "phase": "practical",
+    "objectives": [
+      "Docker Compose의 필요성과 멀티 컨테이너 관리 이해",
+      "docker-compose.yaml 파일 구조와 문법 파악",
+      "서비스 간 의존성 설정 (depends_on, networks)",
+      "Compose를 활용한 서비스 스케일링",
+      "개발 환경과 프로덕션 환경 분리 전략"
+    ]
+  },
+  "sections": [
+    {
+      "id": "chapter10-section-1",
+      "level": 2,
+      "title": "목차",
+      "anchor": "목차",
+      "content": [
+        {
+          "id": "chapter10-block-1",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Clip 1. 멀티 컨테이너 서비스와 Docker Compose 개요"
+              },
+              {
+                "text": "Clip 2. Docker CLI vs Docker Compose 비교"
+              },
+              {
+                "text": "Clip 3. Docker Compose 설치 및 버전 확인"
+              },
+              {
+                "text": "Clip 4. docker-compose.yaml 기본 구조"
+              },
+              {
+                "text": "Clip 5. [실습] WordPress + MySQL 구성"
+              },
+              {
+                "text": "Clip 6. Docker Compose 주요 명령어"
+              },
+              {
+                "text": "Clip 7. [실습] Flask + Redis 서비스"
+              },
+              {
+                "text": "Clip 8. 서비스 스케일링"
+              },
+              {
+                "text": "Clip 9. [실습] Nginx + Flask 다중 앱 (ALB 구조)"
+              },
+              {
+                "text": "Clip 10. [실습] 3-Tier 웹 애플리케이션"
+              },
+              {
+                "text": "Clip 11. Docker Compose vs Kubernetes"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-2",
+      "level": 2,
+      "title": "1. 멀티 컨테이너 서비스와 Docker Compose 개요",
+      "anchor": "1-멀티-컨테이너-서비스와-docker-compose-개요",
+      "content": [
+        {
+          "id": "chapter10-block-3",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "멀티 컨테이너 환경의 한계와 Docker Compose의 역할 이해하기"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-3",
+      "level": 3,
+      "title": "1.1 멀티 컨테이너 서비스란?",
+      "anchor": "11-멀티-컨테이너-서비스란",
+      "content": [
+        {
+          "id": "chapter10-block-4",
+          "type": "text",
+          "data": {
+            "markdown": "현대의 애플리케이션은 단일 컨테이너가 아닌 여러 컨테이너의 조합으로 구성된다."
+          }
+        },
+        {
+          "id": "chapter10-block-5",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter10-diagram-1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-4",
+      "level": 3,
+      "title": "1.2 Docker CLI 기반 멀티 컨테이너 구성의 한계",
+      "anchor": "12-docker-cli-기반-멀티-컨테이너-구성의-한계",
+      "content": [
+        {
+          "id": "chapter10-block-6",
+          "type": "text",
+          "data": {
+            "markdown": "Docker CLI만으로 멀티 컨테이너를 관리할 때의 문제점:"
+          }
+        },
+        {
+          "id": "chapter10-block-7",
+          "type": "table",
+          "data": {
+            "tableId": "chapter10-table-7"
+          }
+        },
+        {
+          "id": "chapter10-block-8",
+          "type": "text",
+          "data": {
+            "markdown": "Docker CLI 방식 예시 (복잡함):"
+          }
+        },
+        {
+          "id": "chapter10-block-9",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 1. 네트워크 생성\ndocker network create backend-net\n\n# 2. 볼륨 생성\ndocker volume create mydb_data\ndocker volume create myweb_data\n\n# 3. MySQL 컨테이너 실행\ndocker run -d --name mysql_app \\\n  --network backend-net \\\n  -v mydb_data:/var/lib/mysql \\\n  -e MYSQL_ROOT_PASSWORD=password# \\\n  -e MYSQL_DATABASE=wpdb \\\n  -e MYSQL_USER=wpuser \\\n  -e MYSQL_PASSWORD=wppassword \\\n  mysql:8.0-debian\n\n# 4. WordPress 컨테이너 실행\ndocker run -d --name wordpress_app \\\n  --network backend-net \\\n  -p 8888:80 \\\n  -v myweb_data:/var/www/html \\\n  -e WORDPRESS_DB_HOST=mysql_app:3306 \\\n  -e WORDPRESS_DB_USER=wpuser \\\n  -e WORDPRESS_DB_PASSWORD=wppassword \\\n  -e WORDPRESS_DB_NAME=wpdb \\\n  wordpress:5.7",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-5",
+      "level": 3,
+      "title": "1.3 Docker Compose의 역할",
+      "anchor": "13-docker-compose의-역할",
+      "content": [
+        {
+          "id": "chapter10-block-10",
+          "type": "text",
+          "data": {
+            "markdown": "Docker Compose는 위의 문제를 해결하는 멀티 컨테이너 오케스트레이션 도구이다."
+          }
+        },
+        {
+          "id": "chapter10-block-11",
+          "type": "text",
+          "data": {
+            "markdown": "Docker Compose의 특징:"
+          }
+        },
+        {
+          "id": "chapter10-block-12",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "멀티 컨테이너 애플리케이션을 YAML 파일 하나로 정의"
+              },
+              {
+                "text": "서비스, 네트워크, 볼륨을 **선언적(Declarative)**으로 관리"
+              },
+              {
+                "text": "단일 명령으로 전체 애플리케이션 스택 관리"
+              },
+              {
+                "text": "개발/테스트/소규모 배포 환경에 적합"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter10-block-13",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter10-diagram-2"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-6",
+      "level": 2,
+      "title": "2. Docker CLI vs Docker Compose 비교",
+      "anchor": "2-docker-cli-vs-docker-compose-비교",
+      "content": [
+        {
+          "id": "chapter10-block-15",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "Docker CLI와 Docker Compose의 차이점 이해하기"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-7",
+      "level": 3,
+      "title": "2.1 비교 표",
+      "anchor": "21-비교-표",
+      "content": [
+        {
+          "id": "chapter10-block-16",
+          "type": "table",
+          "data": {
+            "tableId": "chapter10-table-16"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-8",
+      "level": 3,
+      "title": "2.2 명령어 비교",
+      "anchor": "22-명령어-비교",
+      "content": [
+        {
+          "id": "chapter10-block-17",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter10-diagram-3"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-9",
+      "level": 3,
+      "title": "2.3 사용 시나리오",
+      "anchor": "23-사용-시나리오",
+      "content": [
+        {
+          "id": "chapter10-block-18",
+          "type": "text",
+          "data": {
+            "markdown": "Docker CLI 사용:"
+          }
+        },
+        {
+          "id": "chapter10-block-19",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "단일 컨테이너 빠른 테스트"
+              },
+              {
+                "text": "일회성 작업"
+              },
+              {
+                "text": "학습/실험 목적"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter10-block-20",
+          "type": "text",
+          "data": {
+            "markdown": "Docker Compose 사용:"
+          }
+        },
+        {
+          "id": "chapter10-block-21",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "멀티 컨테이너 애플리케이션"
+              },
+              {
+                "text": "개발 환경 구성"
+              },
+              {
+                "text": "테스트 환경 구성"
+              },
+              {
+                "text": "소규모 운영 환경"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-10",
+      "level": 2,
+      "title": "3. Docker Compose 설치 및 버전 확인",
+      "anchor": "3-docker-compose-설치-및-버전-확인",
+      "content": [
+        {
+          "id": "chapter10-block-23",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "Docker Compose 설치 방법과 버전 확인하기"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-11",
+      "level": 3,
+      "title": "3.1 Docker Compose 버전 확인",
+      "anchor": "31-docker-compose-버전-확인",
+      "content": [
+        {
+          "id": "chapter10-block-24",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ docker compose version\nDocker Compose version v2.19.1",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter10-block-25",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "참고: Docker Desktop에는 Docker Compose가 기본 포함되어 있다."
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-12",
+      "level": 3,
+      "title": "3.2 Docker Compose V1 vs V2",
+      "anchor": "32-docker-compose-v1-vs-v2",
+      "content": [
+        {
+          "id": "chapter10-block-26",
+          "type": "table",
+          "data": {
+            "tableId": "chapter10-table-26"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-13",
+      "level": 3,
+      "title": "3.3 최신 버전 설치 (Linux)",
+      "anchor": "33-최신-버전-설치-linux",
+      "content": [
+        {
+          "id": "chapter10-block-27",
+          "type": "text",
+          "data": {
+            "markdown": "Docker Compose V2가 설치되어 있지 않은 경우:"
+          }
+        },
+        {
+          "id": "chapter10-block-28",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# Docker CLI 플러그인 디렉토리 생성\nDOCKER_CONFIG=${DOCKER_CONFIG:-$HOME/.docker}\nmkdir -p $DOCKER_CONFIG/cli-plugins\n\n# Docker Compose 바이너리 다운로드\ncurl -SL https://github.com/docker/compose/releases/download/v2.19.1/docker-compose-linux-x86_64 \\\n  -o $DOCKER_CONFIG/cli-plugins/docker-compose\n\n# 실행 권한 부여\nchmod +x $DOCKER_CONFIG/cli-plugins/docker-compose\n\n# 버전 확인\ndocker compose version",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-14",
+      "level": 3,
+      "title": "3.4 설치 확인",
+      "anchor": "34-설치-확인",
+      "content": [
+        {
+          "id": "chapter10-block-29",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ docker compose version\nDocker Compose version v2.19.1\n\nkevin@hostos1:~$ which docker\n/usr/bin/docker\n\nkevin@hostos1:~$ ls ~/.docker/cli-plugins/\ndocker-compose",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-15",
+      "level": 2,
+      "title": "4. docker-compose.yaml 기본 구조",
+      "anchor": "4-docker-composeyaml-기본-구조",
+      "content": [
+        {
+          "id": "chapter10-block-31",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "docker-compose.yaml 파일의 구조와 문법 이해하기"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-16",
+      "level": 3,
+      "title": "4.1 기본 구조",
+      "anchor": "41-기본-구조",
+      "content": [
+        {
+          "id": "chapter10-block-32",
+          "type": "code",
+          "data": {
+            "language": "yaml",
+            "code": "version: \"3.8\"              # Compose 파일 버전\n\nservices:                   # 서비스 정의 (필수)\n  service_name:             # 서비스 이름\n    image: image_name       # 사용할 이미지\n    build: .                # 또는 Dockerfile 빌드\n    ports:                  # 포트 매핑\n      - \"HOST:CONTAINER\"\n    volumes:                # 볼륨 마운트\n      - volume_name:/path\n    environment:            # 환경 변수\n      - KEY=value\n    networks:               # 네트워크 연결\n      - network_name\n    depends_on:             # 의존성 (시작 순서)\n      - other_service\n\nnetworks:                   # 네트워크 정의\n  network_name: {}\n\nvolumes:                    # 볼륨 정의\n  volume_name: {}",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-17",
+      "level": 3,
+      "title": "4.2 YAML 문법 특징",
+      "anchor": "42-yaml-문법-특징",
+      "content": [
+        {
+          "id": "chapter10-block-33",
+          "type": "table",
+          "data": {
+            "tableId": "chapter10-table-33"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-18",
+      "level": 3,
+      "title": "4.3 주요 설정 항목",
+      "anchor": "43-주요-설정-항목",
+      "content": [
+        {
+          "id": "chapter10-block-34",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter10-diagram-4"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-19",
+      "level": 3,
+      "title": "4.4 버전별 차이",
+      "anchor": "44-버전별-차이",
+      "content": [
+        {
+          "id": "chapter10-block-35",
+          "type": "table",
+          "data": {
+            "tableId": "chapter10-table-35"
+          }
+        },
+        {
+          "id": "chapter10-block-36",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "참고: Docker Compose V2에서는 version 필드가 선택 사항이다."
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-20",
+      "level": 2,
+      "title": "5. [실습] WordPress + MySQL 구성",
+      "anchor": "5-실습-wordpress-mysql-구성",
+      "content": [
+        {
+          "id": "chapter10-block-38",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "Docker CLI와 Docker Compose 방식 비교 실습"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-21",
+      "level": 3,
+      "title": "5.1 프로젝트 구조",
+      "anchor": "51-프로젝트-구조",
+      "content": [
+        {
+          "id": "chapter10-block-39",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ mkdir -p ~/fastcampus/ch10/wordpress && cd $_\nkevin@hostos1:~/fastcampus/ch10/wordpress$ pwd\n/home/kevin/fastcampus/ch10/wordpress",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-22",
+      "level": 3,
+      "title": "5.2 아키텍처",
+      "anchor": "52-아키텍처",
+      "content": [
+        {
+          "id": "chapter10-block-40",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter10-diagram-5"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-23",
+      "level": 3,
+      "title": "5.3 Docker CLI 방식 (비교용)",
+      "anchor": "53-docker-cli-방식-비교용",
+      "content": [
+        {
+          "id": "chapter10-block-41",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 네트워크 생성\ndocker network create backend-net\ndocker network create frontend-net\n\n# 볼륨 생성\ndocker volume create mydb_data\ndocker volume create myweb_data\n\n# MySQL 컨테이너\ndocker run -d --name mysql_app \\\n  --network backend-net \\\n  -v mydb_data:/var/lib/mysql \\\n  -p 3306:3306 \\\n  -e MYSQL_ROOT_PASSWORD=password# \\\n  -e MYSQL_DATABASE=wpdb \\\n  -e MYSQL_USER=wpuser \\\n  -e MYSQL_PASSWORD=wppassword \\\n  --restart always \\\n  mysql:8.0-debian\n\n# WordPress 컨테이너\ndocker run -d --name wordpress_app \\\n  --network backend-net \\\n  -p 8888:80 \\\n  -v myweb_data:/var/www/html \\\n  -e WORDPRESS_DB_HOST=mysql_app:3306 \\\n  -e WORDPRESS_DB_USER=wpuser \\\n  -e WORDPRESS_DB_PASSWORD=wppassword \\\n  -e WORDPRESS_DB_NAME=wpdb \\\n  wordpress:5.7\n\n# frontend-net 추가 연결\ndocker network connect frontend-net wordpress_app",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-24",
+      "level": 3,
+      "title": "5.4 Docker Compose 방식",
+      "anchor": "54-docker-compose-방식",
+      "content": [
+        {
+          "id": "chapter10-block-42",
+          "type": "text",
+          "data": {
+            "markdown": "docker-compose.yaml 작성:"
+          }
+        },
+        {
+          "id": "chapter10-block-43",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch10/wordpress$ vi docker-compose.yaml",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter10-block-44",
+          "type": "code",
+          "data": {
+            "language": "yaml",
+            "code": "version: \"3.9\"\n\nservices:\n  mydb:\n    image: mysql:8.0-debian\n    container_name: mysql_app\n    volumes:\n      - mydb_data:/var/lib/mysql\n    restart: always\n    ports:\n      - \"3306:3306\"\n    environment:\n      MYSQL_ROOT_PASSWORD: password#\n      MYSQL_DATABASE: wpdb\n      MYSQL_USER: wpuser\n      MYSQL_PASSWORD: wppassword\n    networks:\n      - backend-net\n\n  myweb:\n    image: wordpress:5.7\n    container_name: wordpress_app\n    depends_on:\n      - mydb\n    ports:\n      - \"8888:80\"\n    volumes:\n      - myweb_data:/var/www/html\n    restart: always\n    environment:\n      WORDPRESS_DB_HOST: mydb:3306\n      WORDPRESS_DB_USER: wpuser\n      WORDPRESS_DB_PASSWORD: wppassword\n      WORDPRESS_DB_NAME: wpdb\n    networks:\n      - backend-net\n      - frontend-net\n\nnetworks:\n  frontend-net: {}\n  backend-net: {}\n\nvolumes:\n  mydb_data: {}\n  myweb_data: {}",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-25",
+      "level": 3,
+      "title": "5.5 서비스 실행",
+      "anchor": "55-서비스-실행",
+      "content": [
+        {
+          "id": "chapter10-block-45",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch10/wordpress$ docker compose up -d\n[+] Running 5/5\n ⠿ Network wordpress_backend-net   Created                              0.1s\n ⠿ Network wordpress_frontend-net  Created                              0.1s\n ⠿ Volume \"wordpress_mydb_data\"    Created                              0.0s\n ⠿ Volume \"wordpress_myweb_data\"   Created                              0.0s\n ⠿ Container mysql_app             Started                              1.2s\n ⠿ Container wordpress_app         Started                              2.1s",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-26",
+      "level": 3,
+      "title": "5.6 상태 확인",
+      "anchor": "56-상태-확인",
+      "content": [
+        {
+          "id": "chapter10-block-46",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch10/wordpress$ docker compose ps\nNAME             IMAGE             COMMAND                  SERVICE   CREATED          STATUS          PORTS\nmysql_app        mysql:8.0-debian  \"docker-entrypoint.s…\"   mydb      30 seconds ago   Up 28 seconds   0.0.0.0:3306->3306/tcp, 33060/tcp\nwordpress_app    wordpress:5.7     \"docker-entrypoint.s…\"   myweb     30 seconds ago   Up 27 seconds   0.0.0.0:8888->80/tcp\n\nkevin@hostos1:~/fastcampus/ch10/wordpress$ docker network ls | grep wordpress\na1b2c3d4e5f6   wordpress_backend-net    bridge    local\nb2c3d4e5f6g7   wordpress_frontend-net   bridge    local\n\nkevin@hostos1:~/fastcampus/ch10/wordpress$ docker volume ls | grep wordpress\nlocal     wordpress_mydb_data\nlocal     wordpress_myweb_data",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-27",
+      "level": 3,
+      "title": "5.7 서비스 접속 테스트",
+      "anchor": "57-서비스-접속-테스트",
+      "content": [
+        {
+          "id": "chapter10-block-47",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch10/wordpress$ curl -I localhost:8888\nHTTP/1.1 302 Found\nDate: Tue, 20 Jun 2023 10:30:00 GMT\nServer: Apache/2.4.38 (Debian)\nX-Powered-By: PHP/7.4.29\nLocation: http://localhost:8888/wp-admin/install.php",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter10-block-48",
+          "type": "text",
+          "data": {
+            "markdown": "웹 브라우저에서 http://<호스트IP>:8888 접속하여 WordPress 설치 화면 확인"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-28",
+      "level": 3,
+      "title": "5.8 서비스 종료 및 정리",
+      "anchor": "58-서비스-종료-및-정리",
+      "content": [
+        {
+          "id": "chapter10-block-49",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 컨테이너 중지 및 삭제 (볼륨 유지)\nkevin@hostos1:~/fastcampus/ch10/wordpress$ docker compose down\n[+] Running 4/4\n ⠿ Container wordpress_app         Removed                              1.2s\n ⠿ Container mysql_app             Removed                              2.1s\n ⠿ Network wordpress_backend-net   Removed                              0.1s\n ⠿ Network wordpress_frontend-net  Removed                              0.1s\n\n# 볼륨까지 삭제\nkevin@hostos1:~/fastcampus/ch10/wordpress$ docker compose down -v",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-29",
+      "level": 2,
+      "title": "6. Docker Compose 주요 명령어",
+      "anchor": "6-docker-compose-주요-명령어",
+      "content": [
+        {
+          "id": "chapter10-block-51",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "Docker Compose CLI 명령어 완전 정복"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-30",
+      "level": 3,
+      "title": "6.1 명령어 요약",
+      "anchor": "61-명령어-요약",
+      "content": [
+        {
+          "id": "chapter10-block-52",
+          "type": "table",
+          "data": {
+            "tableId": "chapter10-table-52"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-31",
+      "level": 3,
+      "title": "6.2 상세 명령어",
+      "anchor": "62-상세-명령어",
+      "content": [
+        {
+          "id": "chapter10-block-53",
+          "type": "text",
+          "data": {
+            "markdown": "docker compose up:"
+          }
+        },
+        {
+          "id": "chapter10-block-54",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 기본 실행 (포그라운드)\ndocker compose up\n\n# 백그라운드 실행\ndocker compose up -d\n\n# 이미지 재빌드 후 실행\ndocker compose up --build\n\n# 특정 서비스만 실행\ndocker compose up -d mydb\n\n# 스케일링과 함께 실행\ndocker compose up -d --scale web=3",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter10-block-55",
+          "type": "text",
+          "data": {
+            "markdown": "docker compose down:"
+          }
+        },
+        {
+          "id": "chapter10-block-56",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 컨테이너와 네트워크 삭제\ndocker compose down\n\n# 볼륨까지 삭제\ndocker compose down -v\n\n# 이미지까지 삭제\ndocker compose down --rmi all\n\n# 볼륨과 이미지 모두 삭제\ndocker compose down -v --rmi all",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter10-block-57",
+          "type": "text",
+          "data": {
+            "markdown": "docker compose logs:"
+          }
+        },
+        {
+          "id": "chapter10-block-58",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 전체 로그\ndocker compose logs\n\n# 실시간 로그 (follow)\ndocker compose logs -f\n\n# 특정 서비스 로그\ndocker compose logs mydb\n\n# 최근 100줄만\ndocker compose logs --tail=100",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter10-block-59",
+          "type": "text",
+          "data": {
+            "markdown": "docker compose exec:"
+          }
+        },
+        {
+          "id": "chapter10-block-60",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 컨테이너 셸 접속\ndocker compose exec mydb bash\n\n# 명령어 실행\ndocker compose exec mydb mysql -uroot -p\n\n# 환경 변수 확인\ndocker compose exec myweb env",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter10-block-61",
+          "type": "text",
+          "data": {
+            "markdown": "docker compose config:"
+          }
+        },
+        {
+          "id": "chapter10-block-62",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# Compose 파일 검증\ndocker compose config\n\n# 환경 변수 치환 결과 확인\ndocker compose config --resolve-image-digests",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-32",
+      "level": 3,
+      "title": "6.3 명령어 옵션 정리",
+      "anchor": "63-명령어-옵션-정리",
+      "content": [
+        {
+          "id": "chapter10-block-63",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter10-diagram-6"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-33",
+      "level": 2,
+      "title": "7. [실습] Flask + Redis 서비스",
+      "anchor": "7-실습-flask-redis-서비스",
+      "content": [
+        {
+          "id": "chapter10-block-65",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "Python Flask와 Redis를 Docker Compose로 구성하기"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-34",
+      "level": 3,
+      "title": "7.1 프로젝트 구조",
+      "anchor": "71-프로젝트-구조",
+      "content": [
+        {
+          "id": "chapter10-block-66",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ mkdir -p ~/fastcampus/ch10/flask-redis && cd $_\nkevin@hostos1:~/fastcampus/ch10/flask-redis$ pwd\n/home/kevin/fastcampus/ch10/flask-redis",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter10-block-67",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter10-diagram-7"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-35",
+      "level": 3,
+      "title": "7.2 애플리케이션 파일 작성",
+      "anchor": "72-애플리케이션-파일-작성",
+      "content": [
+        {
+          "id": "chapter10-block-68",
+          "type": "text",
+          "data": {
+            "markdown": "requirements.txt:"
+          }
+        },
+        {
+          "id": "chapter10-block-69",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch10/flask-redis$ vi requirements.txt",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter10-block-70",
+          "type": "code",
+          "data": {
+            "language": "text",
+            "code": "flask==2.3.2\nredis==4.5.5",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter10-block-71",
+          "type": "text",
+          "data": {
+            "markdown": "app.py:"
+          }
+        },
+        {
+          "id": "chapter10-block-72",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch10/flask-redis$ vi app.py",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter10-block-73",
+          "type": "code",
+          "data": {
+            "language": "python",
+            "code": "from flask import Flask\nfrom redis import Redis\nimport os\n\napp = Flask(__name__)\nredis = Redis(host='redis', port=6379)\n\n@app.route('/')\ndef hello():\n    count = redis.incr('hits')\n    hostname = os.environ.get('HOSTNAME', 'unknown')\n    return f'Hello FastCampus Docker! I have been seen {count} times. (Host: {hostname})\\n'\n\n@app.route('/health')\ndef health():\n    return 'OK\\n'\n\nif __name__ == '__main__':\n    app.run(host='0.0.0.0', port=9000)",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter10-block-74",
+          "type": "text",
+          "data": {
+            "markdown": "Dockerfile:"
+          }
+        },
+        {
+          "id": "chapter10-block-75",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch10/flask-redis$ vi Dockerfile",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter10-block-76",
+          "type": "code",
+          "data": {
+            "language": "dockerfile",
+            "code": "FROM python:3.9-slim\n\nWORKDIR /app\n\nCOPY requirements.txt .\nRUN pip install --no-cache-dir -r requirements.txt\n\nCOPY . .\n\nEXPOSE 9000\n\nCMD [\"python\", \"app.py\"]",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-36",
+      "level": 3,
+      "title": "7.3 docker-compose.yaml 작성",
+      "anchor": "73-docker-composeyaml-작성",
+      "content": [
+        {
+          "id": "chapter10-block-77",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch10/flask-redis$ vi docker-compose.yaml",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter10-block-78",
+          "type": "code",
+          "data": {
+            "language": "yaml",
+            "code": "version: '3.8'\n\nservices:\n  redis:\n    image: redis:6-alpine\n    container_name: redis_server\n    ports:\n      - \"6379:6379\"\n    restart: always\n    volumes:\n      - redis_data:/data\n\n  flask:\n    build: .\n    container_name: flask_app\n    ports:\n      - \"9000:9000\"\n    depends_on:\n      - redis\n    restart: always\n    environment:\n      - FLASK_ENV=development\n\nvolumes:\n  redis_data: {}",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-37",
+      "level": 3,
+      "title": "7.4 서비스 실행",
+      "anchor": "74-서비스-실행",
+      "content": [
+        {
+          "id": "chapter10-block-79",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch10/flask-redis$ docker compose up -d --build\n[+] Building 15.2s (10/10) FINISHED\n => [internal] load build definition from Dockerfile                   0.0s\n => [internal] load .dockerignore                                      0.0s\n => [internal] load metadata for docker.io/library/python:3.9-slim     1.2s\n...\n[+] Running 3/3\n ⠿ Network flask-redis_default  Created                                0.1s\n ⠿ Container redis_server       Started                                0.8s\n ⠿ Container flask_app          Started                                1.2s",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-38",
+      "level": 3,
+      "title": "7.5 테스트",
+      "anchor": "75-테스트",
+      "content": [
+        {
+          "id": "chapter10-block-80",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch10/flask-redis$ curl localhost:9000\nHello FastCampus Docker! I have been seen 1 times. (Host: flask_app)\n\nkevin@hostos1:~/fastcampus/ch10/flask-redis$ curl localhost:9000\nHello FastCampus Docker! I have been seen 2 times. (Host: flask_app)\n\nkevin@hostos1:~/fastcampus/ch10/flask-redis$ curl localhost:9000\nHello FastCampus Docker! I have been seen 3 times. (Host: flask_app)\n\nkevin@hostos1:~/fastcampus/ch10/flask-redis$ curl localhost:9000/health\nOK",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-39",
+      "level": 3,
+      "title": "7.6 Redis 데이터 확인",
+      "anchor": "76-redis-데이터-확인",
+      "content": [
+        {
+          "id": "chapter10-block-81",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch10/flask-redis$ docker compose exec redis redis-cli\n127.0.0.1:6379> GET hits\n\"3\"\n127.0.0.1:6379> exit",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-40",
+      "level": 3,
+      "title": "7.7 로그 확인",
+      "anchor": "77-로그-확인",
+      "content": [
+        {
+          "id": "chapter10-block-82",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch10/flask-redis$ docker compose logs -f flask\nflask_app  |  * Serving Flask app 'app'\nflask_app  |  * Debug mode: off\nflask_app  |  * Running on all addresses (0.0.0.0)\nflask_app  |  * Running on http://127.0.0.1:9000\nflask_app  | 172.18.0.1 - - [20/Jun/2023 10:45:00] \"GET / HTTP/1.1\" 200 -",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-41",
+      "level": 3,
+      "title": "7.8 정리",
+      "anchor": "78-정리",
+      "content": [
+        {
+          "id": "chapter10-block-83",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch10/flask-redis$ docker compose down -v",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-42",
+      "level": 2,
+      "title": "8. 서비스 스케일링",
+      "anchor": "8-서비스-스케일링",
+      "content": [
+        {
+          "id": "chapter10-block-85",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "Docker Compose로 서비스 인스턴스 확장하기"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-43",
+      "level": 3,
+      "title": "8.1 스케일링 개념",
+      "anchor": "81-스케일링-개념",
+      "content": [
+        {
+          "id": "chapter10-block-86",
+          "type": "text",
+          "data": {
+            "markdown": "Docker Compose의 --scale 옵션을 사용하면 동일한 서비스의 컨테이너를 여러 개 실행할 수 있다."
+          }
+        },
+        {
+          "id": "chapter10-block-87",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter10-diagram-8"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-44",
+      "level": 3,
+      "title": "8.2 스케일링 실습",
+      "anchor": "82-스케일링-실습",
+      "content": [
+        {
+          "id": "chapter10-block-88",
+          "type": "text",
+          "data": {
+            "markdown": "docker-compose.yaml 수정 (포트 제거):"
+          }
+        },
+        {
+          "id": "chapter10-block-89",
+          "type": "code",
+          "data": {
+            "language": "yaml",
+            "code": "version: '3.8'\n\nservices:\n  redis:\n    image: redis:6-alpine\n    ports:\n      - \"6379:6379\"\n    restart: always\n\n  flask:\n    build: .\n    # ports 제거 (스케일링 시 포트 충돌 방지)\n    expose:\n      - \"9000\"\n    depends_on:\n      - redis\n    restart: always",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter10-block-90",
+          "type": "text",
+          "data": {
+            "markdown": "스케일링 실행:"
+          }
+        },
+        {
+          "id": "chapter10-block-91",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch10/flask-redis$ docker compose up -d --scale flask=3\n[+] Running 4/4\n ⠿ Container redis_server           Running                            0.0s\n ⠿ Container flask-redis-flask-1    Started                            1.0s\n ⠿ Container flask-redis-flask-2    Started                            1.0s\n ⠿ Container flask-redis-flask-3    Started                            1.0s",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter10-block-92",
+          "type": "text",
+          "data": {
+            "markdown": "상태 확인:"
+          }
+        },
+        {
+          "id": "chapter10-block-93",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch10/flask-redis$ docker compose ps\nNAME                    IMAGE                COMMAND              SERVICE   CREATED          STATUS          PORTS\nflask-redis-flask-1     flask-redis-flask    \"python app.py\"      flask     30 seconds ago   Up 28 seconds   9000/tcp\nflask-redis-flask-2     flask-redis-flask    \"python app.py\"      flask     30 seconds ago   Up 28 seconds   9000/tcp\nflask-redis-flask-3     flask-redis-flask    \"python app.py\"      flask     30 seconds ago   Up 28 seconds   9000/tcp\nredis_server            redis:6-alpine       \"docker-entrypoint…\" redis     5 minutes ago    Up 5 minutes    0.0.0.0:6379->6379/tcp",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-45",
+      "level": 3,
+      "title": "8.3 스케일링 주의사항",
+      "anchor": "83-스케일링-주의사항",
+      "content": [
+        {
+          "id": "chapter10-block-94",
+          "type": "table",
+          "data": {
+            "tableId": "chapter10-table-94"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-46",
+      "level": 3,
+      "title": "8.4 스케일 조정",
+      "anchor": "84-스케일-조정",
+      "content": [
+        {
+          "id": "chapter10-block-95",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 스케일 업\ndocker compose up -d --scale flask=5\n\n# 스케일 다운\ndocker compose up -d --scale flask=2\n\n# 스케일 초기화 (1개)\ndocker compose up -d --scale flask=1",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-47",
+      "level": 2,
+      "title": "9. [실습] Nginx + Flask 다중 앱 (ALB 구조)",
+      "anchor": "9-실습-nginx-flask-다중-앱-alb-구조",
+      "content": [
+        {
+          "id": "chapter10-block-97",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "Nginx Reverse Proxy를 활용한 로드밸런싱 구성"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-48",
+      "level": 3,
+      "title": "9.1 아키텍처",
+      "anchor": "91-아키텍처",
+      "content": [
+        {
+          "id": "chapter10-block-98",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter10-diagram-9"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-49",
+      "level": 3,
+      "title": "9.2 프로젝트 구조",
+      "anchor": "92-프로젝트-구조",
+      "content": [
+        {
+          "id": "chapter10-block-99",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ mkdir -p ~/fastcampus/ch10/nginx-flask && cd $_\nkevin@hostos1:~/fastcampus/ch10/nginx-flask$ mkdir app nginx",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter10-block-100",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter10-diagram-10"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-50",
+      "level": 3,
+      "title": "9.3 Flask 앱 작성",
+      "anchor": "93-flask-앱-작성",
+      "content": [
+        {
+          "id": "chapter10-block-101",
+          "type": "text",
+          "data": {
+            "markdown": "app/app.py:"
+          }
+        },
+        {
+          "id": "chapter10-block-102",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch10/nginx-flask$ vi app/app.py",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter10-block-103",
+          "type": "code",
+          "data": {
+            "language": "python",
+            "code": "from flask import Flask\nimport os\n\napp = Flask(__name__)\n\n@app.route('/')\ndef hello():\n    hostname = os.environ.get('HOSTNAME', 'unknown')\n    server_port = os.environ.get('SERVER_PORT', '5000')\n    return f'Hello from Flask App! Server Port: {server_port}, Hostname: {hostname}\\n'\n\n@app.route('/health')\ndef health():\n    return 'OK\\n'\n\nif __name__ == '__main__':\n    port = int(os.environ.get('SERVER_PORT', 5000))\n    app.run(host='0.0.0.0', port=port)",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter10-block-104",
+          "type": "text",
+          "data": {
+            "markdown": "app/Dockerfile:"
+          }
+        },
+        {
+          "id": "chapter10-block-105",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch10/nginx-flask$ vi app/Dockerfile",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter10-block-106",
+          "type": "code",
+          "data": {
+            "language": "dockerfile",
+            "code": "FROM python:3.9-slim\n\nWORKDIR /app\n\nRUN pip install flask\n\nCOPY app.py .\n\nCMD [\"python\", \"app.py\"]",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-51",
+      "level": 3,
+      "title": "9.4 Nginx 설정 작성",
+      "anchor": "94-nginx-설정-작성",
+      "content": [
+        {
+          "id": "chapter10-block-107",
+          "type": "text",
+          "data": {
+            "markdown": "nginx/nginx.conf:"
+          }
+        },
+        {
+          "id": "chapter10-block-108",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch10/nginx-flask$ vi nginx/nginx.conf",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter10-block-109",
+          "type": "code",
+          "data": {
+            "language": "nginx",
+            "code": "events {\n    worker_connections 1024;\n}\n\nhttp {\n    upstream flask_backend {\n        server flask_app1:5001;\n        server flask_app2:5002;\n        server flask_app3:5003;\n    }\n\n    server {\n        listen 80;\n\n        location / {\n            proxy_pass http://flask_backend;\n            proxy_set_header Host $host;\n            proxy_set_header X-Real-IP $remote_addr;\n        }\n\n        location /health {\n            return 200 'Nginx OK\\n';\n            add_header Content-Type text/plain;\n        }\n    }\n}",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter10-block-110",
+          "type": "text",
+          "data": {
+            "markdown": "nginx/Dockerfile:"
+          }
+        },
+        {
+          "id": "chapter10-block-111",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch10/nginx-flask$ vi nginx/Dockerfile",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter10-block-112",
+          "type": "code",
+          "data": {
+            "language": "dockerfile",
+            "code": "FROM nginx:alpine\n\nCOPY nginx.conf /etc/nginx/nginx.conf\n\nEXPOSE 80",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-52",
+      "level": 3,
+      "title": "9.5 docker-compose.yaml 작성",
+      "anchor": "95-docker-composeyaml-작성",
+      "content": [
+        {
+          "id": "chapter10-block-113",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch10/nginx-flask$ vi docker-compose.yaml",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter10-block-114",
+          "type": "code",
+          "data": {
+            "language": "yaml",
+            "code": "version: '3.8'\n\nservices:\n  flask_app1:\n    build:\n      context: ./app\n      dockerfile: Dockerfile\n    container_name: flask_app1\n    environment:\n      - SERVER_PORT=5001\n    expose:\n      - \"5001\"\n    restart: always\n\n  flask_app2:\n    build:\n      context: ./app\n      dockerfile: Dockerfile\n    container_name: flask_app2\n    environment:\n      - SERVER_PORT=5002\n    expose:\n      - \"5002\"\n    restart: always\n\n  flask_app3:\n    build:\n      context: ./app\n      dockerfile: Dockerfile\n    container_name: flask_app3\n    environment:\n      - SERVER_PORT=5003\n    expose:\n      - \"5003\"\n    restart: always\n\n  nginx:\n    build:\n      context: ./nginx\n      dockerfile: Dockerfile\n    container_name: nginx_proxy\n    ports:\n      - \"80:80\"\n    depends_on:\n      - flask_app1\n      - flask_app2\n      - flask_app3\n    restart: always",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-53",
+      "level": 3,
+      "title": "9.6 서비스 실행",
+      "anchor": "96-서비스-실행",
+      "content": [
+        {
+          "id": "chapter10-block-115",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch10/nginx-flask$ docker compose up -d --build\n[+] Building 8.5s (15/15) FINISHED\n...\n[+] Running 5/5\n ⠿ Network nginx-flask_default  Created                                0.1s\n ⠿ Container flask_app1         Started                                0.8s\n ⠿ Container flask_app2         Started                                0.8s\n ⠿ Container flask_app3         Started                                0.8s\n ⠿ Container nginx_proxy        Started                                1.2s",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-54",
+      "level": 3,
+      "title": "9.7 로드밸런싱 테스트",
+      "anchor": "97-로드밸런싱-테스트",
+      "content": [
+        {
+          "id": "chapter10-block-116",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch10/nginx-flask$ curl localhost\nHello from Flask App! Server Port: 5001, Hostname: flask_app1\n\nkevin@hostos1:~/fastcampus/ch10/nginx-flask$ curl localhost\nHello from Flask App! Server Port: 5002, Hostname: flask_app2\n\nkevin@hostos1:~/fastcampus/ch10/nginx-flask$ curl localhost\nHello from Flask App! Server Port: 5003, Hostname: flask_app3\n\nkevin@hostos1:~/fastcampus/ch10/nginx-flask$ curl localhost\nHello from Flask App! Server Port: 5001, Hostname: flask_app1\n\n# 여러 번 호출하여 Round Robin 확인\nkevin@hostos1:~/fastcampus/ch10/nginx-flask$ for i in {1..6}; do curl localhost; done\nHello from Flask App! Server Port: 5002, Hostname: flask_app2\nHello from Flask App! Server Port: 5003, Hostname: flask_app3\nHello from Flask App! Server Port: 5001, Hostname: flask_app1\nHello from Flask App! Server Port: 5002, Hostname: flask_app2\nHello from Flask App! Server Port: 5003, Hostname: flask_app3\nHello from Flask App! Server Port: 5001, Hostname: flask_app1",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-55",
+      "level": 3,
+      "title": "9.8 정리",
+      "anchor": "98-정리",
+      "content": [
+        {
+          "id": "chapter10-block-117",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch10/nginx-flask$ docker compose down",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-56",
+      "level": 2,
+      "title": "10. [실습] 3-Tier 웹 애플리케이션",
+      "anchor": "10-실습-3-tier-웹-애플리케이션",
+      "content": [
+        {
+          "id": "chapter10-block-119",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "Frontend + Backend + Database 구조 실습"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-57",
+      "level": 3,
+      "title": "10.1 아키텍처",
+      "anchor": "101-아키텍처",
+      "content": [
+        {
+          "id": "chapter10-block-120",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter10-diagram-11"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-58",
+      "level": 3,
+      "title": "10.2 프로젝트 구조",
+      "anchor": "102-프로젝트-구조",
+      "content": [
+        {
+          "id": "chapter10-block-121",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ mkdir -p ~/fastcampus/ch10/three-tier && cd $_\nkevin@hostos1:~/fastcampus/ch10/three-tier$ mkdir frontend backend",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter10-block-122",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter10-diagram-12"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-59",
+      "level": 3,
+      "title": "10.3 Backend 작성",
+      "anchor": "103-backend-작성",
+      "content": [
+        {
+          "id": "chapter10-block-123",
+          "type": "text",
+          "data": {
+            "markdown": "backend/package.json:"
+          }
+        },
+        {
+          "id": "chapter10-block-124",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch10/three-tier$ vi backend/package.json",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter10-block-125",
+          "type": "code",
+          "data": {
+            "language": "json",
+            "code": "{\n  \"name\": \"backend-api\",\n  \"version\": \"1.0.0\",\n  \"main\": \"server.js\",\n  \"dependencies\": {\n    \"express\": \"^4.18.2\",\n    \"mysql2\": \"^3.3.3\",\n    \"cors\": \"^2.8.5\"\n  }\n}",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter10-block-126",
+          "type": "text",
+          "data": {
+            "markdown": "backend/server.js:"
+          }
+        },
+        {
+          "id": "chapter10-block-127",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch10/three-tier$ vi backend/server.js",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter10-block-128",
+          "type": "code",
+          "data": {
+            "language": "javascript",
+            "code": "const express = require('express');\nconst mysql = require('mysql2/promise');\nconst cors = require('cors');\n\nconst app = express();\napp.use(cors());\napp.use(express.json());\n\nconst dbConfig = {\n  host: process.env.DB_HOST || 'database',\n  user: process.env.DB_USER || 'appuser',\n  password: process.env.DB_PASSWORD || 'apppassword',\n  database: process.env.DB_NAME || 'appdb'\n};\n\napp.get('/api/health', (req, res) => {\n  res.json({ status: 'OK', service: 'backend' });\n});\n\napp.get('/api/data', async (req, res) => {\n  try {\n    const connection = await mysql.createConnection(dbConfig);\n    const [rows] = await connection.execute('SELECT NOW() as current_time');\n    await connection.end();\n    res.json({\n      message: 'Hello from Backend!',\n      database_time: rows[0].current_time,\n      hostname: require('os').hostname()\n    });\n  } catch (error) {\n    res.status(500).json({ error: error.message });\n  }\n});\n\nconst PORT = process.env.PORT || 8080;\napp.listen(PORT, () => {\n  console.log(`Backend server running on port ${PORT}`);\n});",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter10-block-129",
+          "type": "text",
+          "data": {
+            "markdown": "backend/Dockerfile:"
+          }
+        },
+        {
+          "id": "chapter10-block-130",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch10/three-tier$ vi backend/Dockerfile",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter10-block-131",
+          "type": "code",
+          "data": {
+            "language": "dockerfile",
+            "code": "FROM node:18-alpine\n\nWORKDIR /app\n\nCOPY package.json .\nRUN npm install\n\nCOPY . .\n\nEXPOSE 8080\n\nCMD [\"node\", \"server.js\"]",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-60",
+      "level": 3,
+      "title": "10.4 Frontend 작성",
+      "anchor": "104-frontend-작성",
+      "content": [
+        {
+          "id": "chapter10-block-132",
+          "type": "text",
+          "data": {
+            "markdown": "frontend/index.html:"
+          }
+        },
+        {
+          "id": "chapter10-block-133",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch10/three-tier$ vi frontend/index.html",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter10-block-134",
+          "type": "code",
+          "data": {
+            "language": "html",
+            "code": "<!DOCTYPE html>\n<html>\n<head>\n    <title>3-Tier App - FastCampus Docker</title>\n    <style>\n        body {\n            font-family: Arial, sans-serif;\n            max-width: 800px;\n            margin: 50px auto;\n            padding: 20px;\n            background: #f5f5f5;\n        }\n        .container {\n            background: white;\n            padding: 30px;\n            border-radius: 10px;\n            box-shadow: 0 2px 10px rgba(0,0,0,0.1);\n        }\n        h1 { color: #333; }\n        button {\n            background: #007bff;\n            color: white;\n            padding: 10px 20px;\n            border: none;\n            border-radius: 5px;\n            cursor: pointer;\n            font-size: 16px;\n        }\n        button:hover { background: #0056b3; }\n        #result {\n            margin-top: 20px;\n            padding: 15px;\n            background: #e9ecef;\n            border-radius: 5px;\n            white-space: pre-wrap;\n        }\n    </style>\n</head>\n<body>\n    <div class=\"container\">\n        <h1>FastCampus Docker - 3-Tier Application</h1>\n        <p>Frontend (Nginx) -> Backend (Node.js) -> Database (MySQL)</p>\n        <button onclick=\"fetchData()\">Fetch Data from Backend</button>\n        <div id=\"result\">Click the button to fetch data...</div>\n    </div>\n    <script>\n        async function fetchData() {\n            try {\n                const response = await fetch('/api/data');\n                const data = await response.json();\n                document.getElementById('result').textContent = JSON.stringify(data, null, 2);\n            } catch (error) {\n                document.getElementById('result').textContent = 'Error: ' + error.message;\n            }\n        }\n    </script>\n</body>\n</html>",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter10-block-135",
+          "type": "text",
+          "data": {
+            "markdown": "frontend/Dockerfile:"
+          }
+        },
+        {
+          "id": "chapter10-block-136",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch10/three-tier$ vi frontend/Dockerfile",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter10-block-137",
+          "type": "code",
+          "data": {
+            "language": "dockerfile",
+            "code": "FROM nginx:alpine\n\nCOPY index.html /usr/share/nginx/html/\nCOPY nginx.conf /etc/nginx/conf.d/default.conf\n\nEXPOSE 80",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter10-block-138",
+          "type": "text",
+          "data": {
+            "markdown": "frontend/nginx.conf:"
+          }
+        },
+        {
+          "id": "chapter10-block-139",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch10/three-tier$ vi frontend/nginx.conf",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter10-block-140",
+          "type": "code",
+          "data": {
+            "language": "nginx",
+            "code": "server {\n    listen 80;\n\n    location / {\n        root /usr/share/nginx/html;\n        index index.html;\n    }\n\n    location /api/ {\n        proxy_pass http://backend:8080;\n        proxy_set_header Host $host;\n        proxy_set_header X-Real-IP $remote_addr;\n    }\n}",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-61",
+      "level": 3,
+      "title": "10.5 docker-compose.yaml 작성",
+      "anchor": "105-docker-composeyaml-작성",
+      "content": [
+        {
+          "id": "chapter10-block-141",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch10/three-tier$ vi docker-compose.yaml",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter10-block-142",
+          "type": "code",
+          "data": {
+            "language": "yaml",
+            "code": "version: '3.8'\n\nservices:\n  database:\n    image: mysql:8.0-debian\n    container_name: mysql_db\n    environment:\n      MYSQL_ROOT_PASSWORD: rootpassword\n      MYSQL_DATABASE: appdb\n      MYSQL_USER: appuser\n      MYSQL_PASSWORD: apppassword\n    volumes:\n      - db_data:/var/lib/mysql\n    networks:\n      - backend-net\n    restart: always\n    healthcheck:\n      test: [\"CMD\", \"mysqladmin\", \"ping\", \"-h\", \"localhost\"]\n      interval: 10s\n      timeout: 5s\n      retries: 5\n\n  backend:\n    build:\n      context: ./backend\n      dockerfile: Dockerfile\n    container_name: backend_api\n    environment:\n      DB_HOST: database\n      DB_USER: appuser\n      DB_PASSWORD: apppassword\n      DB_NAME: appdb\n    depends_on:\n      database:\n        condition: service_healthy\n    networks:\n      - frontend-net\n      - backend-net\n    restart: always\n\n  frontend:\n    build:\n      context: ./frontend\n      dockerfile: Dockerfile\n    container_name: frontend_web\n    ports:\n      - \"3000:80\"\n    depends_on:\n      - backend\n    networks:\n      - frontend-net\n    restart: always\n\nnetworks:\n  frontend-net:\n    driver: bridge\n  backend-net:\n    driver: bridge\n\nvolumes:\n  db_data:",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-62",
+      "level": 3,
+      "title": "10.6 서비스 실행",
+      "anchor": "106-서비스-실행",
+      "content": [
+        {
+          "id": "chapter10-block-143",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch10/three-tier$ docker compose up -d --build\n[+] Building 25.3s (20/20) FINISHED\n...\n[+] Running 5/5\n ⠿ Network three-tier_frontend-net  Created                            0.1s\n ⠿ Network three-tier_backend-net   Created                            0.1s\n ⠿ Volume \"three-tier_db_data\"      Created                            0.0s\n ⠿ Container mysql_db               Healthy                           15.2s\n ⠿ Container backend_api            Started                           16.0s\n ⠿ Container frontend_web           Started                           16.5s",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-63",
+      "level": 3,
+      "title": "10.7 테스트",
+      "anchor": "107-테스트",
+      "content": [
+        {
+          "id": "chapter10-block-144",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch10/three-tier$ docker compose ps\nNAME            IMAGE                   COMMAND                  SERVICE    STATUS\nbackend_api     three-tier-backend      \"docker-entrypoint.s…\"   backend    Up 30 seconds\nfrontend_web    three-tier-frontend     \"/docker-entrypoint.…\"   frontend   Up 29 seconds\nmysql_db        mysql:8.0-debian        \"docker-entrypoint.s…\"   database   Up 45 seconds (healthy)\n\nkevin@hostos1:~/fastcampus/ch10/three-tier$ curl localhost:3000\n<!DOCTYPE html>\n<html>\n<head>\n    <title>3-Tier App - FastCampus Docker</title>\n...\n\nkevin@hostos1:~/fastcampus/ch10/three-tier$ curl localhost:3000/api/health\n{\"status\":\"OK\",\"service\":\"backend\"}\n\nkevin@hostos1:~/fastcampus/ch10/three-tier$ curl localhost:3000/api/data\n{\"message\":\"Hello from Backend!\",\"database_time\":\"2023-06-20T11:30:00.000Z\",\"hostname\":\"backend_api\"}",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter10-block-145",
+          "type": "text",
+          "data": {
+            "markdown": "웹 브라우저에서 http://<호스트IP>:3000 접속하여 확인"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-64",
+      "level": 3,
+      "title": "10.8 데이터 영속성 확인",
+      "anchor": "108-데이터-영속성-확인",
+      "content": [
+        {
+          "id": "chapter10-block-146",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 서비스 종료\nkevin@hostos1:~/fastcampus/ch10/three-tier$ docker compose down\n\n# 볼륨 확인 (유지됨)\nkevin@hostos1:~/fastcampus/ch10/three-tier$ docker volume ls | grep three-tier\nlocal     three-tier_db_data\n\n# 다시 시작\nkevin@hostos1:~/fastcampus/ch10/three-tier$ docker compose up -d\n\n# 데이터 유지 확인\nkevin@hostos1:~/fastcampus/ch10/three-tier$ curl localhost:3000/api/data",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-65",
+      "level": 3,
+      "title": "10.9 정리",
+      "anchor": "109-정리",
+      "content": [
+        {
+          "id": "chapter10-block-147",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 볼륨 포함 전체 삭제\nkevin@hostos1:~/fastcampus/ch10/three-tier$ docker compose down -v",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-66",
+      "level": 2,
+      "title": "11. Docker Compose vs Kubernetes",
+      "anchor": "11-docker-compose-vs-kubernetes",
+      "content": [
+        {
+          "id": "chapter10-block-149",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "Docker Compose와 Kubernetes의 차이점 이해하기"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-67",
+      "level": 3,
+      "title": "11.1 비교 표",
+      "anchor": "111-비교-표",
+      "content": [
+        {
+          "id": "chapter10-block-150",
+          "type": "table",
+          "data": {
+            "tableId": "chapter10-table-150"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-68",
+      "level": 3,
+      "title": "11.2 사용 시나리오",
+      "anchor": "112-사용-시나리오",
+      "content": [
+        {
+          "id": "chapter10-block-151",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter10-diagram-13"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-69",
+      "level": 3,
+      "title": "11.3 Docker Compose에서 Kubernetes로",
+      "anchor": "113-docker-compose에서-kubernetes로",
+      "content": [
+        {
+          "id": "chapter10-block-152",
+          "type": "text",
+          "data": {
+            "markdown": "Docker Compose를 사용해 개발한 애플리케이션을 Kubernetes로 마이그레이션하는 것이 일반적인 패턴이다."
+          }
+        },
+        {
+          "id": "chapter10-block-153",
+          "type": "text",
+          "data": {
+            "markdown": "마이그레이션 도구:"
+          }
+        },
+        {
+          "id": "chapter10-block-154",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "kompose: docker-compose.yaml을 Kubernetes 매니페스트로 변환"
+              },
+              {
+                "text": "Docker Desktop: Kubernetes 통합 지원"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter10-block-155",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# kompose를 사용한 변환 예시\nkompose convert -f docker-compose.yaml",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-70",
+      "level": 3,
+      "title": "11.4 선택 가이드",
+      "anchor": "114-선택-가이드",
+      "content": [
+        {
+          "id": "chapter10-block-156",
+          "type": "table",
+          "data": {
+            "tableId": "chapter10-table-156"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-71",
+      "level": 2,
+      "title": "요약",
+      "anchor": "요약",
+      "content": []
+    },
+    {
+      "id": "chapter10-section-72",
+      "level": 3,
+      "title": "핵심 개념",
+      "anchor": "핵심-개념",
+      "content": [
+        {
+          "id": "chapter10-block-158",
+          "type": "list",
+          "data": {
+            "ordered": true,
+            "items": [
+              {
+                "text": "Docker Compose 역할멀티 컨테이너 애플리케이션을 YAML 파일로 정의서비스, 네트워크, 볼륨을 선언적으로 관리개발/테스트 환경에 최적화"
+              },
+              {
+                "text": "docker-compose.yaml 구조services: 컨테이너 서비스 정의networks: 네트워크 정의volumes: 볼륨 정의"
+              },
+              {
+                "text": "주요 명령어"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter10-block-159",
+          "type": "table",
+          "data": {
+            "tableId": "chapter10-table-159"
+          }
+        },
+        {
+          "id": "chapter10-block-160",
+          "type": "list",
+          "data": {
+            "ordered": true,
+            "items": [
+              {
+                "text": "핵심 설정 옵션depends_on: 서비스 의존성 (시작 순서)restart: 재시작 정책healthcheck: 헬스체크 설정build: Dockerfile 빌드 설정"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-73",
+      "level": 3,
+      "title": "주요 명령어 정리",
+      "anchor": "주요-명령어-정리",
+      "content": [
+        {
+          "id": "chapter10-block-161",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 서비스 시작\ndocker compose up -d\n\n# 서비스 종료\ndocker compose down\n\n# 볼륨 포함 삭제\ndocker compose down -v\n\n# 이미지 재빌드 후 시작\ndocker compose up -d --build\n\n# 스케일링\ndocker compose up -d --scale web=3\n\n# 로그 확인\ndocker compose logs -f [서비스명]\n\n# 컨테이너 접속\ndocker compose exec [서비스명] bash\n\n# 설정 검증\ndocker compose config",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-74",
+      "level": 2,
+      "title": "체크리스트 (통과 필수)",
+      "anchor": "체크리스트-통과-필수",
+      "content": [
+        {
+          "id": "chapter10-block-163",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Docker Compose의 역할과 장점을 설명할 수 있다"
+              },
+              {
+                "text": "docker-compose.yaml 파일을 작성할 수 있다"
+              },
+              {
+                "text": "services, networks, volumes 섹션을 이해하고 사용할 수 있다"
+              },
+              {
+                "text": "docker compose up/down 명령을 사용할 수 있다"
+              },
+              {
+                "text": "depends_on으로 서비스 의존성을 설정할 수 있다"
+              },
+              {
+                "text": "환경 변수와 볼륨을 설정할 수 있다"
+              },
+              {
+                "text": "서비스 스케일링을 수행할 수 있다"
+              },
+              {
+                "text": "Nginx를 활용한 로드밸런싱을 구성할 수 있다"
+              },
+              {
+                "text": "3-Tier 아키텍처를 Docker Compose로 구성할 수 있다"
+              },
+              {
+                "text": "Docker Compose와 Kubernetes의 차이점을 설명할 수 있다"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter10-section-75",
+      "level": 2,
+      "title": "다음 챕터 예고",
+      "anchor": "다음-챕터-예고",
+      "content": []
+    },
+    {
+      "id": "chapter10-section-76",
+      "level": 3,
+      "title": "Chapter 11. Docker Swarm",
+      "anchor": "chapter-11-docker-swarm",
+      "content": [
+        {
+          "id": "chapter10-block-165",
+          "type": "text",
+          "data": {
+            "markdown": "다음 장에서는:"
+          }
+        },
+        {
+          "id": "chapter10-block-166",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Docker Swarm 개념과 아키텍처"
+              },
+              {
+                "text": "Swarm 클러스터 구성"
+              },
+              {
+                "text": "서비스 배포와 스케일링"
+              },
+              {
+                "text": "Overlay 네트워크"
+              },
+              {
+                "text": "롤링 업데이트"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter10-block-167",
+          "type": "text",
+          "data": {
+            "markdown": "를 실습 중심으로 다룹니다."
+          }
+        }
+      ]
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "chapter10-diagram-1",
+      "type": "tree",
+      "asciiOriginal": "┌─────────────────────────────────────────────────────────────────────┐\n│                    멀티 컨테이너 서비스 예시                          │\n├─────────────────────────────────────────────────────────────────────┤\n│                                                                     │\n│  ┌──────────┐     ┌──────────┐     ┌──────────┐     ┌──────────┐   │\n│  │  Nginx   │ ──→ │   App    │ ──→ │  Redis   │     │  MySQL   │   │\n│  │ (Proxy)  │     │ (Flask)  │     │ (Cache)  │     │   (DB)   │   │\n│  └──────────┘     └──────────┘     └──────────┘     └──────────┘   │\n│       ↑                ↑                ↑               ↑          │\n│       └────────────────┴────────────────┴───────────────┘          │\n│                      하나의 애플리케이션                             │\n│                                                                     │\n└─────────────────────────────────────────────────────────────────────┘",
+      "mermaidCode": "flowchart LR\n    subgraph Proxy[\"🔀 Proxy 구조\"]\n        direction LR\n\n        Client[\"👤 Client\"]\n        Proxy1[\"🌐 Proxy<br/>(Nginx)\"]\n        Web1[\"📦 Web1\"]\n        Web2[\"📦 Web2\"]\n        DB[\"🗄️ DB\"]\n    end\n\n    Client --> Proxy1\n    Proxy1 --> Web1\n    Proxy1 --> Web2\n    Web1 --> DB\n    Web2 --> DB\n\n    style Proxy fill:#f8fafc,stroke:#64748b\n    style Client fill:#dbeafe,stroke:#2563eb\n    style Proxy1 fill:#dcfce7,stroke:#16a34a\n    style Web1 fill:#fef3c7,stroke:#d97706\n    style Web2 fill:#fef3c7,stroke:#d97706\n    style DB fill:#fee2e2,stroke:#dc2626",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "┌─────────────────────────────────────────────────────────────────────┐",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "멀티 컨테이너 서비스 예시                          │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┤",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┌──────────┐     ┌──────────┐     ┌──────────┐     ┌──────────┐   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "Nginx   │ ──",
+              "type": "branch",
+              "targetInfo": "│   App    │ ──→ │  Redis   │     │  MySQL   │   │",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "(Proxy)  │     │ (Flask)  │     │ (Cache)  │     │   (DB)   │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┘     └──────────┘     └──────────┘     └──────────┘   │",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "↑                ↑                ↑               ↑          │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┴────────────────┴───────────────┘          │",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-4",
+                      "label": "하나의 애플리케이션                             │",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "node-5",
+              "label": "┘",
+              "type": "branch",
+              "children": []
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter10-diagram-2",
+      "type": "tree",
+      "asciiOriginal": "┌─────────────────────────────────────────────────────────────────────┐\n│                    Docker Compose 동작 흐름                          │\n├─────────────────────────────────────────────────────────────────────┤\n│                                                                     │\n│   ┌──────────────────┐         ┌──────────────────────────────┐    │\n│   │ docker-compose   │         │    Docker Compose Engine     │    │\n│   │     .yaml        │  ────→  │  (서비스/네트워크/볼륨 생성)   │    │\n│   └──────────────────┘         └──────────────────────────────┘    │\n│                                            │                        │\n│                                            ↓                        │\n│   ┌─────────────────────────────────────────────────────────────┐  │\n│   │                    Docker Engine                             │  │\n│   │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐    │  │\n│   │  │Container1│  │Container2│  │Container3│  │Container4│    │  │\n│   │  └──────────┘  └──────────┘  └──────────┘  └──────────┘    │  │\n│   │                                                             │  │\n│   │  ┌──────────────────────┐  ┌────────────────────────────┐  │  │\n│   │  │      Network         │  │         Volumes            │  │  │\n│   │  └──────────────────────┘  └────────────────────────────┘  │  │\n│   └─────────────────────────────────────────────────────────────┘  │\n│                                                                     │\n└─────────────────────────────────────────────────────────────────────┘",
+      "mermaidCode": "flowchart TB\n    subgraph Host[\"🖥️ Docker Host\"]\n        direction TB\n\n        subgraph BindMount[\"📁 Bind Mount\"]\n            BH[\"Host 디렉토리<br/>/home/user/data\"]\n            BC[\"Container<br/>/app/data\"]\n            BH <-->|\"직접 연결\"| BC\n        end\n\n        subgraph DockerVolume[\"💾 Docker Volume\"]\n            DV[\"Docker 관리 볼륨<br/>/var/lib/docker/volumes\"]\n            DC[\"Container<br/>/app/data\"]\n            DV <-->|\"Docker 관리\"| DC\n        end\n\n        subgraph Tmpfs[\"⚡ tmpfs Mount\"]\n            TM[\"Memory<br/>(RAM)\"]\n            TC[\"Container<br/>/app/cache\"]\n            TM <-->|\"메모리 연결\"| TC\n        end\n    end\n\n    style Host fill:#f8fafc,stroke:#64748b\n    style BindMount fill:#dbeafe,stroke:#2563eb\n    style DockerVolume fill:#dcfce7,stroke:#16a34a\n    style Tmpfs fill:#fef3c7,stroke:#d97706",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "┌─────────────────────────────────────────────────────────────────────┐",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "Docker Compose 동작 흐름                          │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┤",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "┌──────────────────┐         ┌──────────────────────────────┐    │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "docker-compose   │         │    Docker Compose Engine     │    │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": ".yaml        │  ────",
+                  "type": "branch",
+                  "targetInfo": "│  (서비스/네트워크/볼륨 생성)   │    │",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┘         └──────────────────────────────┘    │",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-4",
+                      "label": "↓                        │",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "id": "node-5",
+                  "label": "┌─────────────────────────────────────────────────────────────┐  │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Docker Engine                             │  │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐    │  │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Container1│  │Container2│  │Container3│  │Container4│    │  │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┘  └──────────┘  └──────────┘  └──────────┘    │  │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┌──────────────────────┐  ┌────────────────────────────┐  │  │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Network         │  │         Volumes            │  │  │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┘  └────────────────────────────┘  │  │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┘  │",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "node-4",
+              "label": "┘",
+              "type": "branch",
+              "children": []
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter10-diagram-3",
+      "type": "tree",
+      "asciiOriginal": "┌────────────────────────────────────────────────────────────────────┐\n│                    Docker CLI vs Docker Compose                     │\n├──────────────────────────────┬─────────────────────────────────────┤\n│        Docker CLI            │          Docker Compose             │\n├──────────────────────────────┼─────────────────────────────────────┤\n│ docker run                   │ docker compose up                   │\n│ docker stop                  │ docker compose stop                 │\n│ docker rm                    │ docker compose down                 │\n│ docker ps                    │ docker compose ps                   │\n│ docker logs                  │ docker compose logs                 │\n│ docker build                 │ docker compose build                │\n│ docker network create        │ (yaml에서 자동 생성)                 │\n│ docker volume create         │ (yaml에서 자동 생성)                 │\n└──────────────────────────────┴─────────────────────────────────────┘",
+      "mermaidCode": "flowchart TB\n    subgraph Lifecycle[\"🔄 컨테이너 생명주기\"]\n        direction TB\n\n        Create[\"docker create\"]\n        Created[\"📦 Created<br/>(생성됨, 실행 대기)\"]\n        Running[\"▶️ Running<br/>(실행 중)\"]\n        Paused[\"⏸️ Paused<br/>(일시정지)\"]\n        Exited[\"⏹️ Exited<br/>(종료됨)\"]\n        Deleted[\"🗑️ Deleted<br/>(삭제됨)\"]\n    end\n\n    Create --> Created\n    Created -->|\"docker start\"| Running\n    Running -->|\"docker stop\"| Exited\n    Running -->|\"docker pause\"| Paused\n    Paused -->|\"docker unpause\"| Running\n    Exited -->|\"docker start<br/>docker restart\"| Running\n    Exited -->|\"docker rm\"| Deleted\n\n    style Lifecycle fill:#f8fafc,stroke:#64748b\n    style Created fill:#dbeafe,stroke:#2563eb\n    style Running fill:#dcfce7,stroke:#16a34a\n    style Paused fill:#fef3c7,stroke:#d97706\n    style Exited fill:#fee2e2,stroke:#dc2626\n    style Deleted fill:#f3f4f6,stroke:#6b7280",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "┌────────────────────────────────────────────────────────────────────┐",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "Docker CLI vs Docker Compose                     │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┬─────────────────────────────────────┤",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "Docker CLI            │          Docker Compose             │",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "node-4",
+              "label": "┼─────────────────────────────────────┤",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "docker run                   │ docker compose up                   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "docker stop                  │ docker compose stop                 │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "docker rm                    │ docker compose down                 │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "docker ps                    │ docker compose ps                   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "docker logs                  │ docker compose logs                 │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "docker build                 │ docker compose build                │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "docker network create        │ (yaml에서 자동 생성)                 │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "docker volume create         │ (yaml에서 자동 생성)                 │",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "┴─────────────────────────────────────┘",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter10-diagram-4",
+      "type": "tree",
+      "asciiOriginal": "┌────────────────────────────────────────────────────────────────────┐\n│                docker-compose.yaml 주요 설정 항목                    │\n├────────────────────────────────────────────────────────────────────┤\n│                                                                    │\n│  services:                                                         │\n│  ├── image          : 사용할 Docker 이미지                          │\n│  ├── build          : Dockerfile 빌드 설정                          │\n│  ├── container_name : 컨테이너 이름 지정                            │\n│  ├── ports          : 포트 매핑 (호스트:컨테이너)                    │\n│  ├── volumes        : 볼륨 마운트                                   │\n│  ├── environment    : 환경 변수                                    │\n│  ├── env_file       : 환경 변수 파일                                │\n│  ├── networks       : 연결할 네트워크                               │\n│  ├── depends_on     : 서비스 의존성                                 │\n│  ├── restart        : 재시작 정책                                   │\n│  ├── command        : 실행 명령어 오버라이드                         │\n│  └── healthcheck    : 헬스체크 설정                                 │\n│                                                                    │\n│  networks:                                                         │\n│  ├── driver         : 네트워크 드라이버 (bridge, overlay 등)         │\n│  └── external       : 외부 네트워크 사용 여부                        │\n│                                                                    │\n│  volumes:                                                          │\n│  ├── driver         : 볼륨 드라이버                                 │\n│  └── external       : 외부 볼륨 사용 여부                            │\n│                                                                    │\n└────────────────────────────────────────────────────────────────────┘",
+      "mermaidCode": "flowchart TB\n    subgraph Host[\"🖥️ Docker Host\"]\n        direction TB\n\n        subgraph BindMount[\"📁 Bind Mount\"]\n            BH[\"Host 디렉토리<br/>/home/user/data\"]\n            BC[\"Container<br/>/app/data\"]\n            BH <-->|\"직접 연결\"| BC\n        end\n\n        subgraph DockerVolume[\"💾 Docker Volume\"]\n            DV[\"Docker 관리 볼륨<br/>/var/lib/docker/volumes\"]\n            DC[\"Container<br/>/app/data\"]\n            DV <-->|\"Docker 관리\"| DC\n        end\n\n        subgraph Tmpfs[\"⚡ tmpfs Mount\"]\n            TM[\"Memory<br/>(RAM)\"]\n            TC[\"Container<br/>/app/cache\"]\n            TM <-->|\"메모리 연결\"| TC\n        end\n    end\n\n    style Host fill:#f8fafc,stroke:#64748b\n    style BindMount fill:#dbeafe,stroke:#2563eb\n    style DockerVolume fill:#dcfce7,stroke:#16a34a\n    style Tmpfs fill:#fef3c7,stroke:#d97706",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "┌────────────────────────────────────────────────────────────────────┐",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "docker-compose.yaml 주요 설정 항목                    │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┤",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "services:                                                         │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "image          : 사용할 Docker 이미지                          │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "build          : Dockerfile 빌드 설정                          │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "container_name : 컨테이너 이름 지정                            │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "ports          : 포트 매핑 (호스트:컨테이너)                    │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "volumes        : 볼륨 마운트                                   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "environment    : 환경 변수                                    │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "env_file       : 환경 변수 파일                                │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "networks       : 연결할 네트워크                               │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "depends_on     : 서비스 의존성                                 │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "restart        : 재시작 정책                                   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "command        : 실행 명령어 오버라이드                         │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "healthcheck    : 헬스체크 설정                                 │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "networks:                                                         │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "driver         : 네트워크 드라이버 (bridge, overlay 등)         │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "external       : 외부 네트워크 사용 여부                        │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "volumes:                                                          │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "driver         : 볼륨 드라이버                                 │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "external       : 외부 볼륨 사용 여부                            │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┘",
+              "type": "branch",
+              "children": []
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter10-diagram-5",
+      "type": "tree",
+      "asciiOriginal": "┌─────────────────────────────────────────────────────────────────────┐\n│                    WordPress + MySQL 아키텍처                        │\n├─────────────────────────────────────────────────────────────────────┤\n│                                                                     │\n│                         ┌──────────────┐                           │\n│                         │    Client    │                           │\n│                         └──────┬───────┘                           │\n│                                │ :8888                             │\n│                                ↓                                   │\n│  ┌─────────────────────────────────────────────────────────────┐   │\n│  │                      Docker Host                             │   │\n│  │                                                             │   │\n│  │   ┌─────────────────┐          ┌─────────────────┐          │   │\n│  │   │    WordPress    │          │      MySQL      │          │   │\n│  │   │  (wordpress_app)│ ───────→ │   (mysql_app)   │          │   │\n│  │   │    Port: 80     │  :3306   │    Port: 3306   │          │   │\n│  │   └────────┬────────┘          └────────┬────────┘          │   │\n│  │            │                            │                   │   │\n│  │            ↓                            ↓                   │   │\n│  │   ┌─────────────────┐          ┌─────────────────┐          │   │\n│  │   │   myweb_data    │          │   mydb_data     │          │   │\n│  │   │    (Volume)     │          │    (Volume)     │          │   │\n│  │   └─────────────────┘          └─────────────────┘          │   │\n│  │                                                             │   │\n│  │   ┌───────────────────────────────────────────────────┐     │   │\n│  │   │        backend-net / frontend-net (Network)       │     │   │\n│  │   └───────────────────────────────────────────────────┘     │   │\n│  └─────────────────────────────────────────────────────────────┘   │\n│                                                                     │\n└─────────────────────────────────────────────────────────────────────┘",
+      "mermaidCode": "flowchart TB\n    subgraph ThreeTier[\"🏗️ 3-Tier 아키텍처\"]\n        direction TB\n\n        subgraph Frontend[\"Frontend Tier\"]\n            FE[\"🌐 Nginx<br/>:80\"]\n        end\n\n        subgraph Backend[\"Backend Tier\"]\n            BE[\"⚙️ Node.js API<br/>:8080\"]\n        end\n\n        subgraph Data[\"Data Tier\"]\n            DB[\"🗄️ MySQL<br/>:3306\"]\n        end\n    end\n\n    Client[\"👤 Client\"] --> FE\n    FE -->|\"/api/*\"| BE\n    BE --> DB\n\n    style ThreeTier fill:#f8fafc,stroke:#64748b\n    style Frontend fill:#dcfce7,stroke:#16a34a\n    style Backend fill:#dbeafe,stroke:#2563eb\n    style Data fill:#fef3c7,stroke:#d97706",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "┌─────────────────────────────────────────────────────────────────────┐",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "WordPress + MySQL 아키텍처                        │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┤",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "┌──────────────┐                           │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Client    │                           │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┬───────┘                           │",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-4",
+                      "label": ":8888                             │",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "↓                                   │",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "node-5",
+              "label": "┌─────────────────────────────────────────────────────────────┐   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "Docker Host                             │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┌─────────────────┐          ┌─────────────────┐          │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "WordPress    │          │      MySQL      │          │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "(wordpress_app)│ ───────",
+              "type": "branch",
+              "targetInfo": "│   (mysql_app)   │          │   │",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "Port: 80     │  :3306   │    Port: 3306   │          │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┬────────┘          └────────┬────────┘          │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "↓                            ↓                   │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┌─────────────────┐          ┌─────────────────┐          │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "myweb_data    │          │   mydb_data     │          │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "(Volume)     │          │    (Volume)     │          │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┘          └─────────────────┘          │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┌───────────────────────────────────────────────────┐     │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "backend-net / frontend-net (Network)       │     │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┘     │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┘   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┘",
+              "type": "branch",
+              "children": []
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter10-diagram-6",
+      "type": "tree",
+      "asciiOriginal": "┌────────────────────────────────────────────────────────────────────┐\n│                Docker Compose 주요 명령어 옵션                       │\n├────────────────────────────────────────────────────────────────────┤\n│                                                                    │\n│  docker compose up                                                 │\n│  ├── -d, --detach      : 백그라운드 실행                           │\n│  ├── --build           : 시작 전 이미지 빌드                        │\n│  ├── --force-recreate  : 컨테이너 강제 재생성                       │\n│  ├── --no-deps         : 의존 서비스 시작 안 함                     │\n│  └── --scale SERVICE=N : 서비스 인스턴스 수 지정                    │\n│                                                                    │\n│  docker compose down                                               │\n│  ├── -v, --volumes     : 볼륨도 함께 삭제                          │\n│  ├── --rmi all         : 모든 이미지 삭제                          │\n│  └── --rmi local       : 커스텀 태그 이미지만 삭제                  │\n│                                                                    │\n│  docker compose logs                                               │\n│  ├── -f, --follow      : 실시간 로그 출력                          │\n│  ├── --tail=N          : 마지막 N줄만 출력                         │\n│  └── -t, --timestamps  : 타임스탬프 표시                           │\n│                                                                    │\n└────────────────────────────────────────────────────────────────────┘",
+      "mermaidCode": "flowchart TB\n    subgraph Host[\"🖥️ Docker Host\"]\n        direction TB\n\n        subgraph BindMount[\"📁 Bind Mount\"]\n            BH[\"Host 디렉토리<br/>/home/user/data\"]\n            BC[\"Container<br/>/app/data\"]\n            BH <-->|\"직접 연결\"| BC\n        end\n\n        subgraph DockerVolume[\"💾 Docker Volume\"]\n            DV[\"Docker 관리 볼륨<br/>/var/lib/docker/volumes\"]\n            DC[\"Container<br/>/app/data\"]\n            DV <-->|\"Docker 관리\"| DC\n        end\n\n        subgraph Tmpfs[\"⚡ tmpfs Mount\"]\n            TM[\"Memory<br/>(RAM)\"]\n            TC[\"Container<br/>/app/cache\"]\n            TM <-->|\"메모리 연결\"| TC\n        end\n    end\n\n    style Host fill:#f8fafc,stroke:#64748b\n    style BindMount fill:#dbeafe,stroke:#2563eb\n    style DockerVolume fill:#dcfce7,stroke:#16a34a\n    style Tmpfs fill:#fef3c7,stroke:#d97706",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "┌────────────────────────────────────────────────────────────────────┐",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "Docker Compose 주요 명령어 옵션                       │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┤",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "docker compose up                                                 │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "-d, --detach      : 백그라운드 실행                           │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "--build           : 시작 전 이미지 빌드                        │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "--force-recreate  : 컨테이너 강제 재생성                       │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "--no-deps         : 의존 서비스 시작 안 함                     │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "--scale SERVICE=N : 서비스 인스턴스 수 지정                    │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "docker compose down                                               │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "-v, --volumes     : 볼륨도 함께 삭제                          │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "--rmi all         : 모든 이미지 삭제                          │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "--rmi local       : 커스텀 태그 이미지만 삭제                  │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "docker compose logs                                               │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "-f, --follow      : 실시간 로그 출력                          │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "--tail=N          : 마지막 N줄만 출력                         │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "-t, --timestamps  : 타임스탬프 표시                           │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┘",
+              "type": "branch",
+              "children": []
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter10-diagram-7",
+      "type": "tree",
+      "title": "flask-redis/",
+      "asciiOriginal": "flask-redis/\n├── docker-compose.yaml\n├── Dockerfile\n├── app.py\n└── requirements.txt",
+      "mermaidCode": "flowchart LR\n    subgraph App[\"🐙 멀티 컨테이너 애플리케이션\"]\n        direction LR\n\n        Nginx[\"🌐 Nginx<br/>(Proxy)\"]\n        Flask[\"🐍 App<br/>(Flask)\"]\n        Redis[\"⚡ Redis<br/>(Cache)\"]\n        MySQL[\"🗄️ MySQL<br/>(DB)\"]\n    end\n\n    Client[\"👤 Client\"] --> Nginx\n    Nginx --> Flask\n    Flask --> Redis\n    Flask --> MySQL\n\n    style App fill:#f8fafc,stroke:#64748b\n    style Nginx fill:#dcfce7,stroke:#16a34a\n    style Flask fill:#dbeafe,stroke:#2563eb\n    style Redis fill:#fee2e2,stroke:#dc2626\n    style MySQL fill:#fef3c7,stroke:#d97706",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "flask-redis/",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "docker-compose.yaml",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "Dockerfile",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "app.py",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "requirements.txt",
+              "type": "branch",
+              "children": []
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter10-diagram-8",
+      "type": "tree",
+      "asciiOriginal": "┌─────────────────────────────────────────────────────────────────────┐\n│                      서비스 스케일링 개념                            │\n├─────────────────────────────────────────────────────────────────────┤\n│                                                                     │\n│   Before (scale=1):              After (scale=3):                   │\n│                                                                     │\n│   ┌──────────────┐               ┌──────────────┐                  │\n│   │   flask_1    │               │   flask_1    │                  │\n│   └──────────────┘               ├──────────────┤                  │\n│                                  │   flask_2    │                  │\n│                                  ├──────────────┤                  │\n│                                  │   flask_3    │                  │\n│                                  └──────────────┘                  │\n│                                                                     │\n└─────────────────────────────────────────────────────────────────────┘",
+      "mermaidCode": "flowchart TB\n    subgraph Scaling[\"📈 서비스 스케일링\"]\n        direction TB\n\n        LB[\"🌐 Nginx<br/>(Load Balancer)\"]\n\n        subgraph FlaskInstances[\"Flask Instances\"]\n            F1[\"🐍 flask-1<br/>:9000\"]\n            F2[\"🐍 flask-2<br/>:9000\"]\n            F3[\"🐍 flask-3<br/>:9000\"]\n        end\n\n        Redis[\"⚡ Redis<br/>(Shared)\"]\n    end\n\n    Client[\"👤 Client\"] --> LB\n    LB --> F1\n    LB --> F2\n    LB --> F3\n    F1 --> Redis\n    F2 --> Redis\n    F3 --> Redis\n\n    style Scaling fill:#f8fafc,stroke:#64748b\n    style FlaskInstances fill:#dbeafe,stroke:#2563eb\n    style LB fill:#dcfce7,stroke:#16a34a\n    style Redis fill:#fee2e2,stroke:#dc2626",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "┌─────────────────────────────────────────────────────────────────────┐",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "서비스 스케일링 개념                            │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┤",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "Before (scale=1):              After (scale=3):                   │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┌──────────────┐               ┌──────────────┐                  │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "flask_1    │               │   flask_1    │                  │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┘               ├──────────────┤                  │",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-4",
+                      "label": "flask_2    │                  │",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "┤                  │",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "flask_3    │                  │",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "┘                  │",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "node-5",
+              "label": "┘",
+              "type": "branch",
+              "children": []
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter10-diagram-9",
+      "type": "tree",
+      "asciiOriginal": "┌─────────────────────────────────────────────────────────────────────┐\n│                    Nginx + Flask ALB 아키텍처                        │\n├─────────────────────────────────────────────────────────────────────┤\n│                                                                     │\n│                         ┌──────────────┐                           │\n│                         │    Client    │                           │\n│                         └──────┬───────┘                           │\n│                                │ :80                               │\n│                                ↓                                   │\n│  ┌─────────────────────────────────────────────────────────────┐   │\n│  │                      Docker Host                             │   │\n│  │                                                             │   │\n│  │                    ┌──────────────┐                         │   │\n│  │                    │    Nginx     │                         │   │\n│  │                    │   (Proxy)    │                         │   │\n│  │                    └──────┬───────┘                         │   │\n│  │                           │                                 │   │\n│  │           ┌───────────────┼───────────────┐                 │   │\n│  │           ↓               ↓               ↓                 │   │\n│  │   ┌──────────────┐ ┌──────────────┐ ┌──────────────┐       │   │\n│  │   │   Flask_1    │ │   Flask_2    │ │   Flask_3    │       │   │\n│  │   │  (App:5001)  │ │  (App:5002)  │ │  (App:5003)  │       │   │\n│  │   └──────────────┘ └──────────────┘ └──────────────┘       │   │\n│  │                                                             │   │\n│  └─────────────────────────────────────────────────────────────┘   │\n│                                                                     │\n└─────────────────────────────────────────────────────────────────────┘",
+      "mermaidCode": "flowchart LR\n    subgraph Proxy[\"🔀 Proxy 구조\"]\n        direction LR\n\n        Client[\"👤 Client\"]\n        Proxy1[\"🌐 Proxy<br/>(Nginx)\"]\n        Web1[\"📦 Web1\"]\n        Web2[\"📦 Web2\"]\n        DB[\"🗄️ DB\"]\n    end\n\n    Client --> Proxy1\n    Proxy1 --> Web1\n    Proxy1 --> Web2\n    Web1 --> DB\n    Web2 --> DB\n\n    style Proxy fill:#f8fafc,stroke:#64748b\n    style Client fill:#dbeafe,stroke:#2563eb\n    style Proxy1 fill:#dcfce7,stroke:#16a34a\n    style Web1 fill:#fef3c7,stroke:#d97706\n    style Web2 fill:#fef3c7,stroke:#d97706\n    style DB fill:#fee2e2,stroke:#dc2626",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "┌─────────────────────────────────────────────────────────────────────┐",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "Nginx + Flask ALB 아키텍처                        │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┤",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "┌──────────────┐                           │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Client    │                           │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┬───────┘                           │",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-4",
+                      "label": ":80                               │",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "↓                                   │",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "node-5",
+              "label": "┌─────────────────────────────────────────────────────────────┐   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "Docker Host                             │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┌──────────────┐                         │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "Nginx     │                         │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "(Proxy)    │                         │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┬───────┘                         │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┌───────────────┼───────────────┐                 │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "↓               ↓               ↓                 │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┌──────────────┐ ┌──────────────┐ ┌──────────────┐       │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "Flask_1    │ │   Flask_2    │ │   Flask_3    │       │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "(App:5001)  │ │  (App:5002)  │ │  (App:5003)  │       │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┘ └──────────────┘ └──────────────┘       │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┘   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┘",
+              "type": "branch",
+              "children": []
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter10-diagram-10",
+      "type": "tree",
+      "title": "nginx-flask/",
+      "asciiOriginal": "nginx-flask/\n├── docker-compose.yaml\n├── app/\n│   ├── Dockerfile\n│   └── app.py\n└── nginx/\n    ├── Dockerfile\n    └── nginx.conf",
+      "mermaidCode": "flowchart LR\n    subgraph App[\"🐙 멀티 컨테이너 애플리케이션\"]\n        direction LR\n\n        Nginx[\"🌐 Nginx<br/>(Proxy)\"]\n        Flask[\"🐍 App<br/>(Flask)\"]\n        Redis[\"⚡ Redis<br/>(Cache)\"]\n        MySQL[\"🗄️ MySQL<br/>(DB)\"]\n    end\n\n    Client[\"👤 Client\"] --> Nginx\n    Nginx --> Flask\n    Flask --> Redis\n    Flask --> MySQL\n\n    style App fill:#f8fafc,stroke:#64748b\n    style Nginx fill:#dcfce7,stroke:#16a34a\n    style Flask fill:#dbeafe,stroke:#2563eb\n    style Redis fill:#fee2e2,stroke:#dc2626\n    style MySQL fill:#fef3c7,stroke:#d97706",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "nginx-flask/",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "docker-compose.yaml",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "app/",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "Dockerfile",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "app.py",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "node-4",
+              "label": "nginx/",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "Dockerfile",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "nginx.conf",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter10-diagram-11",
+      "type": "tree",
+      "asciiOriginal": "┌─────────────────────────────────────────────────────────────────────┐\n│                    3-Tier 웹 애플리케이션 아키텍처                    │\n├─────────────────────────────────────────────────────────────────────┤\n│                                                                     │\n│                         ┌──────────────┐                           │\n│                         │    Client    │                           │\n│                         └──────┬───────┘                           │\n│                                │ :3000 (Frontend)                  │\n│                                ↓                                   │\n│  ┌─────────────────────────────────────────────────────────────┐   │\n│  │                      Docker Host                             │   │\n│  │                                                             │   │\n│  │   ┌─────────────────────────────────────────────────────┐   │   │\n│  │   │                  frontend-net                        │   │   │\n│  │   │                                                     │   │   │\n│  │   │  ┌──────────────┐          ┌──────────────┐        │   │   │\n│  │   │  │   Frontend   │ ───────→ │   Backend    │        │   │   │\n│  │   │  │   (React)    │   API    │  (Node.js)   │        │   │   │\n│  │   │  │   :3000      │          │   :8080      │        │   │   │\n│  │   │  └──────────────┘          └──────┬───────┘        │   │   │\n│  │   │                                   │                │   │   │\n│  │   └───────────────────────────────────┼────────────────┘   │   │\n│  │                                       │                     │   │\n│  │   ┌───────────────────────────────────┼────────────────┐   │   │\n│  │   │                  backend-net      │                │   │   │\n│  │   │                                   ↓                │   │   │\n│  │   │                          ┌──────────────┐          │   │   │\n│  │   │                          │   Database   │          │   │   │\n│  │   │                          │   (MySQL)    │          │   │   │\n│  │   │                          │   :3306      │          │   │   │\n│  │   │                          └──────┬───────┘          │   │   │\n│  │   │                                 │                  │   │   │\n│  │   └─────────────────────────────────┼──────────────────┘   │   │\n│  │                                     ↓                       │   │\n│  │                            ┌──────────────┐                 │   │\n│  │                            │   db_data    │                 │   │\n│  │                            │   (Volume)   │                 │   │\n│  │                            └──────────────┘                 │   │\n│  └─────────────────────────────────────────────────────────────┘   │\n│                                                                     │\n└─────────────────────────────────────────────────────────────────────┘",
+      "mermaidCode": "flowchart TB\n    subgraph ThreeTier[\"🏗️ 3-Tier 아키텍처\"]\n        direction TB\n\n        subgraph Frontend[\"Frontend Tier\"]\n            FE[\"🌐 Nginx<br/>:80\"]\n        end\n\n        subgraph Backend[\"Backend Tier\"]\n            BE[\"⚙️ Node.js API<br/>:8080\"]\n        end\n\n        subgraph Data[\"Data Tier\"]\n            DB[\"🗄️ MySQL<br/>:3306\"]\n        end\n    end\n\n    Client[\"👤 Client\"] --> FE\n    FE -->|\"/api/*\"| BE\n    BE --> DB\n\n    style ThreeTier fill:#f8fafc,stroke:#64748b\n    style Frontend fill:#dcfce7,stroke:#16a34a\n    style Backend fill:#dbeafe,stroke:#2563eb\n    style Data fill:#fef3c7,stroke:#d97706",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "┌─────────────────────────────────────────────────────────────────────┐",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "3-Tier 웹 애플리케이션 아키텍처                    │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┤",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "┌──────────────┐                           │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Client    │                           │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┬───────┘                           │",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-4",
+                      "label": ":3000 (Frontend)                  │",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "↓                                   │",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "node-5",
+              "label": "┌─────────────────────────────────────────────────────────────┐   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "Docker Host                             │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┌─────────────────────────────────────────────────────┐   │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "frontend-net                        │   │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┌──────────────┐          ┌──────────────┐        │   │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "Frontend   │ ───────",
+              "type": "branch",
+              "targetInfo": "│   Backend    │        │   │   │",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "(React)    │   API    │  (Node.js)   │        │   │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": ":3000      │          │   :8080      │        │   │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┘          └──────┬───────┘        │   │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┼────────────────┘   │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┌───────────────────────────────────┼────────────────┐   │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "backend-net      │                │   │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "↓                │   │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┌──────────────┐          │   │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "Database   │          │   │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "(MySQL)    │          │   │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": ":3306      │          │   │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┬───────┘          │   │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┼──────────────────┘   │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "↓                       │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┌──────────────┐                 │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "db_data    │                 │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "(Volume)   │                 │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┘                 │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┘   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┘",
+              "type": "branch",
+              "children": []
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter10-diagram-12",
+      "type": "tree",
+      "title": "three-tier/",
+      "asciiOriginal": "three-tier/\n├── docker-compose.yaml\n├── frontend/\n│   ├── Dockerfile\n│   └── index.html\n└── backend/\n    ├── Dockerfile\n    ├── package.json\n    └── server.js",
+      "mermaidCode": "flowchart TB\n    subgraph Structure[\"📁 프로젝트 구조\"]\n        direction TB\n        Root[\"project/\"]\n        DC[\"docker-compose.yaml\"]\n        App[\"app/\"]\n        AppFile[\"app.py\"]\n        DF[\"Dockerfile\"]\n        Nginx[\"nginx/\"]\n        NginxConf[\"nginx.conf\"]\n    end\n\n    Root --> DC\n    Root --> App\n    Root --> Nginx\n    App --> AppFile\n    App --> DF\n    Nginx --> NginxConf\n\n    style Structure fill:#f8fafc,stroke:#64748b\n    style Root fill:#dbeafe,stroke:#2563eb\n    style DC fill:#fef3c7,stroke:#d97706",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "three-tier/",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "docker-compose.yaml",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "frontend/",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "Dockerfile",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "index.html",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "node-4",
+              "label": "backend/",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "Dockerfile",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "package.json",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "server.js",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter10-diagram-13",
+      "type": "tree",
+      "asciiOriginal": "┌─────────────────────────────────────────────────────────────────────┐\n│                    Docker Compose vs Kubernetes                      │\n├─────────────────────────────────────────────────────────────────────┤\n│                                                                     │\n│  Docker Compose:                     Kubernetes:                    │\n│  ┌───────────────────────┐           ┌───────────────────────┐     │\n│  │ - 로컬 개발 환경       │           │ - 프로덕션 배포        │     │\n│  │ - CI/CD 테스트        │           │ - 대규모 트래픽 처리   │     │\n│  │ - 소규모 프로젝트      │           │ - 고가용성 요구       │     │\n│  │ - 빠른 프로토타이핑    │           │ - 멀티 클라우드        │     │\n│  │ - 단일 서버 배포       │           │ - 마이크로서비스       │     │\n│  └───────────────────────┘           └───────────────────────┘     │\n│                                                                     │\n│  개발 → 테스트 → 스테이징 → 프로덕션                                 │\n│   └── Docker Compose ──┘     └── Kubernetes ──┘                    │\n│                                                                     │\n└─────────────────────────────────────────────────────────────────────┘",
+      "mermaidCode": "flowchart LR\n    subgraph UseCase[\"사용 시나리오\"]\n        direction TB\n\n        subgraph Compose[\"📄 Docker Compose\"]\n            C1[\"개발 환경\"]\n            C2[\"테스트 환경\"]\n            C3[\"소규모 배포\"]\n        end\n\n        subgraph K8s[\"☸️ Kubernetes\"]\n            K1[\"대규모 프로덕션\"]\n            K2[\"멀티 클라우드\"]\n            K3[\"고가용성 필요\"]\n        end\n    end\n\n    style UseCase fill:#f8fafc,stroke:#64748b\n    style Compose fill:#dbeafe,stroke:#2563eb\n    style K8s fill:#dcfce7,stroke:#16a34a",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "┌─────────────────────────────────────────────────────────────────────┐",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "Docker Compose vs Kubernetes                      │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┤",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "Docker Compose:                     Kubernetes:                    │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┌───────────────────────┐           ┌───────────────────────┐     │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "- 로컬 개발 환경       │           │ - 프로덕션 배포        │     │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "- CI/CD 테스트        │           │ - 대규모 트래픽 처리   │     │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "- 소규모 프로젝트      │           │ - 고가용성 요구       │     │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "- 빠른 프로토타이핑    │           │ - 멀티 클라우드        │     │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "- 단일 서버 배포       │           │ - 마이크로서비스       │     │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┘           └───────────────────────┘     │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "개발",
+              "type": "branch",
+              "targetInfo": "테스트 → 스테이징 → 프로덕션                                 │",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "Docker Compose ──┘     └── Kubernetes ──┘                    │",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "node-4",
+              "label": "┘",
+              "type": "branch",
+              "children": []
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    }
+  ],
+  "tables": [
+    {
+      "id": "chapter10-table-1",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "문제점",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "설명",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "복잡한 명령어",
+          "col1": "다수의 컨테이너 실행 시 긴 docker run 명령 증가"
+        },
+        {
+          "col0": "의존성 관리",
+          "col1": "컨테이너 간 시작 순서, 연결 관계 수동 관리 필요"
+        },
+        {
+          "col0": "네트워크/볼륨",
+          "col1": "네트워크와 볼륨을 개별적으로 생성/관리해야 함"
+        },
+        {
+          "col0": "재현성 부족",
+          "col1": "동일한 환경 재구성이 어려움"
+        },
+        {
+          "col0": "문서화 한계",
+          "col1": "설정이 코드로 남지 않아 공유/협업이 어려움"
+        }
+      ]
+    },
+    {
+      "id": "chapter10-table-2",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "항목",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "Docker CLI",
+          "align": "left"
+        },
+        {
+          "key": "col2",
+          "label": "Docker Compose",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "관리 단위",
+          "col1": "개별 컨테이너",
+          "col2": "애플리케이션(서비스 묶음)"
+        },
+        {
+          "col0": "설정 방식",
+          "col1": "명령어 옵션",
+          "col2": "docker-compose.yaml"
+        },
+        {
+          "col0": "재현성",
+          "col1": "낮음 (명령어 기억 필요)",
+          "col2": "높음 (파일로 관리)"
+        },
+        {
+          "col0": "멀티 컨테이너",
+          "col1": "복잡 (개별 실행)",
+          "col2": "간단 (한 번에 실행)"
+        },
+        {
+          "col0": "버전 관리",
+          "col1": "어려움",
+          "col2": "Git으로 관리 가능"
+        },
+        {
+          "col0": "의존성 관리",
+          "col1": "수동",
+          "col2": "depends_on으로 자동"
+        },
+        {
+          "col0": "사용 목적",
+          "col1": "단일 컨테이너, 학습",
+          "col2": "멀티 컨테이너 서비스"
+        }
+      ]
+    },
+    {
+      "id": "chapter10-table-3",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "항목",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "V1 (Legacy)",
+          "align": "left"
+        },
+        {
+          "key": "col2",
+          "label": "V2 (현재)",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "명령어",
+          "col1": "docker-compose",
+          "col2": "docker compose"
+        },
+        {
+          "col0": "설치 방식",
+          "col1": "별도 바이너리",
+          "col2": "Docker CLI 플러그인"
+        },
+        {
+          "col0": "성능",
+          "col1": "보통",
+          "col2": "개선됨"
+        },
+        {
+          "col0": "상태",
+          "col1": "Deprecated",
+          "col2": "권장"
+        }
+      ]
+    },
+    {
+      "id": "chapter10-table-4",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "특징",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "설명",
+          "align": "left"
+        },
+        {
+          "key": "col2",
+          "label": "예시",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "들여쓰기",
+          "col1": "스페이스 사용 (탭 불가)",
+          "col2": "2칸 또는 4칸"
+        },
+        {
+          "col0": "주석",
+          "col1": "#으로 시작",
+          "col2": "# 이것은 주석"
+        },
+        {
+          "col0": "리스트",
+          "col1": "-로 항목 표시",
+          "col2": "- item1"
+        },
+        {
+          "col0": "맵(딕셔너리)",
+          "col1": "key: value 형식",
+          "col2": "name: myapp"
+        },
+        {
+          "col0": "문자열",
+          "col1": "따옴표 선택적",
+          "col2": "image: nginx"
+        }
+      ]
+    },
+    {
+      "id": "chapter10-table-5",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "버전",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "특징",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "2.x",
+          "col1": "단일 호스트, depends_on 조건 지원"
+        },
+        {
+          "col0": "3.x",
+          "col1": "Swarm 호환, deploy 설정 지원"
+        },
+        {
+          "col0": "3.8",
+          "col1": "현재 가장 널리 사용"
+        }
+      ]
+    },
+    {
+      "id": "chapter10-table-6",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "명령어",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "설명",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "docker compose up",
+          "col1": "서비스 생성 및 시작"
+        },
+        {
+          "col0": "docker compose down",
+          "col1": "서비스 중지 및 삭제"
+        },
+        {
+          "col0": "docker compose ps",
+          "col1": "서비스 상태 확인"
+        },
+        {
+          "col0": "docker compose logs",
+          "col1": "서비스 로그 확인"
+        },
+        {
+          "col0": "docker compose build",
+          "col1": "서비스 이미지 빌드"
+        },
+        {
+          "col0": "docker compose pull",
+          "col1": "서비스 이미지 풀"
+        },
+        {
+          "col0": "docker compose start",
+          "col1": "중지된 서비스 시작"
+        },
+        {
+          "col0": "docker compose stop",
+          "col1": "서비스 중지"
+        },
+        {
+          "col0": "docker compose restart",
+          "col1": "서비스 재시작"
+        },
+        {
+          "col0": "docker compose exec",
+          "col1": "실행 중인 컨테이너에 명령 실행"
+        },
+        {
+          "col0": "docker compose config",
+          "col1": "Compose 파일 검증 및 출력"
+        },
+        {
+          "col0": "docker compose top",
+          "col1": "실행 중인 프로세스 표시"
+        }
+      ]
+    },
+    {
+      "id": "chapter10-table-7",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "주의사항",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "설명",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "포트 충돌",
+          "col1": "ports 대신 expose 사용 필요"
+        },
+        {
+          "col0": "컨테이너 이름",
+          "col1": "container_name 지정 시 스케일링 불가"
+        },
+        {
+          "col0": "로드밸런싱",
+          "col1": "별도 구성 필요 (Nginx, HAProxy 등)"
+        },
+        {
+          "col0": "상태 저장",
+          "col1": "각 인스턴스는 독립적, 외부 저장소 필요"
+        }
+      ]
+    },
+    {
+      "id": "chapter10-table-8",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "항목",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "Docker Compose",
+          "align": "left"
+        },
+        {
+          "key": "col2",
+          "label": "Kubernetes",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "범위",
+          "col1": "단일 호스트",
+          "col2": "멀티 호스트 클러스터"
+        },
+        {
+          "col0": "확장성",
+          "col1": "수동 스케일링, 제한적",
+          "col2": "자동 스케일링 (HPA)"
+        },
+        {
+          "col0": "로드밸런싱",
+          "col1": "미지원 (별도 구성 필요)",
+          "col2": "내장 지원 (Service)"
+        },
+        {
+          "col0": "배포 전략",
+          "col1": "단순 (재시작)",
+          "col2": "Rolling / Blue-Green / Canary"
+        },
+        {
+          "col0": "자가 치유",
+          "col1": "제한적 (restart)",
+          "col2": "자동 복구"
+        },
+        {
+          "col0": "설정 관리",
+          "col1": "환경 변수, 파일",
+          "col2": "ConfigMap, Secret"
+        },
+        {
+          "col0": "서비스 디스커버리",
+          "col1": "Docker DNS",
+          "col2": "내장 DNS, Service"
+        },
+        {
+          "col0": "학습 곡선",
+          "col1": "낮음",
+          "col2": "높음"
+        },
+        {
+          "col0": "사용 목적",
+          "col1": "개발/테스트 환경",
+          "col2": "프로덕션 환경"
+        }
+      ]
+    },
+    {
+      "id": "chapter10-table-9",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "질문",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "Docker Compose",
+          "align": "left"
+        },
+        {
+          "key": "col2",
+          "label": "Kubernetes",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "단일 서버인가?",
+          "col1": "O",
+          "col2": ""
+        },
+        {
+          "col0": "로컬 개발 환경인가?",
+          "col1": "O",
+          "col2": ""
+        },
+        {
+          "col0": "빠른 프로토타이핑이 필요한가?",
+          "col1": "O",
+          "col2": ""
+        },
+        {
+          "col0": "자동 스케일링이 필요한가?",
+          "col1": "",
+          "col2": "O"
+        },
+        {
+          "col0": "무중단 배포가 필요한가?",
+          "col1": "",
+          "col2": "O"
+        },
+        {
+          "col0": "멀티 호스트 운영인가?",
+          "col1": "",
+          "col2": "O"
+        },
+        {
+          "col0": "고가용성이 필수인가?",
+          "col1": "",
+          "col2": "O"
+        }
+      ]
+    },
+    {
+      "id": "chapter10-table-10",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "명령어",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "설명",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "docker compose up -d",
+          "col1": "서비스 시작 (백그라운드)"
+        },
+        {
+          "col0": "docker compose down",
+          "col1": "서비스 종료 및 삭제"
+        },
+        {
+          "col0": "docker compose ps",
+          "col1": "서비스 상태 확인"
+        },
+        {
+          "col0": "docker compose logs -f",
+          "col1": "실시간 로그 확인"
+        },
+        {
+          "col0": "docker compose build",
+          "col1": "이미지 빌드"
+        },
+        {
+          "col0": "docker compose exec",
+          "col1": "컨테이너 명령 실행"
+        }
+      ]
+    }
+  ]
+}

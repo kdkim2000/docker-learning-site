@@ -1,0 +1,2565 @@
+{
+  "meta": {
+    "id": "chapter14",
+    "number": 14,
+    "title": "한 번에 끝내는 CI/CD Docker 컨테이너 빌드업",
+    "description": "",
+    "phase": "master",
+    "objectives": [
+      "Jenkins를 활용한 CI/CD 파이프라인 구축",
+      "Docker 컨테이너 기반 Jenkins 환경 구성",
+      "Jenkinsfile을 통한 파이프라인 as Code",
+      "멀티 브랜치 파이프라인과 자동 배포",
+      "실무 프로젝트 전체 CI/CD 워크플로우 완성"
+    ]
+  },
+  "sections": [
+    {
+      "id": "chapter14-section-1",
+      "level": 2,
+      "title": "Clip1: [실습] 컨테이너 배포 자동화를 위한 CI/CD 구성",
+      "anchor": "clip1-실습-컨테이너-배포-자동화를-위한-cicd-구성",
+      "content": [
+        {
+          "id": "chapter14-block-1",
+          "type": "text",
+          "data": {
+            "markdown": "컨테이너 배포 자동화 위한 CI/CD(Jenkins)를 구성해 보기"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-2",
+      "level": 2,
+      "title": "컨테이너 배포 자동화(CI/CD) 프로젝트",
+      "anchor": "컨테이너-배포-자동화cicd-프로젝트",
+      "content": []
+    },
+    {
+      "id": "chapter14-section-3",
+      "level": 3,
+      "title": "지속적 통합과 배포 (CI/CD)",
+      "anchor": "지속적-통합과-배포-cicd",
+      "content": [
+        {
+          "id": "chapter14-block-2",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "CI/CD는 애플리케이션 개발 단계를 자동화하여 보다 짧은 주기로 변경을 제공하여 전반적인 개발 프로세스의 효율성과 지속성 보장.반복적 작업의 자동화를 통해 업무 효율성을 올리고, 실수를 줄일 수 있다.개발 업무에 집중할 수 있는 환경을 제공한다.\"빌드-테스트-배포\"의 자동화 프로세스를 통해 수동 작업을 줄여 오류 위험을 최소화한다.일관된 빌드 및 배포를 보장할 수 있다."
+              },
+              {
+                "text": "CI/CD 과정을 묶어서 CI/CD 파이프라인을 구축하면 애플리케이션의 통합 및 테스트 단계에서부터 제공 및 배포에 이르는 애플리케이션의 라이프사이클 전체에 걸쳐 지속적인 자동화 및 모니터링을 제공하여 안정적인 배포를 수행하는데 도움이 된다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-4",
+      "level": 3,
+      "title": "지속적 통합(CI, Continuous Integration)",
+      "anchor": "지속적-통합ci-continuous-integration",
+      "content": [
+        {
+          "id": "chapter14-block-3",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "CI는 코드 변경 사항을 지정된 Repository(registry)에 정기적으로 통합하고 자동화된 빌드와 테스트를 실행한다.Code Repository 사용 → GitHub 등에서 코드 무결성 및 최신 작업 빌드 유지일관되고 반복 가능한 환경에서 코드를 빌드(빌드→패키징→등록)하고 테스트지속적으로 배포 준비상태의 Artifact(docker image)를 확보지속적으로 빌드 실패 시 feedback loop 종료"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-5",
+      "level": 3,
+      "title": "지속적 전달과 배포 (CD, Continuous Delivery & Deployment)",
+      "anchor": "지속적-전달과-배포-cd-continuous-delivery-deployment",
+      "content": [
+        {
+          "id": "chapter14-block-4",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "CD는 실제 운영에 배포하기 위해 코드 변경이 자동으로 빌드, 테스트, 준비되는 단계다."
+              },
+              {
+                "text": "지속적 전달은 스테이징 환경에서 모든 코드 변경을 자동으로 배포하고 테스트하여 지속적 통합을 확장하고, 이후 운영에 배포하기 위한 수동 승인 단계를 거친다. 즉, 코드 베이스가 항상 배포 가능한 상태를 유지하는 단계다."
+              },
+              {
+                "text": "지속적 배포는 수동 승인 단계를 배제한 전체 end to end 주기가 자동화되는 과정이다.소프트웨어 릴리스 프로세스를 자동화개발자 생산성 향상버그를 더 빠르게 찾아 해결업데이트를 더 빠르게 제공"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-6",
+      "level": 3,
+      "title": "지속적 통합과 배포 (CI/CD) 파이프라인",
+      "anchor": "지속적-통합과-배포-cicd-파이프라인",
+      "content": [
+        {
+          "id": "chapter14-block-5",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "CI/CD는 애플리케이션 개발 프로세스에서 자동화된 빌드, 테스트, 배포를 위해 사용되는 방법론으로 애플리케이션의 품질 향상 및 릴리스 주기를 단축시키는데 도움이 되는 중요한 역할을 수행한다. → CI/CD/CT/CM"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter14-block-6",
+          "type": "text",
+          "data": {
+            "markdown": "[그림: CI/CD 파이프라인]"
+          }
+        },
+        {
+          "id": "chapter14-block-7",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "코드(code) → 빌드(build) → 테스트(test) → 프로비저닝(provision) → 배포(deploy) → 모니터(monitor)"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-7",
+      "level": 3,
+      "title": "좋은 선택",
+      "anchor": "좋은-선택",
+      "content": [
+        {
+          "id": "chapter14-block-8",
+          "type": "text",
+          "data": {
+            "markdown": "좋은 선택은 사용자 요구사항(경험, 선호도)과 프로젝트의 특성을 고려하여 안정적인 서비스를 유지할 수 있는 도구를 선택하는 것이다."
+          }
+        },
+        {
+          "id": "chapter14-block-9",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Jenkins (open source, 다양한 plugin, 설정관리 복잡, 높은 커뮤니티 지원)"
+              },
+              {
+                "text": "GitHub Action (GitHub 자체 CI/CD, workflow 기반 작업 수행)"
+              },
+              {
+                "text": "GitLab (코드 저장 및 관리와 CI/CD 플랫폼 통합으로 편리)"
+              },
+              {
+                "text": "CircleCI (설정간단, 클라우드 호스팅, 빠른 빌드 및 테스트 속도 제공)"
+              },
+              {
+                "text": "Travis CI (Github과 연동, 사용 간편)"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-8",
+      "level": 3,
+      "title": "Jenkins",
+      "anchor": "jenkins",
+      "content": [
+        {
+          "id": "chapter14-block-10",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Jenkins는 Java runtime 환경으로 구성된 소프트웨어 구축, 테스트, 전달 또는 배포와 관련된 모든 종류의 작업을 자동화를 목적으로 사용할 수 있는 독립형 오픈 소스 CI 서버다.웹 기반 콘솔로 다양한 plugin 설정(1800여개)이 가능한 편리한 설정 지원소스 버전 관리 도구와 연동하여 코드 변경을 감지, 자동 테스트, 빌드를 수행하는 안정적인 빌드/배포 환경 지원오픈 소스로 다양한 소프트웨어 활용에 대한 문서화 구성이 잘되어 있고, plugin 개발도 가능"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-9",
+      "level": 3,
+      "title": "Jenkins plugin (https://plugins.jenkins.io)",
+      "anchor": "jenkins-plugin-httpspluginsjenkinsio",
+      "content": [
+        {
+          "id": "chapter14-block-11",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "다양한 plugin(각 기능의 모듈화)을 활용한 자동화 작업 처리가 가능하다.credentials plugin: 인증 관련으로 VM 환경에서는 ssh key, AWS/Git 등은 token을 활용git plugin: GitHub source code 접근을 통해 빌드를 수행할 수 있도록 지원pipeline plugin: 파이프라인 구축의 핵심인 CI 구축 plugindocker plugin & pipeline: docker agent를 통해 Jenkins가 docker를 사용하도록 지원blue/ocean plugin: CD pipeline의 자세한 시각화 지원으로 모든 상황에 대한 파악이 빠름Amazon EC2 plugin: EC2 인스턴스 스케일링 가능한 빌드 클러스터 구성 가능Metric plugin: 운영 환경의 중요 성능 metric(지표) 측정을 위한 java library 제공"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-10",
+      "level": 3,
+      "title": "Jenkins pipeline",
+      "anchor": "jenkins-pipeline",
+      "content": [
+        {
+          "id": "chapter14-block-12",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Jenkins의 pipeline은 용도에 맞게 plugin을 조합하여 원하는 Jenkins CI/CD 자동화를 구성하는 것이다.Pipeline은 자동화 작업의 순서를 정의한 스크립트 언어Declarative (선언적) 방식과 scripted pipeline 구성 방식"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter14-block-13",
+          "type": "code",
+          "data": {
+            "language": "groovy",
+            "code": "# Declarative (빠른 업데이트 및 가독성)\r\npipeline {\r\n    agent { docker 'node:6.3' }\r\n    stages {\r\n        stage('build') {\r\n            steps {\r\n                sh 'npm version'\r\n            }\r\n        }\r\n    }\r\n}",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter14-block-14",
+          "type": "code",
+          "data": {
+            "language": "groovy",
+            "code": "# scripted pipeline\r\nnode('docker') {\r\n    checkout scm\r\n    stage('Build') {\r\n        docker.image('node:6.3').inside {\r\n            sh 'npm version'\r\n        }\r\n    }\r\n}",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-11",
+      "level": 2,
+      "title": "Jenkins Pipeline Section",
+      "anchor": "jenkins-pipeline-section",
+      "content": [
+        {
+          "id": "chapter14-block-15",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Agent Section여러 Slave node 사용할 경우, 어떤 노드에 일을 시킬 것인지 지정또한, node 뿐만 아니라 Jenkins 내부 docker container 에서 수행할 명령 지정도 가능"
+              },
+              {
+                "text": "Stage Section어떤 일들을 처리할 것인지 정의 (category)예로, backend 배포를 위한 stage 정의"
+              },
+              {
+                "text": "Steps Section특정 stage 안에서의 작업 순서(단계, step)를 정의plugin 설치 시 사용 가능한 step 생성"
+              },
+              {
+                "text": "Post Sectionstage 종료 후 결과에 따른 후속 조치성공이면 Email 전송, 실패 시 중단 및 skip 등의 작업 결과에 따른 조치 지정"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-12",
+      "level": 2,
+      "title": "Jenkins Pipeline Section 예",
+      "anchor": "jenkins-pipeline-section-예",
+      "content": [
+        {
+          "id": "chapter14-block-16",
+          "type": "code",
+          "data": {
+            "language": "groovy",
+            "code": "# GitHub에 등록한 access token을 Pipeline Project의 Script 적용\r\npipeline {\r\n    agent any\r\n    stages {\r\n        stage('Prepare') {\r\n            agent any\r\n            steps {\r\n                git branch: 'main',\r\n                credentialsId: 'github_access_token',\r\n                url: 'https://github.com/hylee-kevin/fastcampus.git'\r\n            }\r\n            post {\r\n                failure {\r\n                    error \"Fail Git Cloned Repository\"\r\n                }\r\n            }\r\n        }\r\n    }\r\n}",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-13",
+      "level": 2,
+      "title": "[실습] Jenkins 환경 구성",
+      "anchor": "실습-jenkins-환경-구성",
+      "content": [
+        {
+          "id": "chapter14-block-17",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "~$ docker pull jenkins/jenkins:lts\r\n~$ docker run -itd --name=fc-jenkins -p 18080:8080 -p 50000:50000 \\\r\n> --privileged=true -u root \\\r\n> --restart=always \\\r\n> -v /var/run/docker.sock:/var/run/docker.sock \\\r\n> -v /home/kevin/fastcampus/jenkins:/var/jenkins_home \\\r\n> jenkins/jenkins:lts",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter14-block-18",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "port1: (필수) 외부 연결을 위한 기본 port(8080)"
+              },
+              {
+                "text": "port2: 여러 노드에 Jenkins를 구성한 경우 Jenkins agent를 통해 노드간 통신을 위한 port(50000)"
+              },
+              {
+                "text": "--privileged=true: 컨테이너 내부 시스템의 주요 자원에 접근할 가능하도록 권한 부여"
+              },
+              {
+                "text": "-u root: 여러 권한 문제 및 명령어 수행을 위해 지정. (일반 사용자 지정 시 권한 부여 후 사용)"
+              },
+              {
+                "text": "/var/run/docker.sock 공유: Jenkins에서 docker build 사용을 위해 host에 설치된 docker.sock을 같이 사용하기 위해 볼륨을 구성해야 한다. 또는 docker in docker(dind) 사용."
+              },
+              {
+                "text": "Jenkins home과 애플리케이션 소스가 제공될 볼륨 설정."
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter14-block-19",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "~$ sudo chown -R kevin.kevin /home/kevin/jenkins\r\n~$ sudo netstat -nltp | grep docker-proxy",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-14",
+      "level": 2,
+      "title": "[실습] Jenkins 환경 구성",
+      "anchor": "실습-jenkins-환경-구성",
+      "content": [
+        {
+          "id": "chapter14-block-20",
+          "type": "text",
+          "data": {
+            "markdown": "외부 접근: VM_hostos1_IP:18080 → 192.168.56.101:18080"
+          }
+        },
+        {
+          "id": "chapter14-block-21",
+          "type": "text",
+          "data": {
+            "markdown": "Jenkins 내부에서 암호 확인 가능"
+          }
+        },
+        {
+          "id": "chapter14-block-22",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "~$ docker exec fc-jenkins cat /var/jenkins_home/secrets/initialAdminPassword\r\n23b222d9a02c4c218150badffa324e66\r\n~$ docker logs fc-jenkins\r\n...\r\nJenkins initial setup is required. An admin user has been created and a password generated.\r\nPlease use the following password to proceed to installation:\r\n23b222d9a02c4c218150badffa324e66\r\n...",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-15",
+      "level": 2,
+      "title": "[실습] Jenkins 환경 구성",
+      "anchor": "실습-jenkins-환경-구성",
+      "content": [
+        {
+          "id": "chapter14-block-23",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "널리 사용되는 Jenkins plugin 설치 권장"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-16",
+      "level": 2,
+      "title": "[실습] Jenkins 환경 구성",
+      "anchor": "실습-jenkins-환경-구성",
+      "content": [
+        {
+          "id": "chapter14-block-24",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Jenkins plugin 설치 2~3분"
+              },
+              {
+                "text": "$ docker logs -f fc-jenkins 확인"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-17",
+      "level": 2,
+      "title": "[실습] Jenkins 환경 구성",
+      "anchor": "실습-jenkins-환경-구성",
+      "content": [
+        {
+          "id": "chapter14-block-25",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "(필수) 모두 채워 넣고 [Save and Finish]"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-18",
+      "level": 2,
+      "title": "[실습] Jenkins 환경 구성",
+      "anchor": "실습-jenkins-환경-구성",
+      "content": [
+        {
+          "id": "chapter14-block-26",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Jenkins URL 확인 후 [Save and Finish]"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-19",
+      "level": 2,
+      "title": "[실습] Jenkins 환경 구성",
+      "anchor": "실습-jenkins-환경-구성",
+      "content": [
+        {
+          "id": "chapter14-block-27",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Jenkins에 오신 것을 환영합니다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-20",
+      "level": 2,
+      "title": "[실습] Jenkins + GitHub 연결 구성",
+      "anchor": "실습-jenkins-github-연결-구성",
+      "content": []
+    },
+    {
+      "id": "chapter14-section-21",
+      "level": 3,
+      "title": "Jenkins Credential을 위한 SSH Key 설정",
+      "anchor": "jenkins-credential을-위한-ssh-key-설정",
+      "content": [
+        {
+          "id": "chapter14-block-28",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# Docker 컨테이너에 접속\r\ndocker exec -it fc-jenkins bash\r\n\r\n# Jenkins 홈 디렉토리로 이동\r\ncd /var/jenkins_home/\r\n\r\n# .ssh 디렉토리 생성 및 이동\r\nmkdir .ssh && cd $_\r\n\r\n# SSH 키 생성\r\nssh-keygen -t rsa -f /var/jenkins_home/.ssh/fc-jenkins",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-22",
+      "level": 3,
+      "title": "Public Key와 Private Key 생성 확인",
+      "anchor": "public-key와-private-key-생성-확인",
+      "content": [
+        {
+          "id": "chapter14-block-29",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 생성된 키 파일 확인\r\nls /var/jenkins_home/.ssh\r\n# 출력 결과: fc-jenkins fc-jenkins.pub\r\n\r\n# Private Key 내용 확인\r\ncat /var/jenkins_home/.ssh/fc-jenkins\r\n\r\n# Public Key 내용 확인\r\ncat /var/jenkins_home/.ssh/fc-jenkins.pub",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-23",
+      "level": 3,
+      "title": "Jenkins에서 Credential 생성",
+      "anchor": "jenkins에서-credential-생성",
+      "content": [
+        {
+          "id": "chapter14-block-30",
+          "type": "list",
+          "data": {
+            "ordered": true,
+            "items": [
+              {
+                "text": "Jenkins 관리 메뉴로 이동"
+              },
+              {
+                "text": "Credentials 선택"
+              },
+              {
+                "text": "Add Credentials 클릭"
+              },
+              {
+                "text": "Kind: SSH Username with private keyUsername: Jenkins 생성 시 만든 계정Private key: Enter directly 입력"
+              },
+              {
+                "text": "Create 버튼 클릭"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-24",
+      "level": 3,
+      "title": "GitHub에서 Public Key 등록",
+      "anchor": "github에서-public-key-등록",
+      "content": [
+        {
+          "id": "chapter14-block-31",
+          "type": "list",
+          "data": {
+            "ordered": true,
+            "items": [
+              {
+                "text": "GitHub Repository의 Settings 선택"
+              },
+              {
+                "text": "Deploy keys 메뉴로 이동"
+              },
+              {
+                "text": "Add deploy key 클릭"
+              },
+              {
+                "text": "Title: fc-jenkins"
+              },
+              {
+                "text": "Key: fc-jenkins.pub 파일의 키 값 입력"
+              },
+              {
+                "text": "Add key 버튼 클릭"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-25",
+      "level": 3,
+      "title": "결과 확인",
+      "anchor": "결과-확인",
+      "content": [
+        {
+          "id": "chapter14-block-32",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Jenkins와 GitHub 간의 SSH 연결이 정상적으로 설정되었음을 확인합니다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-26",
+      "level": 3,
+      "title": "실습: Jenkins + GitHub 연결 구성 - Webhook 설정",
+      "anchor": "실습-jenkins-github-연결-구성---webhook-설정",
+      "content": [
+        {
+          "id": "chapter14-block-33",
+          "type": "text",
+          "data": {
+            "markdown": "Webhooks란 특정 이벤트(git push, commit 등)가 발생했을 때 서비스나 응용 프로그램으로 알림을 보내주는 기능입니다. (GitHub 플러그인이 설치되어 있으면 사용 가능)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-27",
+      "level": 4,
+      "title": "Webhook 설정",
+      "anchor": "webhook-설정",
+      "content": [
+        {
+          "id": "chapter14-block-34",
+          "type": "list",
+          "data": {
+            "ordered": true,
+            "items": [
+              {
+                "text": "ngrok 활용Jenkins가 설치된 VM 주소를 입력하면 연결되지 않기 때문에 ngrok 애플리케이션을 사용하여 외부에서 접근할 수 있는 도메인을 사용해야 합니다.# ngrok 설치 및 설정\r\nch14$ mkdir ngrok && cd $_\r\nch14/ngrok$ wget -c https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip\r\nch14/ngrok$ unzip ngrok-stable-linux-amd64.zip\r\nch14/ngrok$ sudo snap install ngrokhttps://ngrok.com 회원 가입하여 개인 토큰(add-authtoken)을 받고 사용합니다.ch14/ngrok$ ngrok config add-authtoken <your-token>\r\nch14/ngrok$ ngrok http 18080ngrok 주소로 Jenkins에 접속합니다: https://<ngrok-subdomain>.ngrok-free.app"
+              },
+              {
+                "text": "Jenkins 설정Jenkins 관리 > 시스템 설정에서 ngrok 주소를 입력하여 git webhook 연결을 위한 설정을 합니다."
+              },
+              {
+                "text": "GitHub Webhook 설정GitHub 저장소의 Settings > Webhooks에서 ngrok 주소를 입력합니다.Payload URL: https://<ngrok-subdomain>.ngrok-free.app/github-webhook/Content type: application/json 선택SSL verification 활성화"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-28",
+      "level": 3,
+      "title": "실습: Jenkins 환경 구성 - Jenkins Plugin 설치",
+      "anchor": "실습-jenkins-환경-구성---jenkins-plugin-설치",
+      "content": [
+        {
+          "id": "chapter14-block-35",
+          "type": "list",
+          "data": {
+            "ordered": true,
+            "items": [
+              {
+                "text": "Jenkins Plugin 설치Jenkins 관리 > Plugins에서 Publish Over SSH 패키지를 검색하여 설치합니다.설치 후 재시작 시 적용되도록 설정합니다.# Jenkins에서 이후 구축할 Production에 접근하기 위해 Publish Over SSH 패키지를 설치\r\n# Publish Over SSH 검색 → check → Download now and install after restart"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-29",
+      "level": 2,
+      "title": "Jenkins 환경 구성",
+      "anchor": "jenkins-환경-구성",
+      "content": []
+    },
+    {
+      "id": "chapter14-section-30",
+      "level": 3,
+      "title": "Jenkins Plugin 설치",
+      "anchor": "jenkins-plugin-설치",
+      "content": [
+        {
+          "id": "chapter14-block-36",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Jenkins를 재시작하여 plugin을 적용합니다."
+              },
+              {
+                "text": "만약 Jenkins가 재시작되지 않으면 다음 명령어를 사용하여 확인 후 시작합니다."
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter14-block-37",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker ps -a\r\ndocker start fc-jenkins",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter14-block-38",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "동일한 방식으로 **\"docker pipeline plugin\"**도 설치합니다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-31",
+      "level": 3,
+      "title": "Docker Credentials 생성",
+      "anchor": "docker-credentials-생성",
+      "content": [
+        {
+          "id": "chapter14-block-39",
+          "type": "list",
+          "data": {
+            "ordered": true,
+            "items": [
+              {
+                "text": "Docker Hub에서 Access Token을 생성합니다.Account Settings > Security > New Access Token 클릭Access Token Description에 \"docker jenkins\" 입력 후 생성"
+              },
+              {
+                "text": "Jenkins에서 Credentials 추가Jenkins 관리 > Credentials > System > Global credentials (unrestricted)Add Credentials 클릭Username: 본인 Docker-IDPassword: 발급된 tokenID: docker-accessDescription: DOCKER-CREDENTIALS"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-32",
+      "level": 3,
+      "title": "GitHub Credentials 생성",
+      "anchor": "github-credentials-생성",
+      "content": [
+        {
+          "id": "chapter14-block-40",
+          "type": "list",
+          "data": {
+            "ordered": true,
+            "items": [
+              {
+                "text": "GitHub에서 Personal Access Token 생성Settings > Developer Settings > Personal access tokens > Generate new token (classic)Token 이름: docker-jenkins"
+              },
+              {
+                "text": "Jenkins에서 Credentials 추가Jenkins 관리 > Credentials > System > Global credentials (unrestricted)Add Credentials 클릭Username: 본인 github-IDPassword: 발급된 tokenID: github_access_token"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-33",
+      "level": 3,
+      "title": "Jenkins 활용, Image Build 및 자동 배포",
+      "anchor": "jenkins-활용-image-build-및-자동-배포",
+      "content": [
+        {
+          "id": "chapter14-block-41",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Jenkins에서 Docker Compose를 사용하여 컨테이너를 실행합니다."
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter14-block-42",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "/home/kevin/fastcampus/jenkins/web-count$ cp -r /home/kevin/fastcampus/ch10/web-count .\r\njenkins/web-count$ ls\r\napp.py docker-compose.yml Dockerfile requirements.txt static templates\r\n\r\njenkins/web-count$ docker compose up -d",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter14-block-43",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "실행 중인 컨테이너 확인"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter14-block-44",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "jenkins/web-count$ docker compose ps\r\njenkins/web-count$ docker ps",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-34",
+      "level": 2,
+      "title": "컨테이너 배포 자동화",
+      "anchor": "컨테이너-배포-자동화",
+      "content": [
+        {
+          "id": "chapter14-block-45",
+          "type": "text",
+          "data": {
+            "markdown": "컨테이너 배포 자동화를 위한 Jenkins CI/CD 구성을 해본다."
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-35",
+      "level": 3,
+      "title": "[실습] Jenkins 활용, image build 및 자동 배포",
+      "anchor": "실습-jenkins-활용-image-build-및-자동-배포",
+      "content": []
+    },
+    {
+      "id": "chapter14-section-36",
+      "level": 4,
+      "title": "Jenkins Container 내부에 Docker 설치",
+      "anchor": "jenkins-container-내부에-docker-설치",
+      "content": [
+        {
+          "id": "chapter14-block-46",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "jenkins/web-count$ docker exec -it -u root fc-jenkins bash\r\nroot@1fdd4610161f:/# curl https://get.docker.com/ > dockerinstall && chmod 777 dockerinstall && ./dockerinstall",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter14-block-47",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "설치가 끝나고, docker ps를 실행하면 host에서 수행한 결과와 같은 것을 확인할 수 있다."
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter14-block-48",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "root@1fdd4610161f:/# docker ps",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-37",
+      "level": 4,
+      "title": "Git webhook 사용을 위한 ngrok 설정",
+      "anchor": "git-webhook-사용을-위한-ngrok-설정",
+      "content": [
+        {
+          "id": "chapter14-block-49",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ ngrok http 18080",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter14-block-50",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Jenkins URL 재설정 (ngrok 유효시간 2h → 따라서 테스트용으로 사용 권장)"
+              },
+              {
+                "text": "Jenkins Dashboard → Jenkins 관리 → System Configure → System → Jenkins Location"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-38",
+      "level": 4,
+      "title": "필요한 plugin 설치 list",
+      "anchor": "필요한-plugin-설치-list",
+      "content": [
+        {
+          "id": "chapter14-block-51",
+          "type": "list",
+          "data": {
+            "ordered": true,
+            "items": [
+              {
+                "text": "Publish Over SSH"
+              },
+              {
+                "text": "Docker Pipeline"
+              },
+              {
+                "text": "Generic Webhook Trigger"
+              },
+              {
+                "text": "GitHub integration"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter14-block-52",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Jenkins 관리 → Plugins → Available plugins에서 검색 후 설치"
+              },
+              {
+                "text": "설치 완료 후 Jenkins restart → Installed plugins에서 확인."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-39",
+      "level": 4,
+      "title": "GitHub webhook 설정",
+      "anchor": "github-webhook-설정",
+      "content": [
+        {
+          "id": "chapter14-block-53",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "jenkins/web-count$ git init\r\nweb-count$ git config --global user.email \"hylee-kevin@naver.com\"\r\nweb-count$ git config --global user.name \"kevin.lee\"\r\nweb-count$ git add .\r\nweb-count$ git commit -m \"web-count first commit\"\r\nweb-count$ git branch -M master\r\nweb-count$ git remote add origin https://github.com/hylee-kevin/web-count\r\nweb-count$ git push -u origin master",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-40",
+      "level": 4,
+      "title": "Jenkins 환경 구성: docker credentials 생성",
+      "anchor": "jenkins-환경-구성-docker-credentials-생성",
+      "content": [
+        {
+          "id": "chapter14-block-54",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Docker Hub에서 New Access Token 생성Access Token Description: docker jenkinsAccess permissions: Read, Write, Delete"
+              },
+              {
+                "text": "Jenkins에서 Add credentialsUsername: 본인 Docker-IDPassword: docker에서 발급된 tokenID: docker-accessDescription: DOCKER-CREDENTIALS"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-41",
+      "level": 2,
+      "title": "Jenkins 환경 구성: GitHub Credentials 생성",
+      "anchor": "jenkins-환경-구성-github-credentials-생성",
+      "content": [
+        {
+          "id": "chapter14-block-55",
+          "type": "text",
+          "data": {
+            "markdown": "GitHub에서 Personal Access Token을 생성합니다. 이 토큰은 GitHub API에 접근하기 위해 사용됩니다."
+          }
+        },
+        {
+          "id": "chapter14-block-56",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Token 이름: docker-jenkins"
+              },
+              {
+                "text": "만료일: 2023년 8월 17일"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter14-block-57",
+          "type": "text",
+          "data": {
+            "markdown": "Jenkins에서 New Credentials를 추가합니다."
+          }
+        },
+        {
+          "id": "chapter14-block-58",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Username: 본인 GitHub-ID"
+              },
+              {
+                "text": "Password: GitHub에서 발급된 token"
+              },
+              {
+                "text": "ID: github_access_token"
+              },
+              {
+                "text": "Description: GITHUB-CREDENTIALS"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-42",
+      "level": 2,
+      "title": "Jenkins Pipeline 생성 (Docker Build & Docker Push Test)",
+      "anchor": "jenkins-pipeline-생성-docker-build-docker-push-test",
+      "content": []
+    },
+    {
+      "id": "chapter14-section-43",
+      "level": 3,
+      "title": "Pipeline 생성",
+      "anchor": "pipeline-생성",
+      "content": [
+        {
+          "id": "chapter14-block-59",
+          "type": "list",
+          "data": {
+            "ordered": true,
+            "items": [
+              {
+                "text": "새로운 Item 생성이름: web_count_pipeline종류: Pipeline"
+              },
+              {
+                "text": "General 설정설명: web count web application CI/CD TestGitHub 프로젝트: 체크Project URL: https://github.com/hylee-kevin/web-count.git"
+              },
+              {
+                "text": "Build Triggers 설정GitHub hook trigger for GITScm polling: 체크"
+              },
+              {
+                "text": "Pipeline 설정Definition: Pipeline script from SCMSCM: GitRepository URL: https://github.com/hylee-kevin/web-count.gitCredentials: hylee-kevin/******"
+              },
+              {
+                "text": "Branches to buildBranch Specifier: */master"
+              },
+              {
+                "text": "Script PathJenkinsfile"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-44",
+      "level": 3,
+      "title": "Jenkinsfile 내용",
+      "anchor": "jenkinsfile-내용",
+      "content": [
+        {
+          "id": "chapter14-block-60",
+          "type": "code",
+          "data": {
+            "language": "groovy",
+            "code": "node {\r\n    stage('Clone repository') {\r\n        git credentialsId: 'github_access_token', url: 'https://github.com/hylee-kevin/web-count.git'\r\n    }\r\n\r\n    stage('Build image') {\r\n        dockerImage = docker.build(\"leecloudo/web_count:v1.0\")\r\n    }\r\n\r\n    stage('Push image') {\r\n        withDockerRegistry([ credentialsId: \"docker-access\", url: \"\" ]) {\r\n            dockerImage.push()\r\n        }\r\n    }\r\n}",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-45",
+      "level": 2,
+      "title": "Jenkins Project 생성 (Docker Build & Docker Push Test)",
+      "anchor": "jenkins-project-생성-docker-build-docker-push-test",
+      "content": [
+        {
+          "id": "chapter14-block-61",
+          "type": "list",
+          "data": {
+            "ordered": true,
+            "items": [
+              {
+                "text": "새로운 Item 생성이름: VM-web-count-deploy종류: Freestyle project"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-46",
+      "level": 2,
+      "title": "Jenkins Project 설정",
+      "anchor": "jenkins-project-설정",
+      "content": []
+    },
+    {
+      "id": "chapter14-section-47",
+      "level": 3,
+      "title": "General 설정",
+      "anchor": "general-설정",
+      "content": [
+        {
+          "id": "chapter14-block-62",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "설명: base on VM. web count Deployment."
+              },
+              {
+                "text": "GitHub 프로젝트:Project URL: https://github.com/hylee-kevin/web-count.git"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-48",
+      "level": 3,
+      "title": "소스 코드 관리",
+      "anchor": "소스-코드-관리",
+      "content": [
+        {
+          "id": "chapter14-block-63",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Git 사용Repository URL: https://github.com/hylee-kevin/web-count.gitCredentials: hylee-kevin/*****Branches to build: */master"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-49",
+      "level": 3,
+      "title": "빌드 유발",
+      "anchor": "빌드-유발",
+      "content": [
+        {
+          "id": "chapter14-block-64",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Build after other projects are built:Projects to watch: web_count_pipelineTrigger only if build is stable"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-50",
+      "level": 3,
+      "title": "Build Steps",
+      "anchor": "build-steps",
+      "content": [
+        {
+          "id": "chapter14-block-65",
+          "type": "code",
+          "data": {
+            "language": "shell",
+            "code": "cd /var/jenkins_home/web-count\r\ndocker compose down\r\ndocker pull leecloudo/web_count:v1.0\r\ndocker compose up -d",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-51",
+      "level": 2,
+      "title": "Jenkins에서 자동 Build & Deploy 확인",
+      "anchor": "jenkins에서-자동-build-deploy-확인",
+      "content": []
+    },
+    {
+      "id": "chapter14-section-52",
+      "level": 3,
+      "title": "docker-compose.yml 코드 수정",
+      "anchor": "docker-composeyml-코드-수정",
+      "content": [
+        {
+          "id": "chapter14-block-66",
+          "type": "code",
+          "data": {
+            "language": "yaml",
+            "code": "version: '3.3'\r\nservices:\r\n  webserver:\r\n    image: leecloudo/web_count:v1.0\r\n    ports:\r\n      - \"8899:8899\"\r\n    depends_on:\r\n      - redis\r\n  redis:\r\n    image: redis:6.0",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-53",
+      "level": 3,
+      "title": "index.html 소스 코드 수정",
+      "anchor": "indexhtml-소스-코드-수정",
+      "content": [
+        {
+          "id": "chapter14-block-67",
+          "type": "code",
+          "data": {
+            "language": "html",
+            "code": "<p>[Jenkins Deploy test -- Version 1]</p>",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-54",
+      "level": 3,
+      "title": "Git 명령어",
+      "anchor": "git-명령어",
+      "content": [
+        {
+          "id": "chapter14-block-68",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "git status\r\ngit add .\r\ngit commit -m \"web-count, build test\"\r\ngit push -u origin master",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-55",
+      "level": 3,
+      "title": "Jenkins 대시보드 확인",
+      "anchor": "jenkins-대시보드-확인",
+      "content": [
+        {
+          "id": "chapter14-block-69",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "빌드 실행 상태:web_count_pipelineVM-web-count-deploy"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-56",
+      "level": 3,
+      "title": "Stage View",
+      "anchor": "stage-view",
+      "content": [
+        {
+          "id": "chapter14-block-70",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Clone repository: 1s"
+              },
+              {
+                "text": "Build image: 2s"
+              },
+              {
+                "text": "Push image: 11s"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-57",
+      "level": 2,
+      "title": "컨테이너 배포 자동화, Jenkins CI/CD",
+      "anchor": "컨테이너-배포-자동화-jenkins-cicd",
+      "content": [
+        {
+          "id": "chapter14-block-71",
+          "type": "text",
+          "data": {
+            "markdown": "컨테이너 배포 자동화를 위한 Jenkins CI/CD 구성을 해본다."
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-58",
+      "level": 3,
+      "title": "실습: Jenkins에서 자동 build & deploy 확인",
+      "anchor": "실습-jenkins에서-자동-build-deploy-확인",
+      "content": [
+        {
+          "id": "chapter14-block-72",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "VM-web-count-deploy: 최근 성공 11초, 최근 실패 3분 31초, 최근 소요 시간 8.9초"
+              },
+              {
+                "text": "web_count_pipeline: 최근 성공 5분 17초, 최근 실패 6분 50초, 최근 소요 시간 1분 4초"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter14-block-73",
+          "type": "text",
+          "data": {
+            "markdown": "[그림: Jenkins Dashboard]\r\nJenkins 대시보드에서 각 파이프라인의 상태와 소요 시간을 확인할 수 있다."
+          }
+        },
+        {
+          "id": "chapter14-block-74",
+          "type": "text",
+          "data": {
+            "markdown": "[그림: Docker Application]\r\n현재 방문 수와 Jenkins 배포 테스트 버전 정보를 보여주는 Docker 애플리케이션 화면."
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-59",
+      "level": 2,
+      "title": "컨테이너 배포 자동화(CI/CD) 프로젝트",
+      "anchor": "컨테이너-배포-자동화cicd-프로젝트",
+      "content": []
+    },
+    {
+      "id": "chapter14-section-60",
+      "level": 3,
+      "title": "[실습] VM 기반의 3-Tier 컨테이너 CI/CD MSA 구성",
+      "anchor": "실습-vm-기반의-3-tier-컨테이너-cicd-msa-구성",
+      "content": []
+    },
+    {
+      "id": "chapter14-section-61",
+      "level": 4,
+      "title": "mydiary 3-tier MSA project (VM-based)",
+      "anchor": "mydiary-3-tier-msa-project-vm-based",
+      "content": [
+        {
+          "id": "chapter14-block-75",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Jenkins는 clip1에서 사용한 fc-jenkins 컨테이너를 사용한다."
+              },
+              {
+                "text": "실습 내용은 ch10의 실습 자료를 재구성하여 활용한다.소스 코드를 Jenkins 컨테이너에 복사: /home/kevin/fastcampus/Jenkins"
+              },
+              {
+                "text": "webhook을 위한 ngrok URL을 Jenkins 관리의 system과 GitHub repository에 설정한다."
+              },
+              {
+                "text": "프로젝트의 Jenkins pipeline과 free project를 생성한다."
+              },
+              {
+                "text": "Git source를 변경하여 Jenkins pipeline 자동 배포를 확인한다."
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter14-block-76",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# Jenkins는 clip1에서 사용한 fc-jenkins 컨테이너를 사용한다.\r\n~$ docker ps\r\n46519e6afa26 jenkins/jenkins:lts ...\r\n\r\n# ch10의 my-diary-3 디렉터리의 소스를 가져온다.\r\n~/fastcampus/jenkins$ cp -r /home/kevin/fastcampus/ch10/my-diary-3 .\r\n\r\n# 실습은 frontend 소스 수정을 CI/CD로 배포하는 것을 기준으로 한다.\r\n~/fastcampus/jenkins/my-diary-3$ docker images | grep mydiary\r\nmydiary-back 1.0 ...\r\nmydiary-front 1.0 ...",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter14-block-77",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "GitHub Repository 생성 후 소스를 업로드하고, Settings에서 webhook 설정."
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter14-block-78",
+          "type": "text",
+          "data": {
+            "markdown": "[그림: GitHub Repository]\r\nGitHub Repository 설정 화면에서 webhook을 설정하는 방법을 보여준다."
+          }
+        },
+        {
+          "id": "chapter14-block-79",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Webhook을 위한 ngrok을 실행하고, public URL을 등록한다."
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter14-block-80",
+          "type": "text",
+          "data": {
+            "markdown": "[그림: Webhook 설정]\r\nWebhook 설정 화면에서 ngrok을 통해 생성된 public URL을 등록하는 방법을 설명한다."
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-62",
+      "level": 4,
+      "title": "Jenkins 관리",
+      "anchor": "jenkins-관리",
+      "content": [
+        {
+          "id": "chapter14-block-81",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Jenkins URL과 System Admin e-mail address 설정."
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter14-block-82",
+          "type": "text",
+          "data": {
+            "markdown": "[그림: Jenkins 관리]\r\nJenkins 관리 화면에서 시스템 설정을 통해 URL과 이메일 주소를 설정하는 방법을 보여준다."
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-63",
+      "level": 4,
+      "title": "Jenkinsfile 구성",
+      "anchor": "jenkinsfile-구성",
+      "content": [
+        {
+          "id": "chapter14-block-83",
+          "type": "code",
+          "data": {
+            "language": "groovy",
+            "code": "node {\r\n    stage('Clone repository') {\r\n        git credentialsId: 'github_access_token', url: 'https://github.com/hylee-kevin/jenkins-mydiary-msa.git'\r\n    }\r\n    stage('Build image') {\r\n        dockerImage = docker.build(\"leecloudo/mydiary-front:2.0\")\r\n    }\r\n    stage('Push image') {\r\n        withDockerRegistry([ credentialsId: \"docker-access\", url: \"\" ]) {\r\n            dockerImage.push()\r\n        }\r\n    }\r\n}",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-64",
+      "level": 2,
+      "title": "VM 기반의 MSA 구성",
+      "anchor": "vm-기반의-msa-구성",
+      "content": []
+    },
+    {
+      "id": "chapter14-section-65",
+      "level": 3,
+      "title": "실습: mydiary 3-tier MSA 프로젝트 (VM 기반)",
+      "anchor": "실습-mydiary-3-tier-msa-프로젝트-vm-기반",
+      "content": []
+    },
+    {
+      "id": "chapter14-section-66",
+      "level": 4,
+      "title": "Jenkins 파이프라인 설정",
+      "anchor": "jenkins-파이프라인-설정",
+      "content": [
+        {
+          "id": "chapter14-block-84",
+          "type": "list",
+          "data": {
+            "ordered": true,
+            "items": [
+              {
+                "text": "새로운 Item 생성이름: mydiary-msa-pipeline유형: Pipeline 선택"
+              },
+              {
+                "text": "일반 설정설명: mydiary 3-tier MSA pipeline.GitHub 프로젝트 URL: https://github.com/hylee-kevin/jenkins-mydiary-msa.git"
+              },
+              {
+                "text": "빌드 트리거 설정GitHub hook trigger for GITScm polling 활성화"
+              },
+              {
+                "text": "파이프라인 설정정의: Pipeline script from SCMSCM: GitRepository URL: https://github.com/hylee-kevin/jenkins-mydiary-msa.gitCredentials: hylee-kevin/****** (GITHUB-CREDENTIALS)Branch Specifier: */masterScript Path: Jenkinsfile"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-67",
+      "level": 4,
+      "title": "두 번째 프로젝트 설정",
+      "anchor": "두-번째-프로젝트-설정",
+      "content": [
+        {
+          "id": "chapter14-block-85",
+          "type": "list",
+          "data": {
+            "ordered": true,
+            "items": [
+              {
+                "text": "새로운 Item 생성이름: mydiary-msa-projectt유형: Freestyle project 선택"
+              },
+              {
+                "text": "일반 설정설명: mydiary 3-tier MSA project.GitHub 프로젝트 URL: https://github.com/hylee-kevin/jenkins-mydiary-msa.git"
+              },
+              {
+                "text": "소스 코드 관리SCM: GitRepository URL: https://github.com/hylee-kevin/jenkins-mydiary-msa.gitCredentials: hylee-kevin/****** (GITHUB-CREDENTIALS)Branch Specifier: */master"
+              },
+              {
+                "text": "빌드 유발Build after other projects are built 활성화Projects to watch: mydiary-msa-pipeline"
+              },
+              {
+                "text": "빌드 단계Execute shell 명령어:cd /var/jenkins_home/my-diary-3\r\ndocker compose down\r\ndocker pull leecloudo/mydiary-front:2.0\r\ndocker compose up -d"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-68",
+      "level": 2,
+      "title": "[실습] mydiary 3-tier MSA project (VM-based)",
+      "anchor": "실습-mydiary-3-tier-msa-project-vm-based",
+      "content": []
+    },
+    {
+      "id": "chapter14-section-69",
+      "level": 3,
+      "title": "소스코드 변경을 통한 Jenkins CI/CD 확인",
+      "anchor": "소스코드-변경을-통한-jenkins-cicd-확인",
+      "content": [
+        {
+          "id": "chapter14-block-86",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "jenkins/my-diary-3$ vi public/index.ejs",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter14-block-87",
+          "type": "code",
+          "data": {
+            "language": "html",
+            "code": "<h2>Docker class diary -kevin-</h2>  # 수정",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter14-block-88",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "jenkins/my-diary-3$ git status\r\njenkins/my-diary-3$ git add .\r\njenkins/my-diary-3$ git commit -m \"mydiary msa commit\"\r\njenkins/my-diary-3$ git push -u origin master",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-70",
+      "level": 3,
+      "title": "빌드 실행 상태",
+      "anchor": "빌드-실행-상태",
+      "content": [
+        {
+          "id": "chapter14-block-89",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "mydiary-msa-pipeline: 최근 성공 없음"
+              },
+              {
+                "text": "mydiary-msa-projectt: 최근 성공 없음"
+              },
+              {
+                "text": "VM-web-count-deploy: 최근 성공 3 hr 39 min, 최근 소요 시간 23 sec"
+              },
+              {
+                "text": "web_count_pipeline: 최근 성공 3 hr 39 min, 최근 소요 시간 25 sec"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-71",
+      "level": 3,
+      "title": "Pipeline mydiary-msa-pipeline",
+      "anchor": "pipeline-mydiary-msa-pipeline",
+      "content": [
+        {
+          "id": "chapter14-block-90",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Stage View:Clone repository: 1sBuild image: 34sPush image: 20s"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-72",
+      "level": 2,
+      "title": "[실습] 다양한 AWS 서비스 기반의 CI/CD 환경 구축",
+      "anchor": "실습-다양한-aws-서비스-기반의-cicd-환경-구축",
+      "content": [
+        {
+          "id": "chapter14-block-91",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "사용되는 AWS 서비스: Cloud9, ECR, SQS, SNS, CodeCommit"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-73",
+      "level": 3,
+      "title": "AWS의 개발도구인 Cloud9 환경에서 Jenkins 구성",
+      "anchor": "aws의-개발도구인-cloud9-환경에서-jenkins-구성",
+      "content": [
+        {
+          "id": "chapter14-block-92",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "ec2-user:~/fastcampus/jenkins/jenkins_image (main) $ ls\r\ndocker-compose.yaml Dockerfile\r\n\r\nec2-user:~/fastcampus/jenkins/jenkins_image (main) $ vi Dockerfile",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter14-block-93",
+          "type": "code",
+          "data": {
+            "language": "dockerfile",
+            "code": "FROM jenkins/jenkins:lts\r\nUSER root\r\nRUN apt-get update && \\\r\n    apt-get -y install apt-transport-https \\\r\n    ca-certificates \\\r\n    curl \\\r\n    gnupg2 \\\r\n    zip \\\r\n    unzip \\\r\n    software-properties-common && \\\r\n    curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add - && \\\r\n    add-apt-repository \"deb [arch=amd64] https://download.docker.com/linux/debian $(lsb_release -cs) stable\" && \\\r\n    apt-get update && \\\r\n    apt-get -y install docker-ce",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-74",
+      "level": 2,
+      "title": "실습: AWS Cloud9 환경에서 Jenkins 구성",
+      "anchor": "실습-aws-cloud9-환경에서-jenkins-구성",
+      "content": []
+    },
+    {
+      "id": "chapter14-section-75",
+      "level": 3,
+      "title": "Docker Compose 설정",
+      "anchor": "docker-compose-설정",
+      "content": [
+        {
+          "id": "chapter14-block-94",
+          "type": "code",
+          "data": {
+            "language": "yaml",
+            "code": "version: '3.3'\r\nservices:\r\n  jenkins:\r\n    build:\r\n      context: .\r\n    container_name: jenkins\r\n    user: root\r\n    restart: always\r\n    ports:\r\n      - 18080:8080\r\n      - 50000:50000\r\n    volumes:\r\n      - /home/ec2-user/jenkins_home:/var/jenkins_home\r\n      - /var/run/docker.sock:/var/run/docker.sock",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter14-block-95",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "docker compose up -d 명령어를 통해 이미지가 자동으로 빌드됩니다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-76",
+      "level": 3,
+      "title": "Jenkins 실행 및 접속",
+      "anchor": "jenkins-실행-및-접속",
+      "content": [
+        {
+          "id": "chapter14-block-96",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "docker compose ps 명령어로 Jenkins 컨테이너 상태를 확인합니다."
+              },
+              {
+                "text": "EC2의 Public IP 주소와 Jenkins의 외부 연결 포트를 통해 접속을 시도합니다.예: http://15.164.237.24:18080"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-77",
+      "level": 3,
+      "title": "보안 그룹 설정",
+      "anchor": "보안-그룹-설정",
+      "content": [
+        {
+          "id": "chapter14-block-97",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "보안 그룹의 인바운드 규칙에 외부로부터 들어오는 18080 포트에 대한 허용이 필요합니다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-78",
+      "level": 3,
+      "title": "Jenkins 초기 설정",
+      "anchor": "jenkins-초기-설정",
+      "content": [
+        {
+          "id": "chapter14-block-98",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Jenkins에 접속하여 초기 설정을 진행합니다."
+              },
+              {
+                "text": "/var/jenkins_home/secrets/initialAdminPassword 파일에서 관리자 비밀번호를 확인합니다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-79",
+      "level": 2,
+      "title": "컨테이너 서비스 게시",
+      "anchor": "컨테이너-서비스-게시",
+      "content": []
+    },
+    {
+      "id": "chapter14-section-80",
+      "level": 3,
+      "title": "My-Diary-3 소스 이용",
+      "anchor": "my-diary-3-소스-이용",
+      "content": [
+        {
+          "id": "chapter14-block-99",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "docker compose up -d 명령어로 컨테이너 서비스를 게시합니다."
+              },
+              {
+                "text": "docker compose ps 명령어로 서비스 상태를 확인합니다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-81",
+      "level": 3,
+      "title": "인바운드 규칙 편집",
+      "anchor": "인바운드-규칙-편집",
+      "content": [
+        {
+          "id": "chapter14-block-100",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "포트 3000에 대한 인바운드 규칙을 추가하여 외부 접속을 허용합니다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-82",
+      "level": 2,
+      "title": "AWS CodeCommit 설정",
+      "anchor": "aws-codecommit-설정",
+      "content": [
+        {
+          "id": "chapter14-block-101",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "AWS CodeCommit은 private Git repository를 호스팅하는 서비스입니다."
+              },
+              {
+                "text": "리포지토리를 생성하고, Git 기반 도구와 연동합니다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-83",
+      "level": 3,
+      "title": "리포지토리 생성",
+      "anchor": "리포지토리-생성",
+      "content": [
+        {
+          "id": "chapter14-block-102",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "리포지토리 이름: mydiary-repo"
+              },
+              {
+                "text": "설명: mydiary CICD repository"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-84",
+      "level": 3,
+      "title": "Git 자격 증명 생성",
+      "anchor": "git-자격-증명-생성",
+      "content": [
+        {
+          "id": "chapter14-block-103",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "IAM 사용자를 위한 Git 자격 증명을 생성합니다."
+              },
+              {
+                "text": "AWS CLI를 통해 자격 증명을 설정합니다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-85",
+      "level": 2,
+      "title": "다양한 AWS 서비스 기반의 CI/CD 환경 구축",
+      "anchor": "다양한-aws-서비스-기반의-cicd-환경-구축",
+      "content": []
+    },
+    {
+      "id": "chapter14-section-86",
+      "level": 3,
+      "title": "사용자 세부 정보 지정",
+      "anchor": "사용자-세부-정보-지정",
+      "content": [
+        {
+          "id": "chapter14-block-104",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "CodeCommit에 대한 HTTPS Git 자격증명 생성을 위해 사용자를 생성합니다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-87",
+      "level": 3,
+      "title": "권한 설정",
+      "anchor": "권한-설정",
+      "content": [
+        {
+          "id": "chapter14-block-105",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "AWSCodeCommitPowerUser 권한을 연결합니다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-88",
+      "level": 3,
+      "title": "검토 및 생성",
+      "anchor": "검토-및-생성",
+      "content": [
+        {
+          "id": "chapter14-block-106",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "사용자 정보를 검토하고 사용자 생성을 완료합니다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-89",
+      "level": 3,
+      "title": "암호 검색",
+      "anchor": "암호-검색",
+      "content": [
+        {
+          "id": "chapter14-block-107",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "생성된 사용자의 암호를 확인하고 다운로드합니다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-90",
+      "level": 3,
+      "title": "보안 자격 증명",
+      "anchor": "보안-자격-증명",
+      "content": [
+        {
+          "id": "chapter14-block-108",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "AWS CodeCommit에 대한 HTTPS Git 자격 증명을 생성합니다."
+              },
+              {
+                "text": "생성된 자격 증명을 다운로드하여 Cloud9에서 사용합니다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-91",
+      "level": 3,
+      "title": "리포지토리 복제",
+      "anchor": "리포지토리-복제",
+      "content": [
+        {
+          "id": "chapter14-block-109",
+          "type": "list",
+          "data": {
+            "ordered": true,
+            "items": [
+              {
+                "text": "Git 클라이언트를 사용하여 CodeCommit 리포지토리를 복제합니다.git clone https://git-codecommit.ap-northeast-2.amazonaws.com/v1/repos/mydiary-repo"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-92",
+      "level": 3,
+      "title": "소스 코드 이동",
+      "anchor": "소스-코드-이동",
+      "content": [
+        {
+          "id": "chapter14-block-110",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "소스 코드를 CodeCommit 리포지토리로 이동합니다.jenkins-mydiary-msa (master) $ ls\r\napp.js docker-compose.yaml Dockerfile fastcampus.png Jenkinsfile mydiary-repo\r\npackage.json package-lock.json public\r\n\r\nmydiary-repo (master) $ git add .\r\nmydiary-repo (master) $ git commit -m \"mydiary commit\"\r\nmydiary-repo (master) $ git push"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-93",
+      "level": 3,
+      "title": "업로드 확인",
+      "anchor": "업로드-확인",
+      "content": [
+        {
+          "id": "chapter14-block-111",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "mydiary-repo에 업로드된 소스 파일을 확인합니다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-94",
+      "level": 2,
+      "title": "다양한 AWS 서비스 기반의 CI/CD 환경 구축",
+      "anchor": "다양한-aws-서비스-기반의-cicd-환경-구축",
+      "content": []
+    },
+    {
+      "id": "chapter14-section-95",
+      "level": 3,
+      "title": "리포지토리 생성",
+      "anchor": "리포지토리-생성",
+      "content": [
+        {
+          "id": "chapter14-block-112",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "mydiary-repo 생성Amazon ECR에서 프라이빗 리포지토리로 설정"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-96",
+      "level": 3,
+      "title": "Jenkins와 AWS CodeCommit 연결",
+      "anchor": "jenkins와-aws-codecommit-연결",
+      "content": [
+        {
+          "id": "chapter14-block-113",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "필요한 플러그인 설치AWS CodeCommitTrigger SQS triggerPipeline: AWS StepsAmazon ECRDocker pipelineAWS Global Configuration"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-97",
+      "level": 3,
+      "title": "SNS 주제 생성",
+      "anchor": "sns-주제-생성",
+      "content": [
+        {
+          "id": "chapter14-block-114",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "mydiary-topic 주제 생성Amazon SNS에서 주제 생성FIFO(선입선출)와 표준 유형 중 선택 가능"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-98",
+      "level": 3,
+      "title": "SQS 대기열 생성",
+      "anchor": "sqs-대기열-생성",
+      "content": [
+        {
+          "id": "chapter14-block-115",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "mydiary-event-queue 생성표준 유형 선택"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-99",
+      "level": 3,
+      "title": "SNS 주제 구독",
+      "anchor": "sns-주제-구독",
+      "content": [
+        {
+          "id": "chapter14-block-116",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Amazon SNS 주제를 SQS 대기열에 구독"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-100",
+      "level": 3,
+      "title": "CodeCommit 트리거 설정",
+      "anchor": "codecommit-트리거-설정",
+      "content": [
+        {
+          "id": "chapter14-block-117",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "mydiary-git-push-trigger 생성이벤트: 기존 브랜치로 푸시브랜치: master서비스: Amazon SNS"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-101",
+      "level": 3,
+      "title": "Jenkins에 자격증명 생성",
+      "anchor": "jenkins에-자격증명-생성",
+      "content": [
+        {
+          "id": "chapter14-block-118",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "CodeCommit Credentials 정보 생성자격증명 생성 파일 참고하여 로그인"
+              },
+              {
+                "text": "AWS access, Docker 자격증명 정보 생성AWS Credentials와 Docker Credentials 설정"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-102",
+      "level": 3,
+      "title": "글로벌 자격증명 설정",
+      "anchor": "글로벌-자격증명-설정",
+      "content": [
+        {
+          "id": "chapter14-block-119",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Global credentials (unrestricted) 설정다양한 자격증명을 생성하여 Jenkins에서 사용 가능하도록 설정합니다."
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter14-block-120",
+          "type": "table",
+          "data": {
+            "tableId": "chapter14-table-120"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-103",
+      "level": 3,
+      "title": "Jenkins 파이프라인 생성",
+      "anchor": "jenkins-파이프라인-생성",
+      "content": [
+        {
+          "id": "chapter14-block-121",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "파이프라인 생성: Jenkins에서 새로운 파이프라인을 생성합니다.Item Name: mydiary-pipelineGitHub 프로젝트: AWS CodeCommit Repository URL을 복사하여 붙여넣습니다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-104",
+      "level": 3,
+      "title": "빌드 트리거 설정",
+      "anchor": "빌드-트리거-설정",
+      "content": [
+        {
+          "id": "chapter14-block-122",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "AWS SQS Trigger 설정Queue URL: https://sqs.ap-northeast-2.amazonaws.com/594682333406/mydiary-event-queueAWS Credentials: AWS-ACCESS-CREDENTIALS 사용"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-105",
+      "level": 3,
+      "title": "파이프라인 정의",
+      "anchor": "파이프라인-정의",
+      "content": [
+        {
+          "id": "chapter14-block-123",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "SCM 설정: Git을 사용하여 파이프라인 스크립트를 가져옵니다.Repository URL: https://git-codecommit.ap-northeast-2.amazonaws.com/v1/repos/mydiary-repoCredentials: AWS-CODECOMMIT-CREDENTIALS 사용"
+              },
+              {
+                "text": "브랜치 설정: */master 브랜치 빌드"
+              },
+              {
+                "text": "스크립트 경로: Jenkinsfile"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-106",
+      "level": 3,
+      "title": "Jenkinsfile 생성",
+      "anchor": "jenkinsfile-생성",
+      "content": [
+        {
+          "id": "chapter14-block-124",
+          "type": "code",
+          "data": {
+            "language": "groovy",
+            "code": "pipeline {\r\n    agent any\r\n    stages {\r\n        stage('Build') {\r\n            steps {\r\n                sh 'docker build -t mydiary-repo .'\r\n            }\r\n        }\r\n        stage('Tag') {\r\n            steps {\r\n                sh 'docker tag mydiary-repo:latest 594682333406.dkr.ecr.ap-northeast-2.amazonaws.com/mydiary-repo:1.0'\r\n            }\r\n        }\r\n        stage('Push') {\r\n            environment {\r\n                AWS_ACCESS_KEY_ID = credentials('awsaccess')\r\n                AWS_SECRET_ACCESS_KEY = credentials('awssecret')\r\n            }\r\n            steps {\r\n                sh 'aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 594682333406.dkr.ecr.ap-northeast-2.amazonaws.com'\r\n                sh 'docker push 594682333406.dkr.ecr.ap-northeast-2.amazonaws.com/mydiary-repo:1.0'\r\n            }\r\n        }\r\n    }\r\n}",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-107",
+      "level": 3,
+      "title": "소스 변경 및 자동 배포 확인",
+      "anchor": "소스-변경-및-자동-배포-확인",
+      "content": [
+        {
+          "id": "chapter14-block-125",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "소스 변경: public/index.ejs 파일 수정<h2>Docker class diary -AWS-</h2>"
+              },
+              {
+                "text": "Git 명령어:git add .\r\ngit commit -m \"mydiary cc commit\"\r\ngit push"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-108",
+      "level": 3,
+      "title": "빌드 결과 확인",
+      "anchor": "빌드-결과-확인",
+      "content": [
+        {
+          "id": "chapter14-block-126",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "빌드 상태: 빌드 #2 성공빌드 시간: 12초 소요변경 사항: 커밋 7a6879d"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-109",
+      "level": 3,
+      "title": "CodeCommit 변경 사항",
+      "anchor": "codecommit-변경-사항",
+      "content": [
+        {
+          "id": "chapter14-block-127",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "커밋 메시지: mydiary cc commit"
+              },
+              {
+                "text": "변경 파일: public/index.ejs<h2>Docker class diary -AWS-</h2>로 변경"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-110",
+      "level": 3,
+      "title": "웹 페이지 확인",
+      "anchor": "웹-페이지-확인",
+      "content": [
+        {
+          "id": "chapter14-block-128",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "변경 전: Docker class diary -kevin-"
+              },
+              {
+                "text": "변경 후: Docker class diary -AWS-"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter14-block-129",
+          "type": "code",
+          "data": {
+            "language": "text",
+            "code": "",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter14-section-111",
+      "level": 2,
+      "title": "마무리",
+      "anchor": "마무리",
+      "content": [
+        {
+          "id": "chapter14-block-130",
+          "type": "text",
+          "data": {
+            "markdown": "여기까지~"
+          }
+        },
+        {
+          "id": "chapter14-block-131",
+          "type": "text",
+          "data": {
+            "markdown": "한 번에 끝내는 CI/CD Docker 컨테이너 빌드업 강의를 진행한 \"이현용\"이었습니다."
+          }
+        },
+        {
+          "id": "chapter14-block-132",
+          "type": "text",
+          "data": {
+            "markdown": "수고하셨습니다!~"
+          }
+        }
+      ]
+    }
+  ],
+  "diagrams": [],
+  "tables": [
+    {
+      "id": "chapter14-table-1",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "ID",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "Name",
+          "align": "left"
+        },
+        {
+          "key": "col2",
+          "label": "Kind",
+          "align": "left"
+        },
+        {
+          "key": "col3",
+          "label": "Description",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "AWS-CODECOMMIT",
+          "col1": "fcuser-at-594682333406/****** (AWS-CODECOMMIT-CREDENTIALS)",
+          "col2": "Username with password",
+          "col3": "AWS-CODECOMMIT-CREDENTIALS"
+        },
+        {
+          "col0": "AWS-ACCESS",
+          "col1": "AKIAYU5OUJDPLRKHK454 (AWS-ACCESS-CREDENTIALS)",
+          "col2": "AWS Credentials",
+          "col3": "AWS-ACCESS-CREDENTIALS"
+        },
+        {
+          "col0": "docker-access",
+          "col1": "leecloudo/****** (DOCKER-CREDENTIALS)",
+          "col2": "Username with password",
+          "col3": "DOCKER-CREDENTIALS"
+        }
+      ]
+    }
+  ]
+}

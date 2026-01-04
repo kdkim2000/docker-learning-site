@@ -1,0 +1,1675 @@
+{
+  "meta": {
+    "id": "chapter08",
+    "number": 8,
+    "title": "Chapter 08. Docker Volume",
+    "description": "",
+    "phase": "practical",
+    "objectives": [
+      "컨테이너 데이터 영속성의 필요성 이해",
+      "Bind Mount, Docker Volume, tmpfs 차이점 파악",
+      "Docker Volume 생성 및 컨테이너 연결 방법",
+      "볼륨을 활용한 데이터 공유 패턴 (Data Container)",
+      "볼륨 백업 및 복구 전략 수립"
+    ]
+  },
+  "sections": [
+    {
+      "id": "chapter08-section-1",
+      "level": 2,
+      "title": "목차",
+      "anchor": "목차",
+      "content": [
+        {
+          "id": "chapter08-block-1",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Clip 1. Docker 제공, volume 기술 이해"
+              },
+              {
+                "text": "Clip 2. [실습] Bind mount 방식"
+              },
+              {
+                "text": "Clip 3. [실습] docker volume 방식"
+              },
+              {
+                "text": "Clip 4. [실습] 데이터 지속성을 위한 volume 구성"
+              },
+              {
+                "text": "Clip 5. [실습] volume 사용량 제한 구성"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter08-section-2",
+      "level": 2,
+      "title": "1. Docker 제공, volume 기술 이해",
+      "anchor": "1-docker-제공-volume-기술-이해",
+      "content": [
+        {
+          "id": "chapter08-block-3",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "컨테이너와 호스트 간의 데이터 공유가 가능한 volume 기술 이해"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter08-section-3",
+      "level": 3,
+      "title": "1.1 volume 기술 이해",
+      "anchor": "11-volume-기술-이해",
+      "content": [
+        {
+          "id": "chapter08-block-4",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Docker에서 제공하는 volume 기술은 컨테이너 애플리케이션에서 생성되고 사용되는 데이터를 유지, 보존하기 위한 메커니즘을 제공한다. 컨테이너가 삭제되어도 volume은 독립적으로 운영되기 때문에 데이터를 유지한다."
+              },
+              {
+                "text": "volume 기술은 Docker HostOS와 컨테이너에서 직접 접근이 가능하다."
+              },
+              {
+                "text": "일반적으로 컨테이너 내부의 데이터는 컨테이너의 생명 주기와 연관되어 컨테이너 종료 시 삭제되지만, 이를 지속적(Persistent)으로 보존하기 위한 방법으로 volume 기술이 사용한다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter08-section-4",
+      "level": 3,
+      "title": "1.2 volume 방식",
+      "anchor": "12-volume-방식",
+      "content": [
+        {
+          "id": "chapter08-block-5",
+          "type": "text",
+          "data": {
+            "markdown": "Docker는 3가지 volume 기술을 제공한다."
+          }
+        },
+        {
+          "id": "chapter08-block-6",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter08-diagram-1"
+          }
+        },
+        {
+          "id": "chapter08-block-7",
+          "type": "text",
+          "data": {
+            "markdown": "[Docker docs 참조: https://docs.docker.com/storage/volumes/]"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter08-section-5",
+      "level": 3,
+      "title": "1.3 volume 방식 → 1) Bind mount",
+      "anchor": "13-volume-방식-1-bind-mount",
+      "content": [
+        {
+          "id": "chapter08-block-8",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Bind mount 기법은 디렉터리 뿐만 아니라 파일도 mount 가능하다."
+              },
+              {
+                "text": "\"호스트 파일 시스템 절대경로\" : \"컨테이너 내부 경로\"를 직접 mount하여 사용한다."
+              },
+              {
+                "text": "사전에 연결할 파일 또는 디렉터리를 사용자가 생성하면 해당 호스트 파일시스템의 소유자 권한으로 연결이 되고, 존재하지 않는 경우 자동 생성되지만 이 디렉터리는 루트(root) 사용자 소유가 된다."
+              },
+              {
+                "text": "사전 정의 없이 컨테이너 실행 시 자동 생성되고, 컨테이너 제거 시 Bind mount가 자동 해제되지만 생성된 호스트 디렉터리와 데이터(file)는 보존된다."
+              },
+              {
+                "text": "Bind mount 방법은 데이터를 Host의 지정된 디렉터리에서 관리한다."
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter08-block-9",
+          "type": "text",
+          "data": {
+            "markdown": "Bind mount 사용 예시:"
+          }
+        },
+        {
+          "id": "chapter08-block-10",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "~$ docker run .. -v /my-host:/app ..\n~$ docker run .. --mount type=bind,source=${PWD}/mydata,target=/var/log ..",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter08-block-11",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter08-diagram-2"
+          }
+        },
+        {
+          "id": "chapter08-block-12",
+          "type": "text",
+          "data": {
+            "markdown": "컨테이너 삭제 시에도 호스트 데이터는 보존:"
+          }
+        },
+        {
+          "id": "chapter08-block-13",
+          "type": "text",
+          "data": {
+            "markdown": "컨테이너를 docker stop 및 docker rm으로 삭제해도 호스트 영역의 데이터는 그대로 보존된다."
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter08-section-6",
+      "level": 3,
+      "title": "1.4 volume 방식 → 2) docker volume",
+      "anchor": "14-volume-방식-2-docker-volume",
+      "content": [
+        {
+          "id": "chapter08-block-14",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Docker에서 권장하는 방법으로 \"docker volume create 볼륨명\"으로 볼륨을 생성한다."
+              },
+              {
+                "text": "Docker 볼륨은 Docker 명령어(CLI)와 Docker API 통해 사용할 수 있다."
+              },
+              {
+                "text": "docker volume 명령은 Docker root dir(/var/lib/docker) 영역에 volume 영역을 만들어 컨테이너 내부 경로와 연결(mount), 공유한다."
+              },
+              {
+                "text": "볼륨 드라이버(vieux/sshfs plugin)를 통해 원격 호스트 및 클라우드 환경에 볼륨 내용을 저장하고 암호화가 가능하다."
+              },
+              {
+                "text": "새 볼륨으로 지정될 영역(directory)에 데이터를 미리 채우고 컨테이너에 연결하면 컨테이너 내에서 바로 데이터 사용이 가능하다."
+              },
+              {
+                "text": "docker volume은 볼륨 데이터를 Docker(/var/lib/docker)가 관리한다."
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter08-block-15",
+          "type": "text",
+          "data": {
+            "markdown": "docker volume 사용 예시:"
+          }
+        },
+        {
+          "id": "chapter08-block-16",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "~$ docker volume create my-volume\n~$ docker run .. -v my-volume:/app ..\n~$ docker run .. --mount source=my-volume,target=/app ..",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter08-block-17",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter08-diagram-3"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter08-section-7",
+      "level": 3,
+      "title": "1.5 volume 방식 → 3) tmpfs mount",
+      "anchor": "15-volume-방식-3-tmpfs-mount",
+      "content": [
+        {
+          "id": "chapter08-block-18",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "앞서 살펴본 두가지 방식과 다르게 tmpfs mount 방식은 Docker hostOS의 Memory에서만 지속되고, 해당 컨테이너가 중지되면 tmpfs mount 연결 해제와 함께 기록된 데이터도 사라진다."
+              },
+              {
+                "text": "이 방식은 컨테이너 간의 공유 설정은 안되고, Linux 기반 Docker에서만 지원된다."
+              },
+              {
+                "text": "임시로 사용하고, 기록되지 않아야 되는 파일, 데이터 등을 사용할 경우에 유용하다. (host 영역 및 컨테이너의 write 영역에 파일이 기록되지 않음)"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter08-block-19",
+          "type": "text",
+          "data": {
+            "markdown": "tmpfs mount 사용 예시:"
+          }
+        },
+        {
+          "id": "chapter08-block-20",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "~$ docker run .. –tmpfs /var/www/html ..\n~$ docker run .. --mount type=tmpfs,destination=/var/www/html ..",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter08-block-21",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter08-diagram-4"
+          }
+        },
+        {
+          "id": "chapter08-block-22",
+          "type": "text",
+          "data": {
+            "markdown": "호스트 파일 시스템에 별도의 경로를 생성하지 않고, 컨테이너와 메모리에만 임시로 생성, 지속성을 갖지 않는다."
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter08-section-8",
+      "level": 2,
+      "title": "2. [실습] Bind mount 방식",
+      "anchor": "2-실습-bind-mount-방식",
+      "content": [
+        {
+          "id": "chapter08-block-24",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "volume 구성 방법 중 Bind mount 방식에 대해 알아보기"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter08-section-9",
+      "level": 3,
+      "title": "2.1 [실습1] Bind mount 연결 이해",
+      "anchor": "21-실습1-bind-mount-연결-이해",
+      "content": [
+        {
+          "id": "chapter08-block-25",
+          "type": "text",
+          "data": {
+            "markdown": "디렉터리 생성 및 테스트 파일 준비:"
+          }
+        },
+        {
+          "id": "chapter08-block-26",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch08$ pwd\n/home/kevin/fastcampus/ch08\n\nkevin@hostos1:~/fastcampus/ch08$ mkdir bind01 bind02\nkevin@hostos1:~/fastcampus/ch08$ echo 'fastcampus docker-1' > bind01/docker-1.txt\nkevin@hostos1:~/fastcampus/ch08$ echo 'fastcampus docker-2' > bind02/docker-2.txt",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter08-block-27",
+          "type": "text",
+          "data": {
+            "markdown": "Bind mount로 컨테이너 실행:"
+          }
+        },
+        {
+          "id": "chapter08-block-28",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch08$ docker run -it --name=bind-mount \\\n> -v /home/kevin/fastcampus/ch08/bind01:/bind01 \\\n> -v ${PWD}/bind02:/bind02 \\\n> ubuntu:14.04 bash",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter08-block-29",
+          "type": "text",
+          "data": {
+            "markdown": "컨테이너 내부에서 마운트 확인:"
+          }
+        },
+        {
+          "id": "chapter08-block-30",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "root@7a91ba8609fa:/# df -ha\nFilesystem      Size  Used Avail Use% Mounted on\noverlay         100G  9.6G   91G  10% /\n...\n/dev/sda1        56G   13G   44G  23% /bind01\n/dev/sda1        56G   13G   44G  23% /bind02\n\nroot@7a91ba8609fa:/# mount | grep bind\n/dev/sda1 on /bind01 type xfs (rw,relatime,attr2,inode64,logbufs=8,logbsize=32k,noquota)\n/dev/sda1 on /bind02 type xfs (rw,relatime,attr2,inode64,logbufs=8,logbsize=32k,noquota)",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter08-block-31",
+          "type": "text",
+          "data": {
+            "markdown": "컨테이너에서 파일 확인 및 수정:"
+          }
+        },
+        {
+          "id": "chapter08-block-32",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "root@7a91ba8609fa:/# ls bind01\ndocker-1.txt\nroot@7a91ba8609fa:/# ls bind02\ndocker-2.txt\n\n# Bind mount로 연결된 양쪽 경로의 기본 권한은 read/write(rw)다.\nroot@7a91ba8609fa:/# echo 'welcome to container' >> bind01/docker-1.txt\nroot@7a91ba8609fa:/# cat bind01/docker-1.txt\nfastcampus docker-1\nwelcome to container",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter08-block-33",
+          "type": "text",
+          "data": {
+            "markdown": "호스트에서 변경 내용 확인:"
+          }
+        },
+        {
+          "id": "chapter08-block-34",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "(ctrl+p+q)\n\nkevin@hostos1:~/fastcampus/ch08$ cat bind01/docker-1.txt\nfastcampus docker-1\nwelcome to container\n\nkevin@hostos1:~/fastcampus/ch08$ docker inspect --format=\"{{ .HostConfig.Binds }}\" bind-mount\n[/home/kevin/fastcampus/ch08/bind01:/bind01\n/home/kevin/fastcampus/ch08/bind02:/bind02]\n\nkevin@hostos1:~/fastcampus/ch08$ docker stop bind-mount\nkevin@hostos1:~/fastcampus/ch08$ docker rm bind-mount",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter08-block-35",
+          "type": "text",
+          "data": {
+            "markdown": "읽기 전용(ro) 및 읽기/쓰기(rw) 권한 설정:"
+          }
+        },
+        {
+          "id": "chapter08-block-36",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch08$ docker run -it --name=bind-mount \\\n> -v /home/kevin/fastcampus/ch08/bind01:/bind01:ro \\\n> -v $(pwd)/bind02:/bind02:rw \\\n> ubuntu:14.04 bash\n\nroot@3fd92c8784c6:/# echo 'welcome to container' >> bind01/docker-1.txt\nbash: bind01/docker-1.txt: Read-only file system\n\n(ctrl+p+q)\n\nkevin@hostos1:~/fastcampus/ch08$ docker inspect --format=\"{{ .HostConfig.Binds }}\" bind-mount\n[/home/kevin/fastcampus/ch08/bind01:/bind01:ro\n/home/kevin/fastcampus/ch08/bind02:/bind02:rw]",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter08-section-10",
+      "level": 3,
+      "title": "2.2 [실습2] Bind mount, 설정 파일 공유(전달)",
+      "anchor": "22-실습2-bind-mount-설정-파일-공유전달",
+      "content": [
+        {
+          "id": "chapter08-block-37",
+          "type": "text",
+          "data": {
+            "markdown": "Redis DB는 제공되는 기본 설정 파일을 통해 redis-cli 접근인증 암호를 포함시켜 공유하면 해당 암호를 이용해 인증이 가능하다."
+          }
+        },
+        {
+          "id": "chapter08-block-38",
+          "type": "text",
+          "data": {
+            "markdown": "Redis 설정 파일 준비:"
+          }
+        },
+        {
+          "id": "chapter08-block-39",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter08-diagram-5"
+          }
+        },
+        {
+          "id": "chapter08-block-40",
+          "type": "text",
+          "data": {
+            "markdown": "Redis 컨테이너 실행:"
+          }
+        },
+        {
+          "id": "chapter08-block-41",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch08/redis-conf$ docker run -itd --name=redis-container \\\n> -p 6379:6379 -h=redis-db \\\n> -v ./data:/data \\\n> -v ./redis.conf:/usr/local/conf/redis.conf \\\n> redis:7 redis-server /usr/local/conf/redis.conf",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter08-block-42",
+          "type": "text",
+          "data": {
+            "markdown": "Redis 인증 테스트:"
+          }
+        },
+        {
+          "id": "chapter08-block-43",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch08/redis-conf$ docker exec -it redis-container bash\n\nroot@redis-db:/data# redis-cli\n127.0.0.1:6379> set item1 docker1\n(error) NOAUTH Authentication required.\n127.0.0.1:6379> exit\n\nroot@redis-db:/data# redis-cli -a pass123#\nWarning: Using a password with '-a' or '-u' option on the command line interface may not be safe.\n127.0.0.1:6379> set item1 docker1\nOK\n127.0.0.1:6379> set item2 docker2\nOK\n127.0.0.1:6379> get item1\n\"docker1\"\n127.0.0.1:6379> get item2\n\"docker2\"",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter08-section-11",
+      "level": 3,
+      "title": "2.3 [실습3] file Bind mount",
+      "anchor": "23-실습3-file-bind-mount",
+      "content": [
+        {
+          "id": "chapter08-block-44",
+          "type": "text",
+          "data": {
+            "markdown": "컨테이너 내부의 특정 파일과 호스트의 파일을 직접 연결(mount)할 수 있다."
+          }
+        },
+        {
+          "id": "chapter08-block-45",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "~$ docker run -it -v ~/.bash_history:/root/.bash_history --rm centos:8 /bin/bash\n\n[root@064551ed5d7f /]# echo 'docker volume test' > volume.txt\n[root@064551ed5d7f /]# ls\n... media  mnt  opt  proc  root  run  sbin  srv  sys  tmp  usr  var  volume.txt\n[root@064551ed5d7f /]# rm volume.txt\nrm: remove regular file 'volume.txt'? y\n\n[root@064551ed5d7f /]# df -h\nFilesystem      Size  Used Avail Use% Mounted on\noverlay         100G  9.7G   91G  10% /\ntmpfs            64M     0   64M   0% /dev\ntmpfs           3.9G     0  3.9G   0% /sys/fs/cgroup\nshm              64M     0   64M   0% /dev/shm\n/dev/sda1        56G   13G   44G  23% /root/.bash_history\n...\n\n[root@064551ed5d7f /]# tail ~/.bash_history\n[root@064551ed5d7f /]# exit\nexit",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter08-block-46",
+          "type": "text",
+          "data": {
+            "markdown": "호스트에서 컨테이너 명령 히스토리 확인:"
+          }
+        },
+        {
+          "id": "chapter08-block-47",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ tail .bash_history\ndocker run -d --name cpuset_2 --cpuset-cpus=0,3 leecloudo/stress:1.0 stress --cpu 2\ndocker update --cpus=0.2 cpuset_2\nclear\nhtop\necho 'docker volume test' > volume.txt\nls\nrm volume.txt\ndf -h\ntail ~/.bash_history\nexit",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter08-section-12",
+      "level": 3,
+      "title": "2.4 [실습4] 시간 동기화를 위한 file Bind mount",
+      "anchor": "24-실습4-시간-동기화를-위한-file-bind-mount",
+      "content": [
+        {
+          "id": "chapter08-block-48",
+          "type": "text",
+          "data": {
+            "markdown": "컨테이너 내부의 시간을 Docker Host의 시간과 동기화할 수 있다."
+          }
+        },
+        {
+          "id": "chapter08-block-49",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ date\n2023. 06. 16. (금) 09:16:00 KST\n\nkevin@hostos1:~$ docker run --rm ubuntu:14.04 date\nFri Jun 16 00:16:34 UTC 2023\n\nkevin@hostos1:~$ docker run --rm -v /etc/localtime:/etc/localtime ubuntu:14.04 date\nFri Jun 16 09:17:06 KST 2023",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter08-block-50",
+          "type": "text",
+          "data": {
+            "markdown": "Dockerfile에서 timezone 설정 (권장 방법):"
+          }
+        },
+        {
+          "id": "chapter08-block-51",
+          "type": "text",
+          "data": {
+            "markdown": "매번 시간 동기화는 비효율적이다. 그래서, docker image 생성하는 Dockerfile에 timezone을 설정하는 방법을 권장한다."
+          }
+        },
+        {
+          "id": "chapter08-block-52",
+          "type": "code",
+          "data": {
+            "language": "dockerfile",
+            "code": "FROM ubuntu:20.04\nENV TZ Asia/Seoul\n# TimeZone 설정\nRUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone\n...",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter08-section-13",
+      "level": 2,
+      "title": "3. [실습] docker volume 방식",
+      "anchor": "3-실습-docker-volume-방식",
+      "content": [
+        {
+          "id": "chapter08-block-54",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "volume 구성 방법 중 docker volume 명령에 대해 알아보기"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter08-section-14",
+      "level": 3,
+      "title": "3.1 [실습1] docker volume 생성과 연결",
+      "anchor": "31-실습1-docker-volume-생성과-연결",
+      "content": [
+        {
+          "id": "chapter08-block-55",
+          "type": "text",
+          "data": {
+            "markdown": "볼륨 생성:"
+          }
+        },
+        {
+          "id": "chapter08-block-56",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ docker volume create mydb-data\nmydb-data\n\nkevin@hostos1:~$ docker volume ls\nDRIVER    VOLUME NAME\nlocal     0e0edcd6891a29a2305d47bf862574e784985a6b5a1b3f4660c42109b30f674d\n...\nlocal     mydb-data\n\nkevin@hostos1:~$ docker volume inspect mydb-data\n[\n    {\n        \"CreatedAt\": \"2023-06-16T09:29:37+09:00\",\n        \"Driver\": \"local\",\n        \"Labels\": null,\n        \"Mountpoint\": \"/var/lib/docker/volumes/mydb-data/_data\",\n        \"Name\": \"mydb-data\",\n        \"Options\": null,\n        \"Scope\": \"local\"\n    }\n]",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter08-block-57",
+          "type": "text",
+          "data": {
+            "markdown": "MySQL 컨테이너에 볼륨 연결:"
+          }
+        },
+        {
+          "id": "chapter08-block-58",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ docker run -d --name mydb \\\n> -e MYSQL_ROOT_PASSWORD=password1 \\\n> -e MYSQL_DATABASE=fastcampus \\\n> -v mydb-data:/var/lib/mysql \\\n> mysql:5.7-debian\n\nkevin@hostos1:~$ docker ps\nb083cd6d5374   mysql:5.7-debian   \"docker-entrypoint.s…\"   35 seconds ago   Up 33\nseconds   3306/tcp, 33060/tcp   mydb\n\nkevin@hostos1:~$ sudo ls /var/lib/docker/volumes/mydb-data/_data\nauto.cnf  ca.pem  client-key.pem  ib_buffer_pool  ib_logfile0  ibtmp1\nperformance_schema  public_key.pem  server-key.pem ca-key.pem client-cert.pem fastcampus\nibdata1 ib_logfile1 mysql private_key.pem server-cert.pem sys\n\nkevin@hostos1:~$ docker exec -it mydb bash\nroot@c9e335e77d58:/# df –ha\n...\n/dev/sdb1       100G  9.9G   91G  10% /var/lib/mysql",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter08-block-59",
+          "type": "text",
+          "data": {
+            "markdown": "컨테이너 삭제 후에도 볼륨 데이터 보존 확인:"
+          }
+        },
+        {
+          "id": "chapter08-block-60",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ docker stop mydb\nkevin@hostos1:~$ docker rm mydb\n\nkevin@hostos1:~$ sudo ls /var/lib/docker/volumes/mydb-data/_data\nauto.cnf  ca.pem  client-key.pem  ib_buffer_pool  ib_logfile0  ibtmp1\nperformance_schema  public_key.pem  server-key.pem ca-key.pem client-cert.pem fastcampus\nibdata1 ib_logfile1 mysql private_key.pem server-cert.pem sys",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter08-block-61",
+          "type": "text",
+          "data": {
+            "markdown": "볼륨 삭제:"
+          }
+        },
+        {
+          "id": "chapter08-block-62",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ docker volume rm mydb-data\nmydb-data\n\nkevin@hostos1:~$ sudo ls /var/lib/docker/volumes/mydb-data/_data\nls: cannot access '/var/lib/docker/volumes/mydb-data/_data': No such file or directory",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter08-section-15",
+      "level": 3,
+      "title": "3.2 [실습2] 암시적 docker volume, 볼륨 생성 없이 사용하는 방법",
+      "anchor": "32-실습2-암시적-docker-volume-볼륨-생성-없이-사용하는-방법",
+      "content": [
+        {
+          "id": "chapter08-block-63",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ docker run -d --name mydb \\\n> -e MYSQL_ROOT_PASSWORD=password1 -e MYSQL_DATABASE=fastcampus \\\n> -v /var/lib/mysql \\\n> mysql:5.7-debian\n\nkevin@hostos1:~$ docker inspect mydb\n...\n \"Mounts\": [\n            {\n                \"Type\": \"volume\",\n                \"Name\": \"a1364533dc094889c144c32a94091793bdbb1240f92b00cf3624f4b0900a4c02\",\n                \"Source\": \"/var/lib/docker/volumes/a1364533dc094889c144c32a94091793bdbb1240f92b00cf3624f4b0900a4c02/_data\",\n                \"Destination\": \"/var/lib/mysql\",\n                \"Driver\": \"local\",\n                \"Mode\": \"\",\n                \"RW\": true,\n                \"Propagation\": \"\"\n            }\n...\n\nkevin@hostos1:~$ docker volume ls\n…\nlocal     a1364533dc094889c144c32a94091793bdbb1240f92b00cf3624f4b0900a4c02",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter08-section-16",
+      "level": 3,
+      "title": "3.3 [실습3] data container",
+      "anchor": "33-실습3-data-container",
+      "content": [
+        {
+          "id": "chapter08-block-64",
+          "type": "text",
+          "data": {
+            "markdown": "여러 컨테이너에 데이터를 공유하고자 하는 경우 데이터 컨테이너 or 볼륨 컨테이너를 만들고, \"--volumes-from 공유컨테이너명\" 옵션을 사용하여 볼륨을 공유할 수 있다."
+          }
+        },
+        {
+          "id": "chapter08-block-65",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter08-diagram-6"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter08-section-17",
+      "level": 4,
+      "title": "[실습3-1] data container, 암시적 docker volume",
+      "anchor": "실습3-1-data-container-암시적-docker-volume",
+      "content": [
+        {
+          "id": "chapter08-block-66",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "~$ docker create -v /share-data --name=share-container ubuntu:14.04\n\n~$ docker ps -a | grep share\n72a10e926c38   ubuntu:14.04   \"/bin/bash\"   12 seconds ago   Created   share-container\n\n~$ docker inspect share-container\n…\n \"Mounts\": [\n            {\n                \"Type\": \"volume\",\n                \"Name\": \"8270de0aecf201c752e3c19835da0fffd427dcaad97c96141e76d259a8e94245\",\n                \"Source\": \"/var/lib/docker/volumes/8270de0aecf201c752e3c19835da0fffd427dcaad97c96141e76d259a8e94245/_data\",\n                \"Destination\": \"/share-data\",\n…\n\n~$ docker run -it --volumes-from share-container --name=data-1 ubuntu:14.04 bash\nroot@cf146148d8ea:/# df –h\n/dev/sdb1       100G   11G   90G  11% /share-data\n\nroot@cf146148d8ea:/# echo 'testing data container' > /share-data/data-1.txt\nroot@cf146148d8ea:/# cat /share-data/data-1.txt\ntesting data container\nroot@cf146148d8ea:/# exit",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter08-block-67",
+          "type": "text",
+          "data": {
+            "markdown": "두 번째 컨테이너에서 공유 데이터 확인:"
+          }
+        },
+        {
+          "id": "chapter08-block-68",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "~$ docker ps -a | grep data\ncf146148d8ea   ubuntu:14.04   \"bash\"   3 minutes ago   Exited (0) 2 minutes ago   data-1\n\n~$ docker run -it --volumes-from share-container --name=data-2 ubuntu:14.04 bash\nroot@1c3b0776acbe:/# df -h\nFilesystem      Size  Used Avail Use% Mounted on\noverlay         100G   11G   90G  11% /\ntmpfs            64M     0   64M   0% /dev\ntmpfs           3.9G     0  3.9G   0% /sys/fs/cgroup\nshm              64M     0   64M   0% /dev/shm\n/dev/sdb1       100G   11G   90G  11% /share-data\n…\n\nroot@1c3b0776acbe:/# cat /share-data/data-1.txt\ntesting data container",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter08-section-18",
+      "level": 4,
+      "title": "[실습3-2] data container, Bind mount",
+      "anchor": "실습3-2-data-container-bind-mount",
+      "content": [
+        {
+          "id": "chapter08-block-69",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "~$ docker create -v $(pwd)/share-volume:/share-data --name=share-container ubuntu:14.04\n\n~$ docker run -it --volumes-from share-container --name=data-1 ubuntu:14.04 bash\nroot@5efbf6c155ea:/# echo 'testing data container' > /share-data/data-1.txt\nroot@5efbf6c155ea:/# cat /share-data/data-1.txt\ntesting data container\nroot@5efbf6c155ea:/# exit\nExit\n\nkevin@hostos1:~$ ls share-volume/\ndata-1.txt\n\n# 읽기 전용으로 공유\n~$ docker run -it --volumes-from share-container:ro --name=data-2 ubuntu:14.04 bash\nroot@7faf6af824d3:/# cat /share-data/data-1.txt\ntesting data container\nroot@8ce0ed8e849c:/# echo 'testing data container2' >> /share-data/data-2.txt\nbash: /share-data/data-2.txt: Read-only file system",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter08-section-19",
+      "level": 2,
+      "title": "4. [실습] 데이터 지속성을 위한 volume 구성",
+      "anchor": "4-실습-데이터-지속성을-위한-volume-구성",
+      "content": [
+        {
+          "id": "chapter08-block-71",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "컨테이너의 중요 데이터의 지속성을 위한 볼륨 구성 실습"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter08-section-20",
+      "level": 3,
+      "title": "4.1 [실습1] DB container의 데이터 지속성을 위한 Volume 구성",
+      "anchor": "41-실습1-db-container의-데이터-지속성을-위한-volume-구성",
+      "content": [
+        {
+          "id": "chapter08-block-72",
+          "type": "text",
+          "data": {
+            "markdown": "DB 컨테이너의 중요 데이터 지속성 및 Backup, Migration 등을 목적으로 Volume을 구성한다."
+          }
+        },
+        {
+          "id": "chapter08-block-73",
+          "type": "text",
+          "data": {
+            "markdown": "MySQL 컨테이너 생성 및 볼륨 연결:"
+          }
+        },
+        {
+          "id": "chapter08-block-74",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ docker run –itd --name=mydb -e MYSQL_ROOT_PASSWORD=pass123# \\\n> -e MYSQL_DATABASE=fastcampus \\\n> -v ${PWD}/mydb-data:/var/lib/mysql \\\n> mysql:5.7-debian\n\nkevin@hostos1:~$ docker ps\nfd73d3cb9de5   mysql:5.7-debian   \"docker-entrypoint.s…\"   4 seconds ago   Up 1\nsecond   3306/tcp, 33060/tcp   mydb\n\nkevin@hostos1:~$ docker exec -it mydb bash\nroot@fd73d3cb9de5:/# cat /etc/os-release\nPRETTY_NAME=\"Debian GNU/Linux 10 (buster)\"\nNAME=\"Debian GNU/Linux\"\nVERSION_ID=\"10\"\n…\n\nroot@fd73d3cb9de5:/# df -h\nFilesystem      Size  Used Avail Use% Mounted on\noverlay         100G   11G   90G  11% /\n/dev/sda1        56G   13G   43G  24% /var/lib/mysql\n…",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter08-block-75",
+          "type": "text",
+          "data": {
+            "markdown": "샘플 테이블과 데이터 생성:"
+          }
+        },
+        {
+          "id": "chapter08-block-76",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "root@fd73d3cb9de5:/# mysql -uroot -p\nEnter password: (pass123#)\n\nmysql> show databases;\n+--------------------+\n| Database           |\n+--------------------+\n| information_schema |\n| fastcampus         |\n…\n\nmysql> use fastcampus;\nmysql> create table dockerclass (classid int, classname varchar(50));\nmysql> insert into dockerclass values (10,'docker container CI/CD');\n\nmysql> select * from dockerclass;\n+---------+-----------------+\n| classid | classname       |\n+---------+-----------------+\n|      10 | container CI/CD |\n+---------+-----------------+\n1 row in set (0.01 sec)\n\nmysql> exit\nBye",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter08-block-77",
+          "type": "text",
+          "data": {
+            "markdown": "테이블 파일 확인:"
+          }
+        },
+        {
+          "id": "chapter08-block-78",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "root@fd73d3cb9de5:/# ls -l /var/lib/mysql/fastcampus/\ntotal 112\n-rw-r----- 1 mysql mysql    65 Jun 16 04:18 db.opt\n-rw-r----- 1 mysql mysql  8606 Jun 16 04:22 dockerclass.frm\n-rw-r----- 1 mysql mysql 98304 Jun 16 04:23 dockerclass.ibd\nroot@fd73d3cb9de5:/# exit",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter08-block-79",
+          "type": "text",
+          "data": {
+            "markdown": "컨테이너 삭제 후 데이터 보존 확인:"
+          }
+        },
+        {
+          "id": "chapter08-block-80",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ docker stop mydb\nkevin@hostos1:~$ docker rm mydb\n\nkevin@hostos1:~$ ls mydb-data/\nauto.cnf  ca.pem  client-key.pem  ib_buffer_pool  ib_logfile0  mysql\nprivate_key.pem  server-cert.pem  sys  ca-key.pem  client-cert.pem  fastcampus  ibdata1\nib_logfile1  performance_schema  public_key.pem  server-key.pem",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter08-block-81",
+          "type": "text",
+          "data": {
+            "markdown": "동일한 볼륨으로 새 컨테이너 생성:"
+          }
+        },
+        {
+          "id": "chapter08-block-82",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ docker run -it --name=mydb -e MYSQL_ROOT_PASSWORD=pass123# -e \\\nMYSQL_DATABASE=fastcampus -v ${PWD}/mydb-data:/var/lib/mysql -d mysql:5.7-debian\n\nkevin@hostos1:~$ docker exec -it mydb bash\nroot@329107150fd5:/# mysql -uroot -p\nEnter password:\n\nmysql> use fastcampus;\nmysql> show tables;\n+----------------------+\n| Tables_in_fastcampus |\n+----------------------+\n| dockerclass          |\n+----------------------+\n\nmysql> select * from dockerclass;\n+---------+-----------------+\n| classid | classname       |\n+---------+-----------------+\n|      10 | container CI/CD |\n+---------+-----------------+",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter08-block-83",
+          "type": "text",
+          "data": {
+            "markdown": "MySQL 이미지 버전 변경 시:"
+          }
+        },
+        {
+          "id": "chapter08-block-84",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ docker stop mydb\nkevin@hostos1:~$ docker rm mydb\nkevin@hostos1:~$ docker run -it --name=mydb -e MYSQL_ROOT_PASSWORD=pass123# -e \\\nMYSQL_DATABASE=fastcampus -v ${PWD}/mydb-data:/var/lib/mysql -d mysql:8.0-debian\n\nkevin@hostos1:~$ docker exec -it mydb bash\nroot@2d140a8879fe:/# mysql -uroot -p\nEnter password:\nERROR 2002 (HY000): Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)\n\n# /var/lib/mysql/mysql.sock 라는 원본파일에 /tmp/mysql.sock 파일에 Symbolic Link 연결\nroot@2d140a8879fe:/# ln -s /var/lib/mysql/mysql.sock /tmp/mysql.sock\nroot@2d140a8879fe:/# mysql -uroot -p\nEnter password:\nmysql> show databases;\nmysql> use fastcampus;\nmysql> show tables;\nmysql> select * from dockerclass;",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter08-block-85",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "참고: 동일 이미지에 대한 태그, 즉 버전이 달라도 데이터 연결이 가능하다."
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter08-section-21",
+      "level": 3,
+      "title": "4.2 [실습2] Web container의 log 유지 및 실시간 확인을 위한 Volume 구성",
+      "anchor": "42-실습2-web-container의-log-유지-및-실시간-확인을-위한-volume-구",
+      "content": [
+        {
+          "id": "chapter08-block-86",
+          "type": "text",
+          "data": {
+            "markdown": "Nginx 컨테이너의 접근 및 에러 로그 영역을 볼륨으로 구성하여 실시간 접근 기록 확인 및 장애 시 에러에 대한 정보를 컨테이너가 중지되어도 확인 가능하도록 한다."
+          }
+        },
+        {
+          "id": "chapter08-block-87",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ mkdir -p /home/kevin/nginx-log\nkevin@hostos1:~$ docker run -d --name=myweb -v /home/kevin/nginx-log:/var/log/nginx \\\n-p 8011:80 nginx:1.25.0-alpine\n\nkevin@hostos1:~$ docker ps | grep myweb\nfcff48f955c8   nginx:1.25.0-alpine   \"/docker-entrypoint.…\"   16 seconds ago   Up 13\nseconds   0.0.0.0:8011->80/tcp, :::8011->80/tcp   myweb\n\nkevin@hostos1:~$ ls nginx-log/\naccess.log  error.log\n\nkevin@hostos1:~$ tail -f nginx-log/access.log\n192.168.56.1 - - [16/Jun/2023:05:14:59 +0000] \"GET / HTTP/1.1\" 200 615 \"-\" \"Mozilla/5.0 (Windows\nNT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36\" \"-\"\n192.168.56.1 - - [16/Jun/2023:05:14:59 +0000] \"GET /favicon.ico HTTP/1.1\" 404 555\n\"http://192.168.56.201:8011/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,\nlike Gecko) Chrome/114.0.0.0 Safari/537.36\" \"-\"\n…\n\n# 다른 호스트에서 접속 테스트\nkevin@hostos2:~$ curl http://192.168.56.201:8011/",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter08-block-88",
+          "type": "text",
+          "data": {
+            "markdown": "웹 로그 분석:"
+          }
+        },
+        {
+          "id": "chapter08-block-89",
+          "type": "text",
+          "data": {
+            "markdown": "지정 범위 내의 로그시간($4) 동안 [IP($1) 중복 건수, IP 내림차순 출력]"
+          }
+        },
+        {
+          "id": "chapter08-block-90",
+          "type": "text",
+          "data": {
+            "markdown": "웹 로그 패턴:"
+          }
+        },
+        {
+          "id": "chapter08-block-91",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "패턴($변수): IP(1) -(2) -(3) 년월일시분초(4) +0900 \"POST(6) /*(7) HTTP(8) 200(9) 사이즈(10)"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter08-block-92",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ cd nginx-log/\nkevin@hostos1:~/nginx-log$ awk '$4>\"[16/Jun/2023:05:14:58]\" && \\\n$4<\"[16/Jun/2023:05:15:31]\"' access.log | awk '{ print $1 }' | sort | uniq -c | sort \\\n-r | more\n      6 192.168.56.102\n     13 192.168.56.1",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter08-section-22",
+      "level": 2,
+      "title": "5. [실습] volume 사용량 제한 구성",
+      "anchor": "5-실습-volume-사용량-제한-구성",
+      "content": [
+        {
+          "id": "chapter08-block-94",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "컨테이너 볼륨 사용량 제한 구성 실습"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter08-section-23",
+      "level": 3,
+      "title": "5.1 컨테이너 영역의 filesystem 사용량은 얼마일까? 제한은 가능할까?",
+      "anchor": "51-컨테이너-영역의-filesystem-사용량은-얼마일까-제한은-가능할까",
+      "content": [
+        {
+          "id": "chapter08-block-95",
+          "type": "text",
+          "data": {
+            "markdown": "컨테이너 생성 후 내부에서 df 명령으로 rootfs과 mount된 볼륨 영역 확인:"
+          }
+        },
+        {
+          "id": "chapter08-block-96",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "~$ docker run -it -v /home/kevin/myvolume:/webapp --name=mycontainer ubuntu:14.04 bash\n\nroot@c303e5badb37:/# df -h\nFilesystem      Size  Used Avail Use% Mounted on\noverlay         100G   12G   89G  12% /\ntmpfs            64M     0   64M   0% /dev\ntmpfs           3.9G     0  3.9G   0% /sys/fs/cgroup\nshm              64M     0   64M   0% /dev/shm\n/dev/sda1        56G   14G   43G  24% /webapp\n/dev/sdb1       100G   12G   89G  12% /etc/hosts\ntmpfs           3.9G     0  3.9G   0% /proc/acpi\ntmpfs           3.9G     0  3.9G   0% /proc/scsi\ntmpfs           3.9G     0  3.9G   0% /sys/firmware",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter08-block-97",
+          "type": "text",
+          "data": {
+            "markdown": "호스트에서 파일시스템 확인:"
+          }
+        },
+        {
+          "id": "chapter08-block-98",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ df -h\nFilesystem      Size  Used Avail Use% Mounted on\ntmpfs           795M  1.9M  794M   1% /run\n/dev/sda1        56G   14G   43G  24% /\ntmpfs           3.9G     0  3.9G   0% /dev/shm\ntmpfs           5.0M     0  5.0M   0% /run/lock\ntmpfs           4.0M     0  4.0M   0% /sys/fs/cgroup\n/dev/sda3        19G   24K   18G   1% /DATA\n/dev/sda4        18G   24K   17G   1% /BACKUP\n/dev/sdb1       100G   12G   89G  12% /var/lib/docker\ntmpfs           795M   88K  795M   1% /run/user/128\ntmpfs           795M   72K  795M   1% /run/user/1000",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter08-block-99",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "참고:컨테이너에 mount된 /webapp은 볼륨 설정 시 /home~에서 시작됐으므로 Docker Host의 / 영역의 공간을 표현한다.컨테이너의 / (rootfs)는 컨테이너가 생성된 위치인 /var/lib/docker 영역의 전체 공간을 표현한다."
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter08-section-24",
+      "level": 3,
+      "title": "5.2 [실습1-1] 컨테이너 rootfs(/) 영역 제한",
+      "anchor": "52-실습1-1-컨테이너-rootfs-영역-제한",
+      "content": [
+        {
+          "id": "chapter08-block-100",
+          "type": "text",
+          "data": {
+            "markdown": "Docker는 컨테이너의 rootfs(/) 영역의 개별적인 공간 할당 제한을 위해 --storage-opt 옵션을 제공한다. 이 옵션을 사용하려면, 해당 disk partition이 xfs로 지정되어야 하고, 추가 기능으로 pquota(project quota)가 설정되어 있어야 한다."
+          }
+        },
+        {
+          "id": "chapter08-block-101",
+          "type": "text",
+          "data": {
+            "markdown": "현재 마운트 상태 확인:"
+          }
+        },
+        {
+          "id": "chapter08-block-102",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "~$ mount | grep xfs\n/dev/sdb1 on /var/lib/docker type xfs (rw,relatime,attr2,inode64,logbufs=8,logbsize=32k,noquota)\n\n~$ docker run -it -v /home/kevin/myvolume:/webapp --name=mycontainer --storage-opt \\\nsize=1G ubuntu:14.04 bash\ndocker: Error response from daemon: --storage-opt is supported only for overlay over xfs with\n'pquota' mount option.",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter08-block-103",
+          "type": "text",
+          "data": {
+            "markdown": "pquota 설정:"
+          }
+        },
+        {
+          "id": "chapter08-block-104",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "~$ sudo vi /etc/default/grub\n..\n10 GRUB_CMDLINE_LINUX_DEFAULT=\"quiet splash rootflags=uquota,pquota\"\n\n~$ sudo vi /etc/fstab\n..\nUUID=b2f0ef34-291f-411d-aa75-9a46d72c7401 /var/lib/docker xfs defaults,pquota 0 0\n\n~$ sudo reboot",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter08-block-105",
+          "type": "text",
+          "data": {
+            "markdown": "재부팅 후 컨테이너 생성:"
+          }
+        },
+        {
+          "id": "chapter08-block-106",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "~$ docker run -it -v /home/kevin/myvolume:/webapp --name=mycontainer --storage-opt \\\nsize=1G ubuntu:14.04 bash\n\nroot@d3032cafdbc1:/# df -h\nFilesystem      Size  Used Avail Use% Mounted on\noverlay         1.0G  8.0K  1.0G   1% /\n…",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter08-section-25",
+      "level": 3,
+      "title": "5.3 [실습1-2] 컨테이너 rootfs(/) 영역 제한 (Docker daemon 설정)",
+      "anchor": "53-실습1-2-컨테이너-rootfs-영역-제한-docker-daemon-설정",
+      "content": [
+        {
+          "id": "chapter08-block-107",
+          "type": "text",
+          "data": {
+            "markdown": "모든 컨테이너의 rootfs(/)용량을 500m으로 제한, docker daemon에 제한 설정을 한다."
+          }
+        },
+        {
+          "id": "chapter08-block-108",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ sudo vi /etc/docker/daemon.json\n{ \"insecure-registries\": [\"192.168.56.101:5000\"],\n  \"log-driver\": \"json-file\",\n  \"log-opts\": {\n    \"max-size\": \"30m\",\n    \"max-file\": \"10\"\n  },\n  \"storage-opts\": [\"overlay2.size=500m\"]\n}\n\nkevin@hostos1:~$ sudo systemctl restart docker.service\nkevin@hostos1:~$ sudo systemctl status docker.service\n\nkevin@hostos1:~$ docker run -it -v /home/kevin/myvolume:/webapp --name=mycontainer \\\nubuntu:14.04 bash\n\nroot@0619da551083:/# df -h\nFilesystem      Size  Used Avail Use% Mounted on\noverlay         500M  8.0K  500M   1% /\n…",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter08-section-26",
+      "level": 3,
+      "title": "5.4 [실습2] 컨테이너 Volume 공간 사용량 제한",
+      "anchor": "54-실습2-컨테이너-volume-공간-사용량-제한",
+      "content": [
+        {
+          "id": "chapter08-block-109",
+          "type": "text",
+          "data": {
+            "markdown": "bind mount로 볼륨을 구성하고 컨테이너 영역의 공간을 제한해 본다."
+          }
+        },
+        {
+          "id": "chapter08-block-110",
+          "type": "text",
+          "data": {
+            "markdown": "임시 디스크 이미지 생성:"
+          }
+        },
+        {
+          "id": "chapter08-block-111",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ sudo su -\n\nroot@hostos1:~# dd if=/dev/zero of=tmpdisk.img count=512 bs=1M\n512+0 records in\n512+0 records out\n536870912 bytes (537 MB, 512 MiB) copied, 0.480423 s, 1.1 GB/s\n\nroot@hostos1:~# mkfs.xfs tmpdisk.img\nmeta-data=tmpdisk.img            isize=512    agcount=4, agsize=32768 blks\n         =                       sectsz=512   attr=2, projid32bit=1\n…\n\nroot@hostos1:~# fdisk -l tmpdisk.img\nDisk tmpdisk.img: 512 MiB, 536870912 bytes, 1048576 sectors\nUnits: sectors of 1 * 512 = 512 bytes\nSector size (logical/physical): 512 bytes / 512 bytes\nI/O size (minimum/optimal): 512 bytes / 512 bytes",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter08-block-112",
+          "type": "text",
+          "data": {
+            "markdown": "디스크 이미지 마운트:"
+          }
+        },
+        {
+          "id": "chapter08-block-113",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "root@hostos1:~# mkdir -p /home/kevin/volume-quota\nroot@hostos1:~# mount -o loop tmpdisk.img /home/kevin/volume-quota\n\nroot@hostos1:~# df -h\n…\n/dev/loop18     507M   30M  478M   6% /home/kevin/volume-quota\n\nroot@hostos1:~# chown -R kevin.kevin /home/kevin/volume-quota\nroot@hostos1:~# exit\nLogout",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter08-block-114",
+          "type": "text",
+          "data": {
+            "markdown": "볼륨 사용량 제한된 컨테이너 실행:"
+          }
+        },
+        {
+          "id": "chapter08-block-115",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ docker run -it -v /home/kevin/volume-quota:/webapp --name=myvolume \\\nubuntu:14.04 bash\n\nroot@fc3eb81aa4c6:/# df -h\nFilesystem      Size  Used Avail Use% Mounted on\noverlay         100G   12G   89G  12% /\ntmpfs            64M     0   64M   0% /dev\ntmpfs           3.9G     0  3.9G   0% /sys/fs/cgroup\nshm              64M     0   64M   0% /dev/shm\n/dev/loop18     507M   30M  478M   6% /webapp\n/dev/sdb1       100G   12G   89G  12% /etc/hosts",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter08-section-27",
+      "level": 2,
+      "title": "요약",
+      "anchor": "요약",
+      "content": [
+        {
+          "id": "chapter08-block-117",
+          "type": "table",
+          "data": {
+            "tableId": "chapter08-table-117"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter08-section-28",
+      "level": 3,
+      "title": "주요 명령어 정리",
+      "anchor": "주요-명령어-정리",
+      "content": [
+        {
+          "id": "chapter08-block-118",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# Bind mount\ndocker run -v /호스트경로:/컨테이너경로 이미지명\ndocker run --mount type=bind,source=/호스트경로,target=/컨테이너경로 이미지명\n\n# Docker volume\ndocker volume create 볼륨명\ndocker volume ls\ndocker volume inspect 볼륨명\ndocker volume rm 볼륨명\ndocker run -v 볼륨명:/컨테이너경로 이미지명\n\n# tmpfs mount\ndocker run --tmpfs /컨테이너경로 이미지명\ndocker run --mount type=tmpfs,destination=/컨테이너경로 이미지명\n\n# Data container (볼륨 공유)\ndocker create -v /공유경로 --name=공유컨테이너명 이미지명\ndocker run --volumes-from 공유컨테이너명 이미지명\n\n# 볼륨 권한 설정\n-v /호스트경로:/컨테이너경로:ro  # 읽기 전용\n-v /호스트경로:/컨테이너경로:rw  # 읽기/쓰기\n\n# rootfs 크기 제한\ndocker run --storage-opt size=1G 이미지명",
+            "copyable": true
+          }
+        }
+      ]
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "chapter08-diagram-1",
+      "type": "tree",
+      "title": "Host",
+      "asciiOriginal": "                    Host\n            ┌─────────────────────────────┐\n            │        ┌─────────────┐      │\n            │        │  Container  │      │\n            │        └─────────────┘      │\n            │     ↗         ↑         ↖   │\n            │  bind       volume     tmpfs│\n            │  mount                 mount│\n            │    ↓          ↓         ↓   │\n            │ ┌──────────┐        ┌──────┐│\n            │ │Filesystem│        │Memory││\n            │ │┌────────┐│        └──────┘│\n            │ ││Docker  ││                │\n            │ ││ area   ││                │\n            │ │└────────┘│                │\n            │ └──────────┘                │\n            └─────────────────────────────┘",
+      "mermaidCode": "flowchart TB\n    subgraph Host[\"🖥️ Docker Host\"]\n        direction TB\n\n        subgraph BindMount[\"📁 Bind Mount\"]\n            BH[\"Host 디렉토리<br/>/home/user/data\"]\n            BC[\"Container<br/>/app/data\"]\n            BH <-->|\"직접 연결\"| BC\n        end\n\n        subgraph DockerVolume[\"💾 Docker Volume\"]\n            DV[\"Docker 관리 볼륨<br/>/var/lib/docker/volumes\"]\n            DC[\"Container<br/>/app/data\"]\n            DV <-->|\"Docker 관리\"| DC\n        end\n\n        subgraph Tmpfs[\"⚡ tmpfs Mount\"]\n            TM[\"Memory<br/>(RAM)\"]\n            TC[\"Container<br/>/app/cache\"]\n            TM <-->|\"메모리 연결\"| TC\n        end\n    end\n\n    style Host fill:#f8fafc,stroke:#64748b\n    style BindMount fill:#dbeafe,stroke:#2563eb\n    style DockerVolume fill:#dcfce7,stroke:#16a34a\n    style Tmpfs fill:#fef3c7,stroke:#d97706",
+      "data": {
+        "root": {
+          "id": "root",
+          "label": "Root",
+          "type": "root",
+          "children": [
+            {
+              "id": "node-1",
+              "label": "Host",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-2",
+              "label": "┌─────────────────────────────┐",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "┌─────────────┐      │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "Container  │      │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "┘      │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "↗         ↑         ↖   │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "bind       volume     tmpfs│",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "mount                 mount│",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-3",
+                      "label": "↓          ↓         ↓   │",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "id": "node-4",
+                  "label": "┌──────────┐        ┌──────┐│",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "Filesystem│        │Memory││",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "┌────────┐│        └──────┘│",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "Docker  ││                │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "area   ││                │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "┘│                │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "┘                │",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-3",
+                      "label": "┘",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter08-diagram-2",
+      "type": "tree",
+      "asciiOriginal": "┌─────────────────────────────────────────────────────────────┐\n│                     Docker HostOS                           │\n│                                                             │\n│  ┌─────────────────┐                    ┌─────────────────┐ │\n│  │   Host area     │                    │    Container    │ │\n│  │ ┌─────────────┐ │     BIND MOUNT     │                 │ │\n│  │ │  /my-host   │ │ ←───────────────→  │     /app        │ │\n│  │ └─────────────┘ │                    │                 │ │\n│  │ ┌─────────────┐ │     BIND MOUNT     │                 │ │\n│  │ │${PWD}/mydata│ │ ←───────────────→  │   /var/log      │ │\n│  │ └─────────────┘ │                    │                 │ │\n│  └─────────────────┘                    └─────────────────┘ │\n└─────────────────────────────────────────────────────────────┘",
+      "mermaidCode": "flowchart TB\n    subgraph Host[\"🖥️ Docker Host\"]\n        direction TB\n\n        subgraph BindMount[\"📁 Bind Mount\"]\n            BH[\"Host 디렉토리<br/>/home/user/data\"]\n            BC[\"Container<br/>/app/data\"]\n            BH <-->|\"직접 연결\"| BC\n        end\n\n        subgraph DockerVolume[\"💾 Docker Volume\"]\n            DV[\"Docker 관리 볼륨<br/>/var/lib/docker/volumes\"]\n            DC[\"Container<br/>/app/data\"]\n            DV <-->|\"Docker 관리\"| DC\n        end\n\n        subgraph Tmpfs[\"⚡ tmpfs Mount\"]\n            TM[\"Memory<br/>(RAM)\"]\n            TC[\"Container<br/>/app/cache\"]\n            TM <-->|\"메모리 연결\"| TC\n        end\n    end\n\n    style Host fill:#f8fafc,stroke:#64748b\n    style BindMount fill:#dbeafe,stroke:#2563eb\n    style DockerVolume fill:#dcfce7,stroke:#16a34a\n    style Tmpfs fill:#fef3c7,stroke:#d97706",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "┌─────────────────────────────────────────────────────────────┐",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "Docker HostOS                           │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┌─────────────────┐                    ┌─────────────────┐ │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "Host area     │                    │    Container    │ │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┌─────────────┐ │     BIND MOUNT     │                 │ │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "/my-host   │ │ ←───────────────",
+              "type": "branch",
+              "targetInfo": "│     /app        │ │",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┘ │                    │                 │ │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┌─────────────┐ │     BIND MOUNT     │                 │ │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "${PWD}/mydata│ │ ←───────────────",
+              "type": "branch",
+              "targetInfo": "│   /var/log      │ │",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┘ │                    │                 │ │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┘                    └─────────────────┘ │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┘",
+              "type": "branch",
+              "children": []
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter08-diagram-3",
+      "type": "tree",
+      "asciiOriginal": "┌─────────────────────────────────────────────────────────────────┐\n│                        Docker Engine                            │\n│                                                                 │\n│  ┌─────────────────────────────────────────┐   ┌─────────────┐  │\n│  │/var/lib/docker/volumes/my-volume/_data/ │   │  Container  │  │\n│  │                                         │   │             │  │\n│  │            ┌───────────┐                │   │    /app     │  │\n│  │            │  MY-DATA  │ ←──────────────────→             │  │\n│  │            └───────────┘                │   │             │  │\n│  └─────────────────────────────────────────┘   └─────────────┘  │\n└─────────────────────────────────────────────────────────────────┘",
+      "mermaidCode": "flowchart TB\n    subgraph Host[\"🖥️ Docker Host\"]\n        direction TB\n\n        subgraph BindMount[\"📁 Bind Mount\"]\n            BH[\"Host 디렉토리<br/>/home/user/data\"]\n            BC[\"Container<br/>/app/data\"]\n            BH <-->|\"직접 연결\"| BC\n        end\n\n        subgraph DockerVolume[\"💾 Docker Volume\"]\n            DV[\"Docker 관리 볼륨<br/>/var/lib/docker/volumes\"]\n            DC[\"Container<br/>/app/data\"]\n            DV <-->|\"Docker 관리\"| DC\n        end\n\n        subgraph Tmpfs[\"⚡ tmpfs Mount\"]\n            TM[\"Memory<br/>(RAM)\"]\n            TC[\"Container<br/>/app/cache\"]\n            TM <-->|\"메모리 연결\"| TC\n        end\n    end\n\n    style Host fill:#f8fafc,stroke:#64748b\n    style BindMount fill:#dbeafe,stroke:#2563eb\n    style DockerVolume fill:#dcfce7,stroke:#16a34a\n    style Tmpfs fill:#fef3c7,stroke:#d97706",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "┌─────────────────────────────────────────────────────────────────┐",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "Docker Engine                            │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┌─────────────────────────────────────────┐   ┌─────────────┐  │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "/var/lib/docker/volumes/my-volume/_data/ │   │  Container  │  │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┌───────────┐                │   │    /app     │  │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "MY-DATA  │ ←──────────────────",
+              "type": "branch",
+              "targetInfo": "│  │",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┘                │   │             │  │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┘   └─────────────┘  │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┘",
+              "type": "branch",
+              "children": []
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter08-diagram-4",
+      "type": "tree",
+      "asciiOriginal": "┌─────────────────────────────────────────────────────────────────┐\n│                        Docker HostOS                            │\n│                                                                 │\n│  ┌─────────────────┐                      ┌──────────────────┐  │\n│  │   Container     │     tmpfs MOUNT      │      Memory      │  │\n│  │                 │ ←─────────────────→  │                  │  │\n│  │  /var/www/html  │                      │                  │  │\n│  └─────────────────┘                      └──────────────────┘  │\n└─────────────────────────────────────────────────────────────────┘",
+      "mermaidCode": "flowchart TB\n    subgraph Host[\"🖥️ Docker Host\"]\n        direction TB\n\n        subgraph BindMount[\"📁 Bind Mount\"]\n            BH[\"Host 디렉토리<br/>/home/user/data\"]\n            BC[\"Container<br/>/app/data\"]\n            BH <-->|\"직접 연결\"| BC\n        end\n\n        subgraph DockerVolume[\"💾 Docker Volume\"]\n            DV[\"Docker 관리 볼륨<br/>/var/lib/docker/volumes\"]\n            DC[\"Container<br/>/app/data\"]\n            DV <-->|\"Docker 관리\"| DC\n        end\n\n        subgraph Tmpfs[\"⚡ tmpfs Mount\"]\n            TM[\"Memory<br/>(RAM)\"]\n            TC[\"Container<br/>/app/cache\"]\n            TM <-->|\"메모리 연결\"| TC\n        end\n    end\n\n    style Host fill:#f8fafc,stroke:#64748b\n    style BindMount fill:#dbeafe,stroke:#2563eb\n    style DockerVolume fill:#dcfce7,stroke:#16a34a\n    style Tmpfs fill:#fef3c7,stroke:#d97706",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "┌─────────────────────────────────────────────────────────────────┐",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "Docker HostOS                            │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┌─────────────────┐                      ┌──────────────────┐  │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "Container     │     tmpfs MOUNT      │      Memory      │  │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "←─────────────────",
+              "type": "branch",
+              "targetInfo": "│                  │  │",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "/var/www/html  │                      │                  │  │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┘                      └──────────────────┘  │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┘",
+              "type": "branch",
+              "children": []
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter08-diagram-5",
+      "type": "architecture",
+      "title": "..",
+      "asciiOriginal": "kevin@hostos1:~/fastcampus/ch08$ mkdir redis-conf && cd $_\nkevin@hostos1:~/fastcampus/ch08/redis-conf$ curl -O \\\nhttps://raw.githubusercontent.com/redis/redis/7.0/redis.conf\n\nkevin@hostos1:~/fastcampus/ch08/redis-conf$ vi redis.conf\n..\n1036 # requirepass foobared\n1037 requirepass pass123#     ← 인증 암호 설정",
+      "mermaidCode": "flowchart TB\n    Root[\"🏠 Root\"]\n    Child1[\"📁 Child 1\"]\n    Child2[\"📁 Child 2\"]\n    Child3[\"📁 Child 3\"]\n\n    Root --> Child1\n    Root --> Child2\n    Root --> Child3\n\n    style Root fill:#dbeafe,stroke:#2563eb\n    style Child1 fill:#dcfce7,stroke:#16a34a\n    style Child2 fill:#dcfce7,stroke:#16a34a\n    style Child3 fill:#dcfce7,stroke:#16a34a",
+      "data": {
+        "components": [],
+        "connections": []
+      }
+    },
+    {
+      "id": "chapter08-diagram-6",
+      "type": "tree",
+      "title": "Docker host",
+      "asciiOriginal": "                  ┌───────────────────┐\n                  │  Data container   │ ←─────┐\n                  └───────────────────┘       │\n                           ↑                  │\n                           │                  │\n      ┌────────────────────┼──────────────────┤\n      │                    │                  │\n      ↓                    │                  ↓\n┌───────────┐              │           ┌───────────┐\n│  data-1   │              │           │  data-2   │\n└───────────┘              │           └───────────┘\n                           │\n                    Docker host",
+      "mermaidCode": "flowchart TB\n    subgraph Pattern[\"📦 Data Container 패턴\"]\n        direction TB\n\n        DataContainer[\"🗄️ Data Container<br/>(볼륨 보유)\"]\n\n        App1[\"📦 App Container 1\"]\n        App2[\"📦 App Container 2\"]\n        App3[\"📦 App Container 3\"]\n    end\n\n    DataContainer -->|\"--volumes-from\"| App1\n    DataContainer -->|\"--volumes-from\"| App2\n    DataContainer -->|\"--volumes-from\"| App3\n\n    style Pattern fill:#f8fafc,stroke:#64748b\n    style DataContainer fill:#dcfce7,stroke:#16a34a\n    style App1 fill:#dbeafe,stroke:#2563eb\n    style App2 fill:#dbeafe,stroke:#2563eb\n    style App3 fill:#dbeafe,stroke:#2563eb",
+      "data": {
+        "root": {
+          "id": "root",
+          "label": "Root",
+          "type": "root",
+          "children": [
+            {
+              "id": "node-1",
+              "label": "┌───────────────────┐",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "Data container   │ ←─────┐",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "┘       │",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-3",
+                      "label": "↑                  │",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "node-4",
+              "label": "┌────────────────────┼──────────────────┤",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-2",
+              "label": "↓                    │                  ↓",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-2",
+              "label": "┌───────────┐              │           ┌───────────┐",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "data-1   │              │           │  data-2   │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "┘              │           └───────────┘",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-3",
+                      "label": "Docker host",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    }
+  ],
+  "tables": [
+    {
+      "id": "chapter08-table-1",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "방식",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "저장 위치",
+          "align": "left"
+        },
+        {
+          "key": "col2",
+          "label": "지속성",
+          "align": "left"
+        },
+        {
+          "key": "col3",
+          "label": "관리 주체",
+          "align": "left"
+        },
+        {
+          "key": "col4",
+          "label": "용도",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "Bind mount",
+          "col1": "호스트의 지정된 경로",
+          "col2": "컨테이너 삭제 후에도 유지",
+          "col3": "사용자",
+          "col4": "설정 파일 공유, 개발 환경"
+        },
+        {
+          "col0": "Docker volume",
+          "col1": "/var/lib/docker/volumes/",
+          "col2": "컨테이너 삭제 후에도 유지",
+          "col3": "Docker",
+          "col4": "DB 데이터, 영구 데이터 저장"
+        },
+        {
+          "col0": "tmpfs mount",
+          "col1": "호스트 메모리",
+          "col2": "컨테이너 중지 시 삭제",
+          "col3": "Docker",
+          "col4": "임시 데이터, 민감한 정보"
+        }
+      ]
+    }
+  ]
+}

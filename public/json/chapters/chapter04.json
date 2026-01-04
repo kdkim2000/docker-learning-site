@@ -1,0 +1,1960 @@
+{
+  "meta": {
+    "id": "chapter04",
+    "number": 4,
+    "title": "Chapter 04. Docker 이미지 관리",
+    "description": "",
+    "phase": "buildup",
+    "objectives": [
+      "Docker 이미지와 컨테이너의 관계를 명확히 설명한다",
+      "Docker 이미지가 Layer 구조임을 이해한다",
+      "이미지를 Pull / Build / Tag / Delete 할 수 있다",
+      "Dockerfile을 작성하여 이미지를 직접 생성한다",
+      "운영 환경에서 이미지 관리 전략을 이해한다"
+    ]
+  },
+  "sections": [
+    {
+      "id": "chapter04-section-1",
+      "level": 2,
+      "title": "1. 이 챕터의 목표",
+      "anchor": "1-이-챕터의-목표",
+      "content": [
+        {
+          "id": "chapter04-block-1",
+          "type": "text",
+          "data": {
+            "markdown": "이 챕터를 마치면 다음을 실제로 할 수 있어야 합니다."
+          }
+        },
+        {
+          "id": "chapter04-block-2",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Docker 이미지와 컨테이너의 관계를 명확히 설명한다"
+              },
+              {
+                "text": "Docker 이미지가 Layer 구조임을 이해한다"
+              },
+              {
+                "text": "이미지를 Pull / Build / Tag / Delete 할 수 있다"
+              },
+              {
+                "text": "Dockerfile을 작성하여 이미지를 직접 생성한다"
+              },
+              {
+                "text": "운영 환경에서 이미지 관리 전략을 이해한다"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter04-block-3",
+          "type": "callout",
+          "data": {
+            "type": "danger",
+            "emoji": "❗",
+            "content": "❗ 이 챕터는Docker 실무의 핵심 중 핵심이다."
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-2",
+      "level": 2,
+      "title": "2. Docker 이미지란 무엇인가?",
+      "anchor": "2-docker-이미지란-무엇인가",
+      "content": []
+    },
+    {
+      "id": "chapter04-section-3",
+      "level": 3,
+      "title": "2.1 이미지 vs 컨테이너 (다시 정리)",
+      "anchor": "21-이미지-vs-컨테이너-다시-정리",
+      "content": [
+        {
+          "id": "chapter04-block-5",
+          "type": "table",
+          "data": {
+            "tableId": "chapter04-table-5"
+          }
+        },
+        {
+          "id": "chapter04-block-6",
+          "type": "text",
+          "data": {
+            "markdown": "👉 이미지 = 클래스, 컨테이너 = 객체"
+          }
+        },
+        {
+          "id": "chapter04-block-7",
+          "type": "text",
+          "data": {
+            "markdown": "Docker image는 Container runtime에 필요한 바이너리, 라이브러리 및 설정 값 등을 포함하고, 변경되는 상태 값을 보유하지 않고(stateless) 변하지 않는다. (Immutable, RO)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-4",
+      "level": 3,
+      "title": "2.2 이미지가 필요한 이유",
+      "anchor": "22-이미지가-필요한-이유",
+      "content": [
+        {
+          "id": "chapter04-block-9",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "동일한 환경 보장"
+              },
+              {
+                "text": "어디서든 동일 실행"
+              },
+              {
+                "text": "배포 자동화"
+              },
+              {
+                "text": "버전 관리 가능"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-5",
+      "level": 3,
+      "title": "2.3 컨테이너 애플리케이션 개발 workflow",
+      "anchor": "23-컨테이너-애플리케이션-개발-workflow",
+      "content": [
+        {
+          "id": "chapter04-block-11",
+          "type": "text",
+          "data": {
+            "markdown": "일반적인 컨테이너 애플리케이션 서비스 개발 과정:"
+          }
+        },
+        {
+          "id": "chapter04-block-12",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter04-diagram-1"
+          }
+        },
+        {
+          "id": "chapter04-block-13",
+          "type": "text",
+          "data": {
+            "markdown": "👉 이 모든 작업을 자동화한다면? → CI/CD 파이프라인"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-6",
+      "level": 3,
+      "title": "2.4 Docker image 관련 명령어 workflow",
+      "anchor": "24-docker-image-관련-명령어-workflow",
+      "content": [
+        {
+          "id": "chapter04-block-15",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter04-diagram-2"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-7",
+      "level": 2,
+      "title": "3. Docker 이미지의 내부 구조 (Layer 개념)",
+      "anchor": "3-docker-이미지의-내부-구조-layer-개념",
+      "content": []
+    },
+    {
+      "id": "chapter04-section-8",
+      "level": 3,
+      "title": "3.1 이미지 Layer 구조",
+      "anchor": "31-이미지-layer-구조",
+      "content": [
+        {
+          "id": "chapter04-block-17",
+          "type": "text",
+          "data": {
+            "markdown": "Docker 이미지는 여러 개의 Layer로 구성된다."
+          }
+        },
+        {
+          "id": "chapter04-block-18",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter04-diagram-3"
+          }
+        },
+        {
+          "id": "chapter04-block-19",
+          "type": "text",
+          "data": {
+            "markdown": "특징:"
+          }
+        },
+        {
+          "id": "chapter04-block-20",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "각 Layer는 Read-Only"
+              },
+              {
+                "text": "변경 시 새로운 Layer 추가"
+              },
+              {
+                "text": "재사용 가능 → 속도/용량 최적화"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-9",
+      "level": 3,
+      "title": "3.2 UFS (Union FileSystem) 개념",
+      "anchor": "32-ufs-union-filesystem-개념",
+      "content": [
+        {
+          "id": "chapter04-block-22",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "이미지는 불변 즉, read only 형태로 만들어진다"
+              },
+              {
+                "text": "docker run 명령으로 컨테이너를 생성하면 [Container layer]가 read write로 추가된다"
+              },
+              {
+                "text": "하나의 이미지는 원하는 만큼의 컨테이너를 생성할 수 있다"
+              },
+              {
+                "text": "여러 개의 layer를 하나의 FS으로 사용하게 해주는 기능을 **UFS(union filesystem)**이라고 함"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter04-block-23",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter04-diagram-4"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-10",
+      "level": 3,
+      "title": "3.3 Layer 구조 확인 실습",
+      "anchor": "33-layer-구조-확인-실습",
+      "content": [
+        {
+          "id": "chapter04-block-25",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker image history nginx",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter04-block-26",
+          "type": "text",
+          "data": {
+            "markdown": "출력 포인트:"
+          }
+        },
+        {
+          "id": "chapter04-block-27",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "각 Layer의 생성 명령"
+              },
+              {
+                "text": "용량 변화"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-11",
+      "level": 2,
+      "title": "4. 실습 1 – 이미지 Pull과 확인",
+      "anchor": "4-실습-1-이미지-pull과-확인",
+      "content": []
+    },
+    {
+      "id": "chapter04-section-12",
+      "level": 3,
+      "title": "4.1 이미지 내려 받기 (docker pull)",
+      "anchor": "41-이미지-내려-받기-docker-pull",
+      "content": [
+        {
+          "id": "chapter04-block-29",
+          "type": "text",
+          "data": {
+            "markdown": "Docker는 hub.docker.com(docker.io)으로 부터 이미지를 제공 받거나 제공한다.\n또는, 기업의 인프라에 개별적인 Private registry 서버를 두고, 이곳에 이미지를 pull/push 하기도 한다."
+          }
+        },
+        {
+          "id": "chapter04-block-30",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker [image] pull [options] name:[tag]\n\n# 기본적으로 docker.io가 default registry로 등록되어 있다.\ndocker pull debian[:latest]\ndocker pull library/debian:10\ndocker pull docker.io/library/debian:10\ndocker pull index/docker.io/library/debian:10\n\n# 만일, private registry 나 클라우드의 저장소(ECR, GCR 등)의 이미지를 받는다면,\ndocker pull 192.168.56.101:5000/debian:10\ndocker pull gcr.io/google-samples/hello-app:1.0",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-13",
+      "level": 3,
+      "title": "4.2 이미지 다운로드 실습",
+      "anchor": "42-이미지-다운로드-실습",
+      "content": [
+        {
+          "id": "chapter04-block-32",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker pull ubuntu:22.04\ndocker pull nginx:alpine",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter04-block-33",
+          "type": "text",
+          "data": {
+            "markdown": "이미지를 내려 받는 과정에서 이미지가 계층(layer) 구조라는 것을 보여 준다:"
+          }
+        },
+        {
+          "id": "chapter04-block-34",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter04-diagram-5"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-14",
+      "level": 3,
+      "title": "4.3 로컬 이미지 목록 확인",
+      "anchor": "43-로컬-이미지-목록-확인",
+      "content": [
+        {
+          "id": "chapter04-block-36",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker images",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter04-block-37",
+          "type": "text",
+          "data": {
+            "markdown": "확인 포인트:"
+          }
+        },
+        {
+          "id": "chapter04-block-38",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "REPOSITORY"
+              },
+              {
+                "text": "TAG"
+              },
+              {
+                "text": "IMAGE ID"
+              },
+              {
+                "text": "SIZE"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-15",
+      "level": 3,
+      "title": "4.4 태그(Tag)의 의미",
+      "anchor": "44-태그tag의-의미",
+      "content": [
+        {
+          "id": "chapter04-block-40",
+          "type": "code",
+          "data": {
+            "language": "text",
+            "code": "nginx:alpine",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter04-block-41",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "nginx → 이미지 이름"
+              },
+              {
+                "text": "alpine → 버전 + OS 의미"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter04-block-42",
+          "type": "text",
+          "data": {
+            "markdown": "👉 latest 사용은 운영에서 위험"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-16",
+      "level": 3,
+      "title": "4.5 이미지 구조 확인 (docker image inspect)",
+      "anchor": "45-이미지-구조-확인-docker-image-inspect",
+      "content": [
+        {
+          "id": "chapter04-block-44",
+          "type": "text",
+          "data": {
+            "markdown": "docker image inspect: 생성된 image의 내부 구조 정보를 JSON 형태로 제공."
+          }
+        },
+        {
+          "id": "chapter04-block-45",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker image inspect httpd:2.4",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter04-block-46",
+          "type": "text",
+          "data": {
+            "markdown": "주요 정보:"
+          }
+        },
+        {
+          "id": "chapter04-block-47",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "image ID: \"Id\""
+              },
+              {
+                "text": "생성일: \"Created\""
+              },
+              {
+                "text": "Docker 버전: \"DockerVersion\""
+              },
+              {
+                "text": "CPU 아키텍처: \"Architecture\""
+              },
+              {
+                "text": "이미지 다이제스트 정보: \"RootFS\""
+              },
+              {
+                "text": "이미지 레이어 저장 정보: \"GraphDriver\""
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter04-block-48",
+          "type": "text",
+          "data": {
+            "markdown": "--format 옵션으로 특정 정보만 추출:"
+          }
+        },
+        {
+          "id": "chapter04-block-49",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# OS 정보 확인\ndocker image inspect --format=\"{{.Os}}\" httpd:2.4\n# linux\n\n# 태그 정보 확인\ndocker image inspect --format=\"{{.RepoTags}}\" httpd:2.4\n# [httpd:2.4]\n\n# 노출 포트 확인\ndocker image inspect --format=\"{{.ContainerConfig.ExposedPorts}}\" httpd:2.4\n# map[80/tcp:{}]\n\n# 여러 정보 동시 확인\ndocker image inspect --format=\"{{.RepoTags}} {{.Os}}\" httpd:2.4\n# [httpd:2.4] linux",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-17",
+      "level": 3,
+      "title": "4.6 이미지 히스토리 확인 (docker history)",
+      "anchor": "46-이미지-히스토리-확인-docker-history",
+      "content": [
+        {
+          "id": "chapter04-block-51",
+          "type": "text",
+          "data": {
+            "markdown": "docker history: docker image는 Dockerfile을 통해 build 됨. history는 이 정보를 제공."
+          }
+        },
+        {
+          "id": "chapter04-block-52",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker image history httpd:2.4\n# IMAGE          CREATED      CREATED BY                                      SIZE      COMMENT\n# d1676199e605   8 days ago   /bin/sh -c #(nop)  CMD [\"httpd-foreground\"]     0B\n# <missing>      8 days ago   /bin/sh -c #(nop)  EXPOSE 80                    0B\n# <missing>      8 days ago   /bin/sh -c #(nop)  COPY file:c432ff61c4993ecd…  138B\n# <missing>      8 days ago   /bin/sh -c set -eux;   savedAptMark=\"$(apt-m…   59.9MB\n# <missing>      8 days ago   /bin/sh -c #(nop)  ENV HTTPD_VERSION=2.4.57     0B\n# <missing>      8 days ago   /bin/sh -c #(nop)  CMD [\"bash\"]                 0B\n# <missing>      8 days ago   /bin/sh -c #(nop) ADD file:88252a7f118b4d6f5…   80.5MB",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-18",
+      "level": 3,
+      "title": "4.7 Layer 저장 경로 확인",
+      "anchor": "47-layer-저장-경로-확인",
+      "content": [
+        {
+          "id": "chapter04-block-54",
+          "type": "text",
+          "data": {
+            "markdown": "download된 layer들은 distribution ID를 부여 받고 docker 전용 경로에 저장된다."
+          }
+        },
+        {
+          "id": "chapter04-block-55",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "sudo su -\ncd /var/lib/docker/image/overlay2/distribution/diffid-by-digest/sha256/\n\n# 이 경로에는 docker pull 된 각 layer들이 각각 저장된다.\nls 49d*\n# 49d8a68fd903c4c5786f34b8510d9cc221f6229ba9921f526afa7fbeb9cf91c5",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-19",
+      "level": 2,
+      "title": "5. 실습 2 – 이미지로 컨테이너 실행",
+      "anchor": "5-실습-2-이미지로-컨테이너-실행",
+      "content": []
+    },
+    {
+      "id": "chapter04-section-20",
+      "level": 3,
+      "title": "5.1 nginx 컨테이너 실행",
+      "anchor": "51-nginx-컨테이너-실행",
+      "content": [
+        {
+          "id": "chapter04-block-57",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker run -d -p 8080:80 --name web nginx:alpine",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-21",
+      "level": 3,
+      "title": "5.2 서비스 확인",
+      "anchor": "52-서비스-확인",
+      "content": [
+        {
+          "id": "chapter04-block-59",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "curl http://localhost:8080",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter04-block-60",
+          "type": "text",
+          "data": {
+            "markdown": "또는 브라우저 접속"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-22",
+      "level": 3,
+      "title": "5.3 컨테이너와 이미지 관계 확인",
+      "anchor": "53-컨테이너와-이미지-관계-확인",
+      "content": [
+        {
+          "id": "chapter04-block-62",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker ps\ndocker images",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter04-block-63",
+          "type": "text",
+          "data": {
+            "markdown": "👉 이미지 1개 → 컨테이너 여러 개 가능"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-23",
+      "level": 2,
+      "title": "6. 실습 3 – Dockerfile 개념 이해",
+      "anchor": "6-실습-3-dockerfile-개념-이해",
+      "content": []
+    },
+    {
+      "id": "chapter04-section-24",
+      "level": 3,
+      "title": "6.1 Dockerfile이란?",
+      "anchor": "61-dockerfile이란",
+      "content": [
+        {
+          "id": "chapter04-block-65",
+          "type": "text",
+          "data": {
+            "markdown": "Dockerfile =\n이미지를 만들기 위한 설계도"
+          }
+        },
+        {
+          "id": "chapter04-block-66",
+          "type": "text",
+          "data": {
+            "markdown": "특징:"
+          }
+        },
+        {
+          "id": "chapter04-block-67",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "위에서 아래로 실행"
+              },
+              {
+                "text": "각 줄 = 하나의 Layer"
+              },
+              {
+                "text": "명령 결과가 이미지에 반영됨"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-25",
+      "level": 3,
+      "title": "6.2 기본 Dockerfile 구조",
+      "anchor": "62-기본-dockerfile-구조",
+      "content": [
+        {
+          "id": "chapter04-block-69",
+          "type": "code",
+          "data": {
+            "language": "dockerfile",
+            "code": "FROM nginx:alpine\nCOPY index.html /usr/share/nginx/html/index.html",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-26",
+      "level": 2,
+      "title": "7. 실습 4 – 나만의 이미지 만들기",
+      "anchor": "7-실습-4-나만의-이미지-만들기",
+      "content": []
+    },
+    {
+      "id": "chapter04-section-27",
+      "level": 3,
+      "title": "7.1 실습 디렉토리 준비",
+      "anchor": "71-실습-디렉토리-준비",
+      "content": [
+        {
+          "id": "chapter04-block-71",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "mkdir image-lab\ncd image-lab",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-28",
+      "level": 3,
+      "title": "7.2 HTML 파일 생성",
+      "anchor": "72-html-파일-생성",
+      "content": [
+        {
+          "id": "chapter04-block-73",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "cat > index.html <<EOF\n<h1>Hello Docker Image</h1>\n<p>Chapter 04 Image Build Test</p>\nEOF",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-29",
+      "level": 3,
+      "title": "7.3 Dockerfile 작성",
+      "anchor": "73-dockerfile-작성",
+      "content": [
+        {
+          "id": "chapter04-block-75",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "cat > Dockerfile <<EOF\nFROM nginx:alpine\nCOPY index.html /usr/share/nginx/html/index.html\nEOF",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-30",
+      "level": 3,
+      "title": "7.4 이미지 빌드",
+      "anchor": "74-이미지-빌드",
+      "content": [
+        {
+          "id": "chapter04-block-77",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker build -t my-nginx:v1 .",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-31",
+      "level": 3,
+      "title": "7.5 이미지 확인",
+      "anchor": "75-이미지-확인",
+      "content": [
+        {
+          "id": "chapter04-block-79",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker images",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-32",
+      "level": 3,
+      "title": "7.6 컨테이너 실행",
+      "anchor": "76-컨테이너-실행",
+      "content": [
+        {
+          "id": "chapter04-block-81",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker run -d -p 8081:80 --name myweb my-nginx:v1",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-33",
+      "level": 3,
+      "title": "7.7 결과 확인",
+      "anchor": "77-결과-확인",
+      "content": [
+        {
+          "id": "chapter04-block-83",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "curl http://localhost:8081",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-34",
+      "level": 2,
+      "title": "8. 실습 5 – 이미지 태그 관리",
+      "anchor": "8-실습-5-이미지-태그-관리",
+      "content": []
+    },
+    {
+      "id": "chapter04-section-35",
+      "level": 3,
+      "title": "8.1 이미지 태그 추가",
+      "anchor": "81-이미지-태그-추가",
+      "content": [
+        {
+          "id": "chapter04-block-85",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker tag my-nginx:v1 my-nginx:latest",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-36",
+      "level": 3,
+      "title": "8.2 태그 확인",
+      "anchor": "82-태그-확인",
+      "content": [
+        {
+          "id": "chapter04-block-87",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker images my-nginx",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-37",
+      "level": 2,
+      "title": "9. 실습 6 – 이미지 삭제와 의존성",
+      "anchor": "9-실습-6-이미지-삭제와-의존성",
+      "content": []
+    },
+    {
+      "id": "chapter04-section-38",
+      "level": 3,
+      "title": "9.1 이미지 삭제 실패 확인",
+      "anchor": "91-이미지-삭제-실패-확인",
+      "content": [
+        {
+          "id": "chapter04-block-89",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker rmi my-nginx:v1",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter04-block-90",
+          "type": "text",
+          "data": {
+            "markdown": "출력 예:"
+          }
+        },
+        {
+          "id": "chapter04-block-91",
+          "type": "code",
+          "data": {
+            "language": "text",
+            "code": "image is being used by running container",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-39",
+      "level": 3,
+      "title": "9.2 컨테이너 중지 및 삭제",
+      "anchor": "92-컨테이너-중지-및-삭제",
+      "content": [
+        {
+          "id": "chapter04-block-93",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker stop myweb\ndocker rm myweb",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-40",
+      "level": 3,
+      "title": "9.3 이미지 삭제 성공",
+      "anchor": "93-이미지-삭제-성공",
+      "content": [
+        {
+          "id": "chapter04-block-95",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker rmi my-nginx:v1 my-nginx:latest",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-41",
+      "level": 2,
+      "title": "10. Docker Hub에 이미지 Push",
+      "anchor": "10-docker-hub에-이미지-push",
+      "content": []
+    },
+    {
+      "id": "chapter04-section-42",
+      "level": 3,
+      "title": "10.1 이미지 올리기 (push) 개념",
+      "anchor": "101-이미지-올리기-push-개념",
+      "content": [
+        {
+          "id": "chapter04-block-97",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Dockerfile을 통해 생성된 이미지나 docker commit을 통해 생성된 이미지를 저장하는 곳을 registry라고 한다."
+              },
+              {
+                "text": "Registry는 공개적으로 사용하는 Public registry와 회사 내부에서만 접근되도록 하는 Private registry가 있다."
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter04-block-98",
+          "type": "text",
+          "data": {
+            "markdown": "docker push를 수행하려면 다음과 같은 작업이 전제 된다:"
+          }
+        },
+        {
+          "id": "chapter04-block-99",
+          "type": "list",
+          "data": {
+            "ordered": true,
+            "items": [
+              {
+                "text": "docker login: hub.docker.com에 가입된 본인ID와 암호로 현재 로컬에 계정을 등록한다. (해제는 docker logout)"
+              },
+              {
+                "text": "docker tag: hub.docker.com에 본인 계정의 Repositories에 넣기 위한 태그를 수행한다. (tag는 이미지의 새로운 참조명을 넣는 방법. 간혹, OS, 버전 표시로 활용하기도 한다.)"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-43",
+      "level": 3,
+      "title": "10.2 docker login/logout",
+      "anchor": "102-docker-loginlogout",
+      "content": [
+        {
+          "id": "chapter04-block-101",
+          "type": "text",
+          "data": {
+            "markdown": "hub.docker.com에 회원가입 후 서버에서 docker login을 통해 본인 저장소에 업로드 한다."
+          }
+        },
+        {
+          "id": "chapter04-block-102",
+          "type": "text",
+          "data": {
+            "markdown": "\"암호\"로 접근 하는 방법:"
+          }
+        },
+        {
+          "id": "chapter04-block-103",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker login\n# Login with your Docker ID to push and pull images from Docker Hub.\n# Username: (본인계정)\n# Password: (본인암호)\n# WARNING! Your password will be stored unencrypted in /home/kevin/.docker/config.json.\n# Login Succeeded\n\ndocker info | grep Username\n# Username: (본인계정확인)",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter04-block-104",
+          "type": "callout",
+          "data": {
+            "type": "warning",
+            "emoji": "⚠️",
+            "content": "⚠️ 경고! 입력한 암호는 암호화 되지 않는다. 제공되는 경로를 열어보면 암호코드처럼 생긴 값이 있지만, base64 인코딩 값이다."
+          }
+        },
+        {
+          "id": "chapter04-block-105",
+          "type": "text",
+          "data": {
+            "markdown": "\"Token\"으로 접근하는 방법:"
+          }
+        },
+        {
+          "id": "chapter04-block-106",
+          "type": "text",
+          "data": {
+            "markdown": "Docker Hub > Account Settings > Security > New Access Token에서 토큰 생성 후:"
+          }
+        },
+        {
+          "id": "chapter04-block-107",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "vi .access_token\n# dckr_pat_wjXAeTK1x2mbQr2qseWW_LXNdZs\n\ncat .access_token | docker login --username 본인계정 --password-stdin\n# Login Succeeded\n\ndocker info | grep Username\n# Username: (본인계정확인)",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-44",
+      "level": 3,
+      "title": "10.3 docker tag → push",
+      "anchor": "103-docker-tag-push",
+      "content": [
+        {
+          "id": "chapter04-block-109",
+          "type": "text",
+          "data": {
+            "markdown": "hub.docker.com에 본인 계정의 Repositories에 생성한 이미지를 업로드하기 위해서는 본인계정을 이미지명 앞에 붙여야 docker push 수행 시 계정으로 찾아가 저장된다."
+          }
+        },
+        {
+          "id": "chapter04-block-110",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker images\n# REPOSITORY   TAG    IMAGE ID       CREATED       SIZE\n# myweb        v1.1   533b0d9189d6   3 days ago    41.4MB\n# myweb        v1.0   ed199951117d   3 days ago    41.4MB\n\n# 본인계정/이미지명:태그 형태로 tag 추가\ndocker image tag myweb:v1.0 dbgurum/myweb:v1.0\n\ndocker images\n# REPOSITORY       TAG    IMAGE ID       CREATED       SIZE\n# myweb            v1.1   533b0d9189d6   3 days ago    41.4MB\n# dbgurum/myweb    v1.0   ed199951117d   3 days ago    41.4MB\n\n# Docker Hub에 push\ndocker push dbgurum/myweb:v1.0\n# The push refers to repository [docker.io/dbgurum/myweb]\n# 0e09aaca8f2d: Pushed\n# v1.0: digest: sha256:1e2580f9199d54738823cda8a79d154080ecbfb93bdedf4325baf4e1dea20168 size: 2198",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-45",
+      "level": 3,
+      "title": "10.4 push된 이미지 확인",
+      "anchor": "104-push된-이미지-확인",
+      "content": [
+        {
+          "id": "chapter04-block-112",
+          "type": "text",
+          "data": {
+            "markdown": "hub.docker.com에 push된 이미지를 다른 위치에서 pull 해보고, docker run 으로 정상 이미지인지 확인해 본다."
+          }
+        },
+        {
+          "id": "chapter04-block-113",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 다른 서버에서\ndocker pull dbgurum/myweb:v1.0\ndocker run -d -p 8001:80 --name=myweb dbgurum/myweb:v1.0\ncurl localhost:8001",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter04-block-114",
+          "type": "text",
+          "data": {
+            "markdown": "이미지를 공유하는 방법:"
+          }
+        },
+        {
+          "id": "chapter04-block-115",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "registry에 push하여 공유"
+              },
+              {
+                "text": "이미지를 생성하는 Dockerfile과 소스를 Github에 올려 공유"
+              },
+              {
+                "text": "이미지를 docker save를 통해 파일로 백업하여 전달 후 docker load를 통해 공유"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-46",
+      "level": 2,
+      "title": "11. Docker 이미지 백업 및 이전 (save/load)",
+      "anchor": "11-docker-이미지-백업-및-이전-saveload",
+      "content": []
+    },
+    {
+      "id": "chapter04-section-47",
+      "level": 3,
+      "title": "11.1 docker save - 이미지 백업",
+      "anchor": "111-docker-save---이미지-백업",
+      "content": [
+        {
+          "id": "chapter04-block-117",
+          "type": "text",
+          "data": {
+            "markdown": "docker save 명령을 통해 Layer로 구성된 이미지를 *.tar 파일로 묶어 파일로 저장한다."
+          }
+        },
+        {
+          "id": "chapter04-block-118",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "mkdir save_lab && cd $_\n\n# tar 파일로 저장\ndocker image save phpserver:1.0 > phpserver1.tar\nls -lh\n# -rw-rw-r-- 1 kevin kevin 331M 06월 15 11:49 phpserver1.tar\n\n# gzip 압축으로 저장\ndocker image save phpserver:1.0 | gzip > phpserver1.tar.gz\nls -lh\n# -rw-rw-r-- 1 kevin kevin 331M 06월 15 11:49 phpserver1.tar\n# -rw-rw-r-- 1 kevin kevin 102M 06월 15 11:50 phpserver1.tar.gz\n\n# bzip2 압축으로 저장\ndocker image save phpserver:1.0 | bzip2 > phpserver1.tar.bz2\nls -lh\n# -rw-rw-r-- 1 kevin kevin 331M 06월 15 11:49 phpserver1.tar\n# -rw-rw-r-- 1 kevin kevin 102M 06월 15 11:50 phpserver1.tar.gz\n# -rw-rw-r-- 1 kevin kevin  93M 06월 15 11:51 phpserver1.tar.bz2",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-48",
+      "level": 3,
+      "title": "11.2 docker load - 이미지 복원",
+      "anchor": "112-docker-load---이미지-복원",
+      "content": [
+        {
+          "id": "chapter04-block-120",
+          "type": "text",
+          "data": {
+            "markdown": "해당 파일을 전달 받은 컴퓨터에서 docker load를 통해 이미지로 등록한다."
+          }
+        },
+        {
+          "id": "chapter04-block-121",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# hostos1에서 hostos2로 파일 전송\nscp phpserver1.tar.gz kevin@hostos2:/home/kevin/backup/phpserver1.tar.gz\n\n# hostos2에서 이미지 로드\ncd ~/backup\ndocker image load < phpserver1.tar.gz\n# Loaded image: phpserver:1.0\n\ndocker images\ndocker run -itd -p 8200:80 phpserver:1.0\ncurl localhost:8200",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-49",
+      "level": 2,
+      "title": "12. 이미지 삭제 고급 기법",
+      "anchor": "12-이미지-삭제-고급-기법",
+      "content": []
+    },
+    {
+      "id": "chapter04-section-50",
+      "level": 3,
+      "title": "12.1 이미지 삭제 명령",
+      "anchor": "121-이미지-삭제-명령",
+      "content": [
+        {
+          "id": "chapter04-block-123",
+          "type": "text",
+          "data": {
+            "markdown": "Docker Hub를 통해 다운로드(pull) 받은 이미지는 종류에 따라 용량이 다르다. 작게는 몇 MB부터 크게는 몇 GB가 넘는 것도 있다. 이미지를 계속 다운로드만 받게 되면 로컬 서버의 저장 용량을 많이 차지하여 공간 부족과 같은 문제를 야기하기도 한다."
+          }
+        },
+        {
+          "id": "chapter04-block-124",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker image rm [옵션] {이미지명[:태그] | 이미지ID}\ndocker rmi [옵션] {이미지명[:태그] | 이미지ID}",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-51",
+      "level": 3,
+      "title": "12.2 이미지 일괄 삭제 기법",
+      "anchor": "122-이미지-일괄-삭제-기법",
+      "content": [
+        {
+          "id": "chapter04-block-126",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 이미지 전체 삭제\ndocker rmi $(docker images -q)\n\n# 특정 이미지명이 포함된 것만 삭제\ndocker rmi $(docker images | grep debian)\n\n# 반대로 특정 이미지명이 포함된 것만 제외하고 모두 삭제\ndocker rmi $(docker images | grep -v centos)",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-52",
+      "level": 3,
+      "title": "12.3 유용한 alias 설정",
+      "anchor": "123-유용한-alias-설정",
+      "content": [
+        {
+          "id": "chapter04-block-128",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "vi .bashrc\n\n# 상태가 exited 인 container를 찾아서 모두 삭제\nalias cexrm='docker rm $(docker ps --filter 'status=exited' -a -q)'\n\n# 설정한 alias를 적용하고 확인\nsource .bashrc\nalias\n# alias cexrm='docker rm $(docker ps --filter 'status=exited' -a -q)'",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-53",
+      "level": 3,
+      "title": "12.4 사용 중인 이미지 삭제 시 오류",
+      "anchor": "124-사용-중인-이미지-삭제-시-오류",
+      "content": [
+        {
+          "id": "chapter04-block-130",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 현재 centos:7 이미지를 사용 중인 컨테이너가 있다.\ndocker ps -a\n# CONTAINER ID   IMAGE      COMMAND   CREATED          STATUS          NAMES\n# 0b5612583dfa   centos:7   \"bash\"    8 minutes ago    Up 8 minutes    mycontainer\n\n# 이미지를 삭제하면?\ndocker image rm centos:7\n# Error response from daemon: conflict: unable to remove repository reference \"centos:7\"\n# (must force) - container 0b5612583dfa is using its referenced image eeb6ee3f44bd\n\n# 해당 컨테이너 stop 후 rm으로 컨테이너 삭제\ndocker stop 0b5612583dfa\ndocker rm 0b5612583dfa",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-54",
+      "level": 2,
+      "title": "13. Private Docker Registry 구성",
+      "anchor": "13-private-docker-registry-구성",
+      "content": []
+    },
+    {
+      "id": "chapter04-section-55",
+      "level": 3,
+      "title": "13.1 Private Registry 필요성",
+      "anchor": "131-private-registry-필요성",
+      "content": [
+        {
+          "id": "chapter04-block-132",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "기업 내부에서 생성한 프로젝트용 이미지를 public registry에 올리는 경우는 없다."
+              },
+              {
+                "text": "image에 네트워크나 OS 및 미들웨어 설정 등의 정보가 포함되어 있으므로 보안상 Docker Hub와 같이 인터넷을 통해 불특정 다수에게 공개되는 곳에는 올릴 수 없는 경우에는 **\"Private Registry\"**를 구축한다."
+              },
+              {
+                "text": "Docker registry는 docker image를 회사 서버에서 개별적으로 구축 관리하는 서비스다."
+              },
+              {
+                "text": "회사 인프라내에 private docker registry를 구축하기 위해서는, Docker Hub에 공개되어 있는 공식 image인 **\"registry\"**를 사용한다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-56",
+      "level": 3,
+      "title": "13.2 Private Registry 구성",
+      "anchor": "132-private-registry-구성",
+      "content": [
+        {
+          "id": "chapter04-block-134",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# registry 이미지 다운로드\ndocker pull registry\ndocker images | grep registry\n# registry   latest   65f3b3441f04   3 weeks ago   24MB\n\n# registry 컨테이너 실행\ndocker run -d \\\n  -v /home/kevin/registry_data:/var/lib/registry \\\n  -p 5000:5000 \\\n  --restart=always \\\n  --name=local-registry \\\n  registry\n\ndocker ps | grep registry\n# 36a452a303e1   registry   \"/entrypoint.sh /etc…\"   13 seconds ago   Up 12 seconds\n# 0.0.0.0:5000->5000/tcp, :::5000->5000/tcp   local-registry\n\nsudo netstat -nlp | grep 5000\n# tcp   0   0 0.0.0.0:5000   0.0.0.0:*   LISTEN   58135/docker-proxy",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-57",
+      "level": 3,
+      "title": "13.3 insecure-registry 설정",
+      "anchor": "133-insecure-registry-설정",
+      "content": [
+        {
+          "id": "chapter04-block-136",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# registry에 이미지 목록 확인\ncurl -X GET http://192.168.56.101:5000/v2/_catalog\n# {\"repositories\":[]}\n\n# 이미지 태그 및 push 시도\ndocker image tag myweb:v1.0 192.168.56.101:5000/myweb:v1.0\ndocker push 192.168.56.101:5000/myweb:v1.0\n# Get \"https://192.168.56.101:5000/v2/\": http: server gave HTTP response to HTTPS client",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter04-block-137",
+          "type": "text",
+          "data": {
+            "markdown": "HTTP 접근을 허용하기 위해 insecure-registry 설정:"
+          }
+        },
+        {
+          "id": "chapter04-block-138",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# /etc/docker/daemon.json 파일 수정\nsudo vi /etc/docker/daemon.json\n{ \"insecure-registries\": [\"192.168.56.101:5000\"] }\n\n# Docker 서비스 재시작\nsudo systemctl restart docker.service\n\n# 설정 확인\ndocker info\n# ...\n# Insecure Registries:\n#   192.168.56.101:5000\n#   127.0.0.0/8",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-58",
+      "level": 3,
+      "title": "13.4 Private Registry에 이미지 Push/Pull",
+      "anchor": "134-private-registry에-이미지-pushpull",
+      "content": [
+        {
+          "id": "chapter04-block-140",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 이미지 push\ndocker push 192.168.56.101:5000/myweb:v1.0\n# The push refers to repository [192.168.56.101:5000/myweb]\n# 0e09aaca8f2d: Pushed\n# v1.0: digest: sha256:1e2580f9199d54738823cda8a79d154080ecbfb93bdedf4325baf4e1dea20 size: 2198\n\n# registry 목록 확인\ncurl -X GET http://192.168.56.101:5000/v2/_catalog\n# {\"repositories\":[\"myweb\"]}\n\ncurl -X GET http://192.168.56.101:5000/v2/myweb/tags/list\n# {\"name\":\"myweb\",\"tags\":[\"v1.0\"]}",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-59",
+      "level": 3,
+      "title": "13.5 다른 서버에서 Private Registry 사용",
+      "anchor": "135-다른-서버에서-private-registry-사용",
+      "content": [
+        {
+          "id": "chapter04-block-142",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# hostos2 (client)에서 registry 확인\ncurl -X GET http://192.168.56.101:5000/v2/_catalog\n# {\"repositories\":[\"myweb\"]}\n\ncurl -X GET http://192.168.56.101:5000/v2/myweb/tags/list\n# {\"name\":\"myweb\",\"tags\":[\"v1.0\",\"v1.1\"]}\n\n# 이미지 pull 및 실행\ndocker pull 192.168.56.101:5000/myweb:v1.0\ndocker image tag 192.168.56.101:5000/myweb:v1.0 dev_http:1.1\ndocker images\ndocker run -d -p 8100:80 --name myweb-server dev_http:1.1",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter04-block-143",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "기본 docker registry는 http 접근으로 별도의 인증 절차가 없다.\n보안 구성을 위해 별도로 SSL(openssl)로 인증서를 만들어 보안 인증 구성도 가능하다."
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-60",
+      "level": 2,
+      "title": "14. 운영 관점 이미지 관리 전략",
+      "anchor": "14-운영-관점-이미지-관리-전략",
+      "content": []
+    },
+    {
+      "id": "chapter04-section-61",
+      "level": 3,
+      "title": "14.1 운영에서 지켜야 할 원칙",
+      "anchor": "141-운영에서-지켜야-할-원칙",
+      "content": [
+        {
+          "id": "chapter04-block-145",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "latest 사용 금지"
+              },
+              {
+                "text": "명확한 버전 태그 사용"
+              },
+              {
+                "text": "이미지 크기 최소화"
+              },
+              {
+                "text": "불필요한 이미지 주기적 정리"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-62",
+      "level": 3,
+      "title": "14.2 이미지 정리 명령",
+      "anchor": "142-이미지-정리-명령",
+      "content": [
+        {
+          "id": "chapter04-block-147",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker image prune\ndocker system prune",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter04-block-148",
+          "type": "text",
+          "data": {
+            "markdown": "⚠️ 운영 서버에서는 주의"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-63",
+      "level": 2,
+      "title": "15. 반드시 이해해야 할 핵심 요약",
+      "anchor": "15-반드시-이해해야-할-핵심-요약",
+      "content": [
+        {
+          "id": "chapter04-block-150",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "이미지는 Layer 구조"
+              },
+              {
+                "text": "Dockerfile 한 줄 = 한 Layer"
+              },
+              {
+                "text": "Image는 Read-Only (Immutable)"
+              },
+              {
+                "text": "Container는 Image 기반 실행 인스턴스 (Read/Write Layer 추가)"
+              },
+              {
+                "text": "UFS(Union FileSystem)로 여러 Layer를 하나의 FS로 사용"
+              },
+              {
+                "text": "docker login → tag → push 로 Docker Hub에 업로드"
+              },
+              {
+                "text": "docker save/load로 이미지 백업 및 이전"
+              },
+              {
+                "text": "Private Registry로 사내 이미지 관리"
+              },
+              {
+                "text": "이미지 관리 = Docker 실무의 핵심"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-64",
+      "level": 2,
+      "title": "16. 체크리스트 (통과 필수)",
+      "anchor": "16-체크리스트-통과-필수",
+      "content": [
+        {
+          "id": "chapter04-block-152",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Image와 Container 차이를 설명할 수 있다"
+              },
+              {
+                "text": "docker pull / run / build 사용 가능"
+              },
+              {
+                "text": "Dockerfile을 직접 작성했다"
+              },
+              {
+                "text": "이미지 태그 개념을 이해했다"
+              },
+              {
+                "text": "이미지 삭제 시 의존성 이해"
+              },
+              {
+                "text": "docker login / push 수행 가능"
+              },
+              {
+                "text": "docker save / load로 이미지 백업 및 복원 가능"
+              },
+              {
+                "text": "Private Registry 구성 및 활용 방법 이해"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter04-section-65",
+      "level": 2,
+      "title": "17. 다음 챕터 예고",
+      "anchor": "17-다음-챕터-예고",
+      "content": []
+    },
+    {
+      "id": "chapter04-section-66",
+      "level": 3,
+      "title": "Chapter 05. 컨테이너 생명주기와 관리",
+      "anchor": "chapter-05-컨테이너-생명주기와-관리",
+      "content": [
+        {
+          "id": "chapter04-block-154",
+          "type": "text",
+          "data": {
+            "markdown": "다음 장에서는:"
+          }
+        },
+        {
+          "id": "chapter04-block-155",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "create / start / stop / rm"
+              },
+              {
+                "text": "컨테이너 상태 전이"
+              },
+              {
+                "text": "로그 / exec / inspect"
+              },
+              {
+                "text": "장애 분석 기본기"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter04-block-156",
+          "type": "text",
+          "data": {
+            "markdown": "를 실습 중심으로 다룹니다."
+          }
+        }
+      ]
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "chapter04-diagram-1",
+      "type": "flow",
+      "title": "(1) 애플리케이션 코드 개발",
+      "asciiOriginal": "(1) 애플리케이션 코드 개발\n        ↓\n(2) 베이스이미지를 이용한 Dockerfile 작성\n        ↓\n(3) Dockerfile build를 통한 새로운 이미지 생성\n        ↓\n(4-1) 생성된 이미지를 이용한 컨테이너 실행\n(4-2) 도커컴포즈를 이용한 다중 컨테이너 실행\n        ↓\n(5-1) 컨테이너 애플리케이션 서비스 테스트\n(5-2) 마이크로서비스 테스트\n        ↓\n(6) 로컬 및 원격 저장소에 이미지 저장 (push)\n        ↓\n(7) Github 등을 활용한 Dockerfile 관리\n        ↓\n(8) 동일환경에서의 지속적 애플리케이션 개발 수행",
+      "mermaidCode": "flowchart LR\n    subgraph Development[\"👨‍💻 개발\"]\n        Dockerfile[\"📄 Dockerfile\"]\n        AppCode[\"💻 Application<br/>+ Infra 구성\"]\n    end\n\n    subgraph Build[\"🔨 빌드\"]\n        BuildProcess[\"docker build\"]\n        Image[\"🐳 Docker Image\"]\n    end\n\n    subgraph Registry[\"📦 레지스트리\"]\n        Push[\"docker push\"]\n        Hub[\"Docker Hub\"]\n        Pull[\"docker pull\"]\n    end\n\n    subgraph Deploy[\"🚀 배포\"]\n        Run[\"docker run\"]\n        Container[\"📦 Container\"]\n        Service[\"🌐 Application<br/>서비스 제공\"]\n    end\n\n    AppCode --> Dockerfile\n    Dockerfile --> BuildProcess\n    BuildProcess --> Image\n    Image --> Push\n    Push --> Hub\n    Hub --> Pull\n    Pull --> Run\n    Run --> Container\n    Container --> Service\n\n    style Development fill:#fef3c7,stroke:#d97706\n    style Build fill:#dbeafe,stroke:#2563eb\n    style Registry fill:#e0e7ff,stroke:#6366f1\n    style Deploy fill:#dcfce7,stroke:#16a34a",
+      "data": {
+        "steps": [],
+        "connections": [],
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter04-diagram-2",
+      "type": "tree",
+      "title": "<Local Server>",
+      "asciiOriginal": "                    <Local Server>\n                        save\n  DOCKERFILE ──build──→  ┌─────┐  ←──load──\n       │                 │image│\n       │     ls, rm, tag │     │  docker login\n       │     inspect     └──┬──┘       ↓\n       ↓     history        │       ┌─────────────┐\n    GitHub                  │  push │ Docker Hub  │\n                           run  ←──pull── Registry│\n                            │       │             │\n                            ↓    search           │\n                      ┌──────────┐  └─────────────┘\n                      │container │\n                      └──────────┘    Automated Build",
+      "mermaidCode": "flowchart LR\n    subgraph Development[\"👨‍💻 개발\"]\n        Dockerfile[\"📄 Dockerfile\"]\n        AppCode[\"💻 Application<br/>+ Infra 구성\"]\n    end\n\n    subgraph Build[\"🔨 빌드\"]\n        BuildProcess[\"docker build\"]\n        Image[\"🐳 Docker Image\"]\n    end\n\n    subgraph Registry[\"📦 레지스트리\"]\n        Push[\"docker push\"]\n        Hub[\"Docker Hub\"]\n        Pull[\"docker pull\"]\n    end\n\n    subgraph Deploy[\"🚀 배포\"]\n        Run[\"docker run\"]\n        Container[\"📦 Container\"]\n        Service[\"🌐 Application<br/>서비스 제공\"]\n    end\n\n    AppCode --> Dockerfile\n    Dockerfile --> BuildProcess\n    BuildProcess --> Image\n    Image --> Push\n    Push --> Hub\n    Hub --> Pull\n    Pull --> Run\n    Run --> Container\n    Container --> Service\n\n    style Development fill:#fef3c7,stroke:#d97706\n    style Build fill:#dbeafe,stroke:#2563eb\n    style Registry fill:#e0e7ff,stroke:#6366f1\n    style Deploy fill:#dcfce7,stroke:#16a34a",
+      "data": {
+        "root": {
+          "id": "root",
+          "label": "Root",
+          "type": "root",
+          "children": [
+            {
+              "id": "node-1",
+              "label": "<Local Server>",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "save",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "node-3",
+              "label": "DOCKERFILE ──build──",
+              "type": "branch",
+              "targetInfo": "┌─────┐  ←──load──",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "image│",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "ls, rm, tag │     │  docker login",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "inspect     └──┬──┘       ↓",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "↓     history        │       ┌─────────────┐",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "GitHub                  │  push │ Docker Hub  │",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-3",
+                      "label": "run  ←──pull── Registry│",
+                      "type": "branch",
+                      "children": [
+                        {
+                          "id": "node-4",
+                          "label": "↓    search           │",
+                          "type": "branch",
+                          "children": []
+                        }
+                      ]
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "┌──────────┐  └─────────────┘",
+                      "type": "branch",
+                      "children": [
+                        {
+                          "id": "node-4",
+                          "label": "container │",
+                          "type": "branch",
+                          "children": [
+                            {
+                              "id": "node-5",
+                              "label": "┘    Automated Build",
+                              "type": "branch",
+                              "children": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter04-diagram-3",
+      "type": "tree",
+      "title": "Docker Image",
+      "asciiOriginal": "┌─────────────────────┐\n│  Application Layer  │  ← 웹소스\n├─────────────────────┤\n│   httpd (서버)      │  ← httpd 서버\n├─────────────────────┤\n│    Library Layer    │  ← OS 계층\n├─────────────────────┤\n│  Base Image Layer   │  ← OS 계층\n└─────────────────────┘\n      Docker Image",
+      "mermaidCode": "flowchart TB\n    subgraph Image[\"🐳 Docker Image\"]\n        direction TB\n        L4[\"📦 Application Layer<br/>(Your Code)\"]\n        L3[\"⚙️ Runtime Layer<br/>(Node.js, Python, etc.)\"]\n        L2[\"📚 Library Layer<br/>(Dependencies)\"]\n        L1[\"🐧 Base Layer<br/>(Ubuntu, Alpine, etc.)\"]\n    end\n\n    L4 --> L3\n    L3 --> L2\n    L2 --> L1\n\n    style L4 fill:#dbeafe,stroke:#2563eb\n    style L3 fill:#e0f2fe,stroke:#0284c7\n    style L2 fill:#ecfdf5,stroke:#059669\n    style L1 fill:#f3f4f6,stroke:#6b7280",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "┌─────────────────────┐",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "Application Layer  │  ← 웹소스",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┤",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "httpd (서버)      │  ← httpd 서버",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "node-4",
+              "label": "┤",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "Library Layer    │  ← OS 계층",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "node-4",
+              "label": "┤",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "Base Image Layer   │  ← OS 계층",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┘",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "Docker Image",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter04-diagram-4",
+      "type": "tree",
+      "asciiOriginal": "Docker Image                          httpd Container\n┌───────────┐   ┌───────────────┐     ┌─────────────┐\n│ web source│   │  web source   │     │ Read write  │ ← Container Layer\n├───────────┤   ├───────────────┤  ┌──┼─────────────┤\n│  httpd    │   │    httpd      │  │  │  web app    │\n├───────────┤ → ├───────────────┤ →│  │  Image      │ ...\n│  Layer 3  │   │   Layer 3     │  │  │  Layers     │\n├───────────┤   ├───────────────┤  │  └─────────────┘\n│  Layer 2  │   │   Layer 2     │  │\n├───────────┤   ├───────────────┤  │  ┌─────────────┐\n│  Layer 1  │   │   Layer 1     │  │  │ Read write  │\n├───────────┤   ├───────────────┤  └──┼─────────────┤\n│Debian Linux│  │   Web App.    │     │  web app    │\n└───────────┘   └───────────────┘     │  Image      │\nApache httpd                          │  Layers     │\n                                      └─────────────┘",
+      "mermaidCode": "flowchart TB\n    subgraph ImageBuild[\"🐳 Docker Image 빌드\"]\n        direction TB\n        subgraph BaseImage[\"Base Image\"]\n            L1[\"🐧 Debian Linux<br/>(Base Layer)\"]\n            L2[\"📦 Layer 1\"]\n            L3[\"📦 Layer 2\"]\n            L4[\"📦 Layer 3\"]\n            L5[\"⚙️ httpd<br/>(Apache)\"]\n            L6[\"🌐 web source\"]\n        end\n    end\n\n    subgraph Container1[\"📦 httpd Container 1\"]\n        direction TB\n        RW1[\"✏️ Read/Write<br/>Container Layer\"]\n        IL1[\"📚 Image Layers<br/>(Read Only)\"]\n    end\n\n    subgraph Container2[\"📦 httpd Container 2\"]\n        direction TB\n        RW2[\"✏️ Read/Write<br/>Container Layer\"]\n        IL2[\"📚 Image Layers<br/>(Read Only)\"]\n    end\n\n    ImageBuild -->|docker run| Container1\n    ImageBuild -->|docker run| Container2\n\n    L1 --> L2\n    L2 --> L3\n    L3 --> L4\n    L4 --> L5\n    L5 --> L6\n\n    RW1 --> IL1\n    RW2 --> IL2\n\n    style ImageBuild fill:#f8fafc,stroke:#64748b\n    style BaseImage fill:#e0f2fe,stroke:#0284c7\n    style Container1 fill:#dcfce7,stroke:#16a34a\n    style Container2 fill:#dcfce7,stroke:#16a34a\n    style RW1 fill:#fef3c7,stroke:#d97706\n    style RW2 fill:#fef3c7,stroke:#d97706",
+      "data": {
+        "root": {
+          "id": "root",
+          "label": "Root",
+          "type": "root",
+          "children": [
+            {
+              "id": "node-1",
+              "label": "Docker Image                          httpd Container",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-2",
+              "label": "┌───────────┐   ┌───────────────┐     ┌─────────────┐",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "web source│   │  web source   │     │ Read write  │ ← Container Layer",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-3",
+                      "label": "┤   ├───────────────┤  ┌──┼─────────────┤",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-4",
+                      "label": "httpd    │   │    httpd      │  │  │  web app    │",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-4",
+                      "label": "┤",
+                      "type": "branch",
+                      "targetInfo": "├───────────────┤ →│  │  Image      │ ...",
+                      "children": []
+                    },
+                    {
+                      "id": "node-4",
+                      "label": "Layer 3  │   │   Layer 3     │  │  │  Layers     │",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-4",
+                      "label": "┤   ├───────────────┤  │  └─────────────┘",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-4",
+                      "label": "Layer 2  │   │   Layer 2     │  │",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-4",
+                      "label": "┤   ├───────────────┤  │  ┌─────────────┐",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-4",
+                      "label": "Layer 1  │   │   Layer 1     │  │  │ Read write  │",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-4",
+                      "label": "┤   ├───────────────┤  └──┼─────────────┤",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "id": "node-4",
+                  "label": "Debian Linux│  │   Web App.    │     │  web app    │",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-3",
+                      "label": "┘   └───────────────┘     │  Image      │",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "node-4",
+              "label": "Apache httpd                          │  Layers     │",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "┘",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter04-diagram-5",
+      "type": "flow",
+      "title": "docker pull httpd:2.4",
+      "asciiOriginal": "docker pull httpd:2.4\n# 2.4: Pulling from library/httpd\n# f03b40093957: Pull complete ... layer 5 → 웹소스\n# abaf8619eb1c: Pull complete ... layer 4 → httpd 서버\n# e3fe37d0c2ad: Pull complete ... layer 3 → OS 계층\n# 52a1e37affe5: Pull complete ... layer 2 → OS 계층\n# 49d8a68fd903: Pull complete ... layer 1 → OS 계층\n# Digest: sha256:1bb3f7669a85713906e695599d29c58ab40d4e6409907946609d92a428e95b49\n# Status: Downloaded newer image for httpd:2.4\n# docker.io/library/httpd:2.4",
+      "mermaidCode": "flowchart TB\n    subgraph Image[\"🐳 Docker Image\"]\n        direction TB\n        L4[\"📦 Application Layer<br/>(Your Code)\"]\n        L3[\"⚙️ Runtime Layer<br/>(Node.js, Python, etc.)\"]\n        L2[\"📚 Library Layer<br/>(Dependencies)\"]\n        L1[\"🐧 Base Layer<br/>(Ubuntu, Alpine, etc.)\"]\n    end\n\n    L4 --> L3\n    L3 --> L2\n    L2 --> L1\n\n    style L4 fill:#dbeafe,stroke:#2563eb\n    style L3 fill:#e0f2fe,stroke:#0284c7\n    style L2 fill:#ecfdf5,stroke:#059669\n    style L1 fill:#f3f4f6,stroke:#6b7280",
+      "data": {
+        "steps": [],
+        "connections": [],
+        "orientation": "horizontal"
+      }
+    }
+  ],
+  "tables": [
+    {
+      "id": "chapter04-table-1",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "구분",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "Docker Image",
+          "align": "left"
+        },
+        {
+          "key": "col2",
+          "label": "Docker Container",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "개념",
+          "col1": "실행 설계도",
+          "col2": "실행 인스턴스"
+        },
+        {
+          "col0": "상태",
+          "col1": "Read-Only (Immutable)",
+          "col2": "Read/Write"
+        },
+        {
+          "col0": "생성 시점",
+          "col1": "Build / Pull (Build-time)",
+          "col2": "Run (Run-time)"
+        },
+        {
+          "col0": "수명",
+          "col1": "반영구",
+          "col2": "휘발성"
+        }
+      ]
+    }
+  ]
+}

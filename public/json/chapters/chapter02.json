@@ -1,0 +1,966 @@
+{
+  "meta": {
+    "id": "chapter02",
+    "number": 2,
+    "title": "Chapter 02. Docker 플랫폼 구성과 동작 원리",
+    "description": "",
+    "phase": "buildup",
+    "objectives": [
+      "docker run 명령이 내부에서 어떤 순서로 처리되는가",
+      "Docker Client와 Daemon의 역할 차이",
+      "Image / Container / Runtime의 관계",
+      "Docker가 단순한 실행 도구가 아닌 플랫폼인 이유"
+    ]
+  },
+  "sections": [
+    {
+      "id": "chapter02-section-1",
+      "level": 2,
+      "title": "1. 이 챕터의 목표",
+      "anchor": "1-이-챕터의-목표",
+      "content": [
+        {
+          "id": "chapter02-block-1",
+          "type": "text",
+          "data": {
+            "markdown": "이 챕터를 마치면 반드시 다음을 설명할 수 있어야 합니다."
+          }
+        },
+        {
+          "id": "chapter02-block-2",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "docker run 명령이 내부에서 어떤 순서로 처리되는가"
+              },
+              {
+                "text": "Docker Client와 Daemon의 역할 차이"
+              },
+              {
+                "text": "Image / Container / Runtime의 관계"
+              },
+              {
+                "text": "Docker가 단순한 실행 도구가 아닌 플랫폼인 이유"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter02-block-3",
+          "type": "callout",
+          "data": {
+            "type": "danger",
+            "emoji": "❗",
+            "content": "❗ 이 장을 이해하지 못하면Dockerfile, Compose, Kubernetes는 암기 과목이 됩니다."
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter02-section-2",
+      "level": 2,
+      "title": "2. Docker는 “단일 프로그램”이 아니다",
+      "anchor": "2-docker는-단일-프로그램이-아니다",
+      "content": []
+    },
+    {
+      "id": "chapter02-section-3",
+      "level": 3,
+      "title": "2.1 흔한 오해",
+      "anchor": "21-흔한-오해",
+      "content": [
+        {
+          "id": "chapter02-block-5",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Docker = 하나의 실행 파일 ❌"
+              },
+              {
+                "text": "Docker = 단일 데몬 ❌"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter02-section-4",
+      "level": 3,
+      "title": "2.2 실제 Docker 구성 요소",
+      "anchor": "22-실제-docker-구성-요소",
+      "content": [
+        {
+          "id": "chapter02-block-6",
+          "type": "text",
+          "data": {
+            "markdown": "Docker는 여러 컴포넌트가 조합된 플랫폼입니다."
+          }
+        },
+        {
+          "id": "chapter02-block-7",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter02-diagram-1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter02-section-5",
+      "level": 2,
+      "title": "3. Docker Client",
+      "anchor": "3-docker-client",
+      "content": []
+    },
+    {
+      "id": "chapter02-section-6",
+      "level": 3,
+      "title": "3.1 역할",
+      "anchor": "31-역할",
+      "content": [
+        {
+          "id": "chapter02-block-9",
+          "type": "text",
+          "data": {
+            "markdown": "Docker Client는:"
+          }
+        },
+        {
+          "id": "chapter02-block-10",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "사용자의 명령을 입력받고"
+              },
+              {
+                "text": "Docker Daemon에 요청만 전달"
+              },
+              {
+                "text": "실제 작업은 수행하지 않음"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter02-block-11",
+          "type": "text",
+          "data": {
+            "markdown": "예:"
+          }
+        },
+        {
+          "id": "chapter02-block-12",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker run nginx",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter02-block-13",
+          "type": "text",
+          "data": {
+            "markdown": "👉 Client는 “명령 전달자”"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter02-section-7",
+      "level": 3,
+      "title": "3.2 Client ↔ Daemon 통신 방식",
+      "anchor": "32-client-daemon-통신-방식",
+      "content": [
+        {
+          "id": "chapter02-block-15",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "REST API 기반"
+              },
+              {
+                "text": "Unix Socket (/var/run/docker.sock)"
+              },
+              {
+                "text": "TCP (원격 Docker)"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter02-section-8",
+      "level": 2,
+      "title": "4. Docker Daemon (dockerd)",
+      "anchor": "4-docker-daemon-dockerd",
+      "content": []
+    },
+    {
+      "id": "chapter02-section-9",
+      "level": 3,
+      "title": "4.1 역할",
+      "anchor": "41-역할",
+      "content": [
+        {
+          "id": "chapter02-block-17",
+          "type": "text",
+          "data": {
+            "markdown": "Docker Daemon은 Docker의 두뇌 역할"
+          }
+        },
+        {
+          "id": "chapter02-block-18",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "이미지 관리"
+              },
+              {
+                "text": "컨테이너 생명주기 관리"
+              },
+              {
+                "text": "네트워크 / 볼륨 관리"
+              },
+              {
+                "text": "보안 정책 적용"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter02-section-10",
+      "level": 3,
+      "title": "4.2 데몬 상태 확인 실습",
+      "anchor": "42-데몬-상태-확인-실습",
+      "content": [
+        {
+          "id": "chapter02-block-20",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "ps -ef | grep dockerd",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter02-block-21",
+          "type": "text",
+          "data": {
+            "markdown": "또는:"
+          }
+        },
+        {
+          "id": "chapter02-block-22",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "systemctl status docker",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter02-section-11",
+      "level": 2,
+      "title": "5. containerd 와 runc",
+      "anchor": "5-containerd-와-runc",
+      "content": []
+    },
+    {
+      "id": "chapter02-section-12",
+      "level": 3,
+      "title": "5.1 containerd",
+      "anchor": "51-containerd",
+      "content": [
+        {
+          "id": "chapter02-block-24",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "컨테이너 생성, 시작, 중지 담당"
+              },
+              {
+                "text": "CNCF 프로젝트"
+              },
+              {
+                "text": "Kubernetes도 사용"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter02-section-13",
+      "level": 3,
+      "title": "5.2 runc",
+      "anchor": "52-runc",
+      "content": [
+        {
+          "id": "chapter02-block-26",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "실제 컨테이너 프로세스 실행"
+              },
+              {
+                "text": "Linux namespace / cgroup 적용"
+              },
+              {
+                "text": "OCI Runtime 표준 구현체"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter02-section-14",
+      "level": 2,
+      "title": "6. docker run 명령의 내부 흐름 (핵심)",
+      "anchor": "6-docker-run-명령의-내부-흐름-핵심",
+      "content": []
+    },
+    {
+      "id": "chapter02-section-15",
+      "level": 3,
+      "title": "6.1 docker run 한 줄로 벌어지는 일",
+      "anchor": "61-docker-run-한-줄로-벌어지는-일",
+      "content": [
+        {
+          "id": "chapter02-block-28",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker run -d -p 8080:80 nginx",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter02-block-29",
+          "type": "text",
+          "data": {
+            "markdown": "실제 내부 동작 순서:"
+          }
+        },
+        {
+          "id": "chapter02-block-30",
+          "type": "list",
+          "data": {
+            "ordered": true,
+            "items": [
+              {
+                "text": "Docker Client → Daemon 요청"
+              },
+              {
+                "text": "이미지 존재 여부 확인"
+              },
+              {
+                "text": "없으면 Registry에서 Pull"
+              },
+              {
+                "text": "컨테이너 생성"
+              },
+              {
+                "text": "네트워크 할당"
+              },
+              {
+                "text": "볼륨 마운트"
+              },
+              {
+                "text": "runc 실행"
+              },
+              {
+                "text": "프로세스 실행"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter02-block-31",
+          "type": "text",
+          "data": {
+            "markdown": "👉 단순 실행 명령이 아님"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter02-section-16",
+      "level": 2,
+      "title": "7. 실습 1 – Client / Daemon 분리 체감",
+      "anchor": "7-실습-1-client-daemon-분리-체감",
+      "content": []
+    },
+    {
+      "id": "chapter02-section-17",
+      "level": 3,
+      "title": "7.1 Client 명령 실행",
+      "anchor": "71-client-명령-실행",
+      "content": [
+        {
+          "id": "chapter02-block-33",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker ps",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter02-section-18",
+      "level": 3,
+      "title": "7.2 Docker 서비스 중지 (주의)",
+      "anchor": "72-docker-서비스-중지-주의",
+      "content": [
+        {
+          "id": "chapter02-block-35",
+          "type": "callout",
+          "data": {
+            "type": "danger",
+            "emoji": "❗",
+            "content": "❗ 실습 서버에서만 수행"
+          }
+        },
+        {
+          "id": "chapter02-block-36",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "sudo systemctl stop docker",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter02-section-19",
+      "level": 3,
+      "title": "7.3 다시 명령 실행",
+      "anchor": "73-다시-명령-실행",
+      "content": [
+        {
+          "id": "chapter02-block-38",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker ps",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter02-block-39",
+          "type": "text",
+          "data": {
+            "markdown": "출력:"
+          }
+        },
+        {
+          "id": "chapter02-block-40",
+          "type": "code",
+          "data": {
+            "language": "text",
+            "code": "Cannot connect to the Docker daemon",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter02-block-41",
+          "type": "text",
+          "data": {
+            "markdown": "👉 Client는 있지만 Daemon이 없음"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter02-section-20",
+      "level": 3,
+      "title": "7.4 Docker 서비스 복구",
+      "anchor": "74-docker-서비스-복구",
+      "content": [
+        {
+          "id": "chapter02-block-43",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "sudo systemctl start docker",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter02-section-21",
+      "level": 2,
+      "title": "8. 실습 2 – Image와 Container의 관계",
+      "anchor": "8-실습-2-image와-container의-관계",
+      "content": []
+    },
+    {
+      "id": "chapter02-section-22",
+      "level": 3,
+      "title": "8.1 이미지 목록 확인",
+      "anchor": "81-이미지-목록-확인",
+      "content": [
+        {
+          "id": "chapter02-block-45",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker images",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter02-section-23",
+      "level": 3,
+      "title": "8.2 컨테이너 생성 및 실행",
+      "anchor": "82-컨테이너-생성-및-실행",
+      "content": [
+        {
+          "id": "chapter02-block-47",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker run -d --name web1 nginx\ndocker run -d --name web2 nginx",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter02-section-24",
+      "level": 3,
+      "title": "8.3 컨테이너 목록 확인",
+      "anchor": "83-컨테이너-목록-확인",
+      "content": [
+        {
+          "id": "chapter02-block-49",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker ps",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter02-block-50",
+          "type": "text",
+          "data": {
+            "markdown": "👉 하나의 이미지 → 여러 컨테이너"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter02-section-25",
+      "level": 2,
+      "title": "9. 실습 3 – 컨테이너 생명주기 직접 제어",
+      "anchor": "9-실습-3-컨테이너-생명주기-직접-제어",
+      "content": []
+    },
+    {
+      "id": "chapter02-section-26",
+      "level": 3,
+      "title": "9.1 중지",
+      "anchor": "91-중지",
+      "content": [
+        {
+          "id": "chapter02-block-52",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker stop web1",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter02-section-27",
+      "level": 3,
+      "title": "9.2 시작",
+      "anchor": "92-시작",
+      "content": [
+        {
+          "id": "chapter02-block-54",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker start web1",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter02-section-28",
+      "level": 3,
+      "title": "9.3 삭제",
+      "anchor": "93-삭제",
+      "content": [
+        {
+          "id": "chapter02-block-56",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker rm -f web2",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter02-section-29",
+      "level": 2,
+      "title": "10. 실습 4 – Docker 객체 정리",
+      "anchor": "10-실습-4-docker-객체-정리",
+      "content": []
+    },
+    {
+      "id": "chapter02-section-30",
+      "level": 3,
+      "title": "10.1 컨테이너 / 이미지 관계 확인",
+      "anchor": "101-컨테이너-이미지-관계-확인",
+      "content": [
+        {
+          "id": "chapter02-block-58",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker ps -a\ndocker images",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter02-section-31",
+      "level": 3,
+      "title": "10.2 이미지 삭제 실패 확인",
+      "anchor": "102-이미지-삭제-실패-확인",
+      "content": [
+        {
+          "id": "chapter02-block-60",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker rmi nginx",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter02-block-61",
+          "type": "text",
+          "data": {
+            "markdown": "출력:"
+          }
+        },
+        {
+          "id": "chapter02-block-62",
+          "type": "code",
+          "data": {
+            "language": "text",
+            "code": "image is being used by stopped container",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter02-block-63",
+          "type": "text",
+          "data": {
+            "markdown": "👉 컨테이너가 남아 있기 때문"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter02-section-32",
+      "level": 3,
+      "title": "10.3 전체 정리",
+      "anchor": "103-전체-정리",
+      "content": [
+        {
+          "id": "chapter02-block-65",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker rm -f web1\ndocker rmi nginx",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter02-section-33",
+      "level": 2,
+      "title": "11. Docker 플랫폼이 중요한 이유",
+      "anchor": "11-docker-플랫폼이-중요한-이유",
+      "content": [
+        {
+          "id": "chapter02-block-67",
+          "type": "text",
+          "data": {
+            "markdown": "Docker는:"
+          }
+        },
+        {
+          "id": "chapter02-block-68",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "실행 도구 ❌"
+              },
+              {
+                "text": "컨테이너 플랫폼 ⭕"
+              },
+              {
+                "text": "Kubernetes의 기반 ⭕"
+              },
+              {
+                "text": "CI/CD 핵심 구성요소 ⭕"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter02-section-34",
+      "level": 2,
+      "title": "12. 반드시 이해해야 할 핵심 요약",
+      "anchor": "12-반드시-이해해야-할-핵심-요약",
+      "content": [
+        {
+          "id": "chapter02-block-70",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Docker Client ≠ Docker Daemon"
+              },
+              {
+                "text": "docker run = 다단계 작업"
+              },
+              {
+                "text": "containerd / runc 존재 이유"
+              },
+              {
+                "text": "Image는 설계도, Container는 인스턴스"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter02-section-35",
+      "level": 2,
+      "title": "13. 체크리스트 (통과 필수)",
+      "anchor": "13-체크리스트-통과-필수",
+      "content": [
+        {
+          "id": "chapter02-block-72",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Docker 아키텍처를 그림으로 설명할 수 있다"
+              },
+              {
+                "text": "docker run 내부 흐름을 단계별로 설명 가능"
+              },
+              {
+                "text": "Image와 Container 차이를 이해했다"
+              },
+              {
+                "text": "Docker 데몬 중지/복구 실습 성공"
+              },
+              {
+                "text": "컨테이너 생명주기 제어 가능"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter02-section-36",
+      "level": 2,
+      "title": "14. 다음 챕터 예고",
+      "anchor": "14-다음-챕터-예고",
+      "content": []
+    },
+    {
+      "id": "chapter02-section-37",
+      "level": 3,
+      "title": "Chapter 03. Docker 엔진 관리와 업데이트",
+      "anchor": "chapter-03-docker-엔진-관리와-업데이트",
+      "content": [
+        {
+          "id": "chapter02-block-74",
+          "type": "text",
+          "data": {
+            "markdown": "다음 장에서는:"
+          }
+        },
+        {
+          "id": "chapter02-block-75",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Docker 버전 관리"
+              },
+              {
+                "text": "운영 서버 업데이트 전략"
+              },
+              {
+                "text": "장애 발생 시 복구 절차"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter02-block-76",
+          "type": "text",
+          "data": {
+            "markdown": "를 운영 관점 실습으로 다룹니다."
+          }
+        }
+      ]
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "chapter02-diagram-1",
+      "type": "tree",
+      "asciiOriginal": "┌────────────────────┐\n│   Docker Client    │  ← docker 명령어\n└─────────┬──────────┘\n          │ REST API\n┌─────────▼──────────┐\n│   Docker Daemon    │  ← dockerd\n└─────────┬──────────┘\n          │\n┌─────────▼──────────┐\n│    containerd      │  ← 컨테이너 수명 관리\n└─────────┬──────────┘\n          │\n┌─────────▼──────────┐\n│       runc         │  ← 실제 프로세스 실행\n└────────────────────┘",
+      "mermaidCode": "flowchart LR\n    subgraph LXC[\"LXC 기반<br/>(초기)\"]\n        direction TB\n        L_Container[\"Container<br/>App + Libs\"]\n        L_LXC[\"LXC\"]\n        L_Kernel[\"Kernel<br/>(cgroup, ns)\"]\n        L_OS[\"Host OS\"]\n    end\n\n    subgraph Libcontainer[\"libcontainer 기반<br/>(중기)\"]\n        direction TB\n        M_Container[\"Container<br/>App + Libs\"]\n        M_Lib[\"libcontainer\"]\n        M_Kernel[\"Kernel<br/>(cgroup, ns)\"]\n        M_OS[\"Host OS\"]\n    end\n\n    subgraph Containerd[\"containerd 기반<br/>(현재)\"]\n        direction TB\n        C_Container[\"Container<br/>App + Libs\"]\n        C_Runtime[\"containerd<br/>+ runC\"]\n        C_Kernel[\"Kernel<br/>(cgroup, ns)\"]\n        C_OS[\"Host OS\"]\n    end\n\n    LXC -->|발전| Libcontainer\n    Libcontainer -->|발전| Containerd\n\n    style LXC fill:#f3f4f6,stroke:#6b7280\n    style Libcontainer fill:#fef3c7,stroke:#d97706\n    style Containerd fill:#dcfce7,stroke:#16a34a",
+      "data": {
+        "root": {
+          "id": "root",
+          "label": "Root",
+          "type": "root",
+          "children": [
+            {
+              "id": "node-1",
+              "label": "┌────────────────────┐",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "Docker Client    │  ← docker 명령어",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "┬──────────┘",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-3",
+                      "label": "REST API",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "node-4",
+              "label": "┌─────────▼──────────┐",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "Docker Daemon    │  ← dockerd",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "┬──────────┘",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "node-3",
+              "label": "┌─────────▼──────────┐",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "containerd      │  ← 컨테이너 수명 관리",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "┬──────────┘",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "node-3",
+              "label": "┌─────────▼──────────┐",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "runc         │  ← 실제 프로세스 실행",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "┘",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    }
+  ],
+  "tables": []
+}

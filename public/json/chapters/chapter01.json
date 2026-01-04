@@ -1,0 +1,2074 @@
+{
+  "meta": {
+    "id": "chapter01",
+    "number": 1,
+    "title": "Chapter 01. 컨테이너 가상화 이해",
+    "description": "",
+    "phase": "buildup",
+    "objectives": [
+      "컨테이너는 VM과 무엇이 다른가?",
+      "컨테이너는 “가상머신”이 아니라 왜 “프로세스”인가?",
+      "컨테이너는 실제로 어디까지 격리되는가?",
+      "컨테이너 내부에서 보는 OS는 진짜 OS인가?"
+    ]
+  },
+  "sections": [
+    {
+      "id": "chapter01-section-1",
+      "level": 2,
+      "title": "0. 강의 클립 구성",
+      "anchor": "0-강의-클립-구성",
+      "content": [
+        {
+          "id": "chapter01-block-1",
+          "type": "table",
+          "data": {
+            "tableId": "chapter01-table-1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-2",
+      "level": 2,
+      "title": "1. 이 챕터의 목표 (반드시 달성해야 할 것)",
+      "anchor": "1-이-챕터의-목표-반드시-달성해야-할-것",
+      "content": [
+        {
+          "id": "chapter01-block-3",
+          "type": "text",
+          "data": {
+            "markdown": "이 챕터를 끝내면 다음 질문에 명확히 답할 수 있어야 합니다."
+          }
+        },
+        {
+          "id": "chapter01-block-4",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "컨테이너는 VM과 무엇이 다른가?"
+              },
+              {
+                "text": "컨테이너는 “가상머신”이 아니라 왜 “프로세스”인가?"
+              },
+              {
+                "text": "컨테이너는 실제로 어디까지 격리되는가?"
+              },
+              {
+                "text": "컨테이너 내부에서 보는 OS는 진짜 OS인가?"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter01-block-5",
+          "type": "text",
+          "data": {
+            "markdown": "👉 개념 이해 + 직접 눈으로 확인하는 실습이 핵심입니다."
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-3",
+      "level": 2,
+      "title": "2. 컨테이너 기술이란? (Why Container?)",
+      "anchor": "2-컨테이너-기술이란-why-container",
+      "content": []
+    },
+    {
+      "id": "chapter01-section-4",
+      "level": 3,
+      "title": "2.1 컨테이너 기술의 정의",
+      "anchor": "21-컨테이너-기술의-정의",
+      "content": [
+        {
+          "id": "chapter01-block-7",
+          "type": "text",
+          "data": {
+            "markdown": "컨테이너는 애플리케이션을 언제든 실행 가능하도록 필요한 모든 요소를 하나의 런타임 환경으로 패키징한 논리적 공간을 말합니다."
+          }
+        },
+        {
+          "id": "chapter01-block-8",
+          "type": "text",
+          "data": {
+            "markdown": "포함되는 요소:"
+          }
+        },
+        {
+          "id": "chapter01-block-9",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "소스코드"
+              },
+              {
+                "text": "구성요소"
+              },
+              {
+                "text": "종속성 (라이브러리, 프레임워크 등)"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter01-block-10",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "Docker에서는 Dockerfile build를 통해 이러한 패키징 기술을 구현합니다."
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-5",
+      "level": 3,
+      "title": "2.2 컨테이너의 본질",
+      "anchor": "22-컨테이너의-본질",
+      "content": [
+        {
+          "id": "chapter01-block-11",
+          "type": "text",
+          "data": {
+            "markdown": "한마디로, 애플리케이션과 종속 항목을 하나로 묶어, 실행하게 해주는 운영 시스템을 가상화한 경량의 격리된 프로세스라고 볼 수 있습니다."
+          }
+        },
+        {
+          "id": "chapter01-block-12",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "microVM이라고도 함"
+              },
+              {
+                "text": "운영체제 수준의 가상화 제공"
+              },
+              {
+                "text": "독립성을 갖기 때문에 다른 컨테이너에 영향을 주지 않는 stateless 환경 제공"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-6",
+      "level": 3,
+      "title": "2.3 컨테이너의 장점",
+      "anchor": "23-컨테이너의-장점",
+      "content": [
+        {
+          "id": "chapter01-block-13",
+          "type": "text",
+          "data": {
+            "markdown": "이 기술은 개인 데스크탑 뿐만 아니라 기업 내의 온프레미스 서버에서 AWS와 같은 퍼블릭 클라우드까지 언제 어디서든 빠르고 효율적으로 배포 가능하며, 확장성 또한 가지고 있습니다."
+          }
+        },
+        {
+          "id": "chapter01-block-14",
+          "type": "text",
+          "data": {
+            "markdown": "이를 통해 서버구성, OS 설치, 네트워크, 개발 도구 구성 등의 반복적이고 불편한 작업에 시간을 낭비하지 않고 개발자는 애플리케이션 개발 그 자체에 집중할 수 있게 됩니다."
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-7",
+      "level": 2,
+      "title": "3. 컨테이너 특징 (What Container?)",
+      "anchor": "3-컨테이너-특징-what-container",
+      "content": []
+    },
+    {
+      "id": "chapter01-section-8",
+      "level": 3,
+      "title": "3.1 경량성",
+      "anchor": "31-경량성",
+      "content": [
+        {
+          "id": "chapter01-block-16",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "컨테이너는 우리가 개발한 최소한의 Image를 통해 실행되므로 경량이다."
+              },
+              {
+                "text": "컨테이너 이미지 생성의 Best practice 중 하나는 이미지 경량화다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-9",
+      "level": 3,
+      "title": "3.2 빠른 실행 속도",
+      "anchor": "32-빠른-실행-속도",
+      "content": [
+        {
+          "id": "chapter01-block-17",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "일반 서버 환경에서의 애플리케이션 실행과 달리 언제든 프로세스 수준의 속도로 빠르게 실행(run)할 수 있다."
+              },
+              {
+                "text": "한번에 여러 개의 컨테이너를 동시에 실행 가능하다."
+              },
+              {
+                "text": "Docker에서는 docker compose 기술을 통해 구현한다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-10",
+      "level": 3,
+      "title": "3.3 이식성 (Portability)",
+      "anchor": "33-이식성-portability",
+      "content": [
+        {
+          "id": "chapter01-block-18",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "개인 환경이던 클라우드 환경이던 어떤 OS, 어떤 환경에서도 동작 가능한 이식성을 보유하고 있다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-11",
+      "level": 3,
+      "title": "3.4 비용 절감",
+      "anchor": "34-비용-절감",
+      "content": [
+        {
+          "id": "chapter01-block-19",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "컨테이너 자체 애플리케이션 환경에 대한 관리만 요구되므로, 지속적 서버관리 비용을 절감할 수 있다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-12",
+      "level": 3,
+      "title": "3.5 DevOps 최적화",
+      "anchor": "35-devops-최적화",
+      "content": [
+        {
+          "id": "chapter01-block-20",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "개발팀과 운영팀의 업무 분리로 각자의 업무와 세분화된 관리에 집중할 수 있다."
+              },
+              {
+                "text": "즉, 컨테이너는 DevOps workflow 구성에 최적이다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-13",
+      "level": 2,
+      "title": "4. 컨테이너 사용 사례 (When Container?)",
+      "anchor": "4-컨테이너-사용-사례-when-container",
+      "content": [
+        {
+          "id": "chapter01-block-22",
+          "type": "text",
+          "data": {
+            "markdown": "앞서 설명한 컨테이너의 특징을 활용할 수 있는 대규모 애플리케이션 서비스부터 앱 서비스까지 여러 기업의 다양한 애플리케이션 환경에서 사용 중입니다."
+          }
+        },
+        {
+          "id": "chapter01-block-23",
+          "type": "table",
+          "data": {
+            "tableId": "chapter01-table-23"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-14",
+      "level": 2,
+      "title": "5. 컨테이너 타입 (Type Container?)",
+      "anchor": "5-컨테이너-타입-type-container",
+      "content": []
+    },
+    {
+      "id": "chapter01-section-15",
+      "level": 3,
+      "title": "5.1 컨테이너 패키징 메커니즘",
+      "anchor": "51-컨테이너-패키징-메커니즘",
+      "content": [
+        {
+          "id": "chapter01-block-25",
+          "type": "text",
+          "data": {
+            "markdown": "컨테이너는 다음 세 가지 타입으로 분류됩니다:"
+          }
+        },
+        {
+          "id": "chapter01-block-26",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "시스템 컨테이너"
+              },
+              {
+                "text": "애플리케이션 컨테이너"
+              },
+              {
+                "text": "라우터 컨테이너"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-16",
+      "level": 3,
+      "title": "5.2 시스템 (OS) 컨테이너",
+      "anchor": "52-시스템-os-컨테이너",
+      "content": [
+        {
+          "id": "chapter01-block-27",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "호스트OS 위에 Ubuntu와 같은 배포판 리눅스 Image를 통해 배포되는 컨테이너"
+              },
+              {
+                "text": "또다른 VM의 형태이고, 내부에 다양한 애플리케이션 및 라이브러리 도구를 설치, 실행 가능"
+              },
+              {
+                "text": "대표적으로 LXC, LXD, OpenVZ, Linux VServer, BSD Jails 등이 있다."
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter01-block-28",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter01-diagram-1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-17",
+      "level": 3,
+      "title": "5.3 애플리케이션 컨테이너",
+      "anchor": "53-애플리케이션-컨테이너",
+      "content": [
+        {
+          "id": "chapter01-block-29",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "단일 애플리케이션 실행을 위해 해당 서비스를 패키징하고 실행하도록 설계된 컨테이너"
+              },
+              {
+                "text": "3-tier 애플리케이션과 같은 경우 각 tier (frontend-backend-DB)를 개별 컨테이너로 실행하여 연결"
+              },
+              {
+                "text": "대표적으로 Docker container runtime, Rocket 등이 있다."
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter01-block-30",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter01-diagram-2"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-18",
+      "level": 2,
+      "title": "6. Docker란?",
+      "anchor": "6-docker란",
+      "content": []
+    },
+    {
+      "id": "chapter01-section-19",
+      "level": 3,
+      "title": "6.1 Docker의 탄생",
+      "anchor": "61-docker의-탄생",
+      "content": [
+        {
+          "id": "chapter01-block-32",
+          "type": "text",
+          "data": {
+            "markdown": "Open source에 힘입어 전세계적으로 큰 인기를 얻고 있는 Docker는 **2013년 3월 Docker, Inc (PYCON)**에서 발표한 **\"Open Source Container Project\"**로 공개하였고, 컨테이너를 실행하고 관리하는 container runtime 도구입니다."
+          }
+        },
+        {
+          "id": "chapter01-block-33",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "발표자: 솔로몬 하익스(Solomon Hykes)"
+              },
+              {
+                "text": "참고: https://www.youtube.com/watch?v=wW9CAH9nSLs"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-20",
+      "level": 3,
+      "title": "6.2 Docker는 무엇인가요?",
+      "anchor": "62-docker는-무엇인가요",
+      "content": [
+        {
+          "id": "chapter01-block-34",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "여러 계층의 Application을 container로 분리, 연결하여 실행하는 MSA (MicroService Architecture) 프로젝트에 유용하다."
+              },
+              {
+                "text": "Application의 Infra(runtime)는 Image를 통해 제공하고 Public or Private 하게 공유 가능"
+              },
+              {
+                "text": "Github과 유사한 방식(open share)으로 Docker Hub에서 제공 함 (https://hub.docker.com)"
+              },
+              {
+                "text": "이렇게 제공된 Image를 기반으로 Application 서비스를 제공, 이를 **컨테이너화(Containerization)**할 수 있다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-21",
+      "level": 3,
+      "title": "6.3 Docker 워크플로우",
+      "anchor": "63-docker-워크플로우",
+      "content": [
+        {
+          "id": "chapter01-block-35",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter01-diagram-3"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-22",
+      "level": 2,
+      "title": "7. 컨테이너 기술 역사 (Trend History)",
+      "anchor": "7-컨테이너-기술-역사-trend-history",
+      "content": []
+    },
+    {
+      "id": "chapter01-section-23",
+      "level": 3,
+      "title": "7.1 컨테이너 기술 타임라인",
+      "anchor": "71-컨테이너-기술-타임라인",
+      "content": [
+        {
+          "id": "chapter01-block-37",
+          "type": "table",
+          "data": {
+            "tableId": "chapter01-table-37"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-24",
+      "level": 2,
+      "title": "8. 가상화(Virtualization)란?",
+      "anchor": "8-가상화virtualization란",
+      "content": []
+    },
+    {
+      "id": "chapter01-section-25",
+      "level": 3,
+      "title": "8.1 가상화의 정의",
+      "anchor": "81-가상화의-정의",
+      "content": [
+        {
+          "id": "chapter01-block-39",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "일반적으로 서버, 스토리지, 네트워크, 애플리케이션 등을 가상화하여 하드웨어 리소스를 효율적으로 사용하는데 그 목적이 있다."
+              },
+              {
+                "text": "이를 통해 기업은 효율적인 자원 활용, 자동화된 IT 관리, 빠른 재해 복구 등의 장점을 갖을 수 있다."
+              },
+              {
+                "text": "물리적 하드웨어 유지 관리 대신 소프트웨어적으로 추상화된 가상화를 통해 제한된 부분을 쉽게 관리하고 유지할 수 있다."
+              },
+              {
+                "text": "**하이퍼바이저 기반의 가상머신(VM, Virtual Machine)**을 통해 수행한다.VMware, VirtualBox 등"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-26",
+      "level": 3,
+      "title": "8.2 컨테이너 가상화 vs. VM 가상화",
+      "anchor": "82-컨테이너-가상화-vs-vm-가상화",
+      "content": [
+        {
+          "id": "chapter01-block-40",
+          "type": "text",
+          "data": {
+            "markdown": "두 가지 가상화 모두 실행하고자 하는 애플리케이션 프로세스 및 종속 요소와 소스 등을 패키지, 즉 이미지화하여 HostOS와 격리된 환경을 제공한다."
+          }
+        },
+        {
+          "id": "chapter01-block-41",
+          "type": "table",
+          "data": {
+            "tableId": "chapter01-table-41"
+          }
+        },
+        {
+          "id": "chapter01-block-42",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "VM 가상화: 실제 호스트 운영체제와 같이 별도의 GuestOS를 두고 원하는 애플리케이션을 설치하는 하드웨어 수준의 가상화를 구현"
+              },
+              {
+                "text": "컨테이너 가상화: VM 가상화에 비해 경량이면서 호스트 운영체제의 커널을 공유하는 운영체제(OS) 수준의 가상화를 구현"
+              },
+              {
+                "text": "따라서, 컨테이너 가상화는 원하는 애플리케이션 환경을 빠르게 번들링하여 패키징한다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-27",
+      "level": 2,
+      "title": "9. 애플리케이션 배포 방식 비교",
+      "anchor": "9-애플리케이션-배포-방식-비교",
+      "content": []
+    },
+    {
+      "id": "chapter01-section-28",
+      "level": 3,
+      "title": "9.1 세 가지 배포 방식",
+      "anchor": "91-세-가지-배포-방식",
+      "content": [
+        {
+          "id": "chapter01-block-44",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter01-diagram-4"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-29",
+      "level": 2,
+      "title": "10. 컨테이너화 (Containerization) 기술",
+      "anchor": "10-컨테이너화-containerization-기술",
+      "content": []
+    },
+    {
+      "id": "chapter01-section-30",
+      "level": 3,
+      "title": "10.1 LXC에서 Docker로",
+      "anchor": "101-lxc에서-docker로",
+      "content": [
+        {
+          "id": "chapter01-block-46",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "리눅스 컨테이너 기술은 **LXC(LinuX Container)**를 이용한 시스템 컨테이너화로 시작OS 수준의 가상화 도구cgroup, namespace 등의 커널 기술을 공유하여 컨테이너에 제공"
+              },
+              {
+                "text": "이후 애플리케이션 컨테이너 기반의 Docker 출시가 되었고, 초기 Docker 버전은 LXC를 활용해 컨테이너를 생성"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-31",
+      "level": 3,
+      "title": "10.2 Docker 엔진의 발전",
+      "anchor": "102-docker-엔진의-발전",
+      "content": [
+        {
+          "id": "chapter01-block-47",
+          "type": "text",
+          "data": {
+            "markdown": "지속된 컨테이너 엔진의 발전으로 Docker는 containerd, runC를 이용하는 방식으로 변경"
+          }
+        },
+        {
+          "id": "chapter01-block-48",
+          "type": "table",
+          "data": {
+            "tableId": "chapter01-table-48"
+          }
+        },
+        {
+          "id": "chapter01-block-49",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter01-diagram-5"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-32",
+      "level": 3,
+      "title": "10.3 dockerd 기능",
+      "anchor": "103-dockerd-기능",
+      "content": [
+        {
+          "id": "chapter01-block-50",
+          "type": "text",
+          "data": {
+            "markdown": "dockerd는 다음과 같은 기능을 제공합니다:"
+          }
+        },
+        {
+          "id": "chapter01-block-51",
+          "type": "table",
+          "data": {
+            "tableId": "chapter01-table-51"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-33",
+      "level": 2,
+      "title": "11. 가상화의 역사 (왜 컨테이너가 등장했는가)",
+      "anchor": "11-가상화의-역사-왜-컨테이너가-등장했는가",
+      "content": []
+    },
+    {
+      "id": "chapter01-section-34",
+      "level": 3,
+      "title": "11.1 물리 서버 시대",
+      "anchor": "111-물리-서버-시대",
+      "content": [
+        {
+          "id": "chapter01-block-53",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter01-diagram-6"
+          }
+        },
+        {
+          "id": "chapter01-block-54",
+          "type": "text",
+          "data": {
+            "markdown": "문제점:"
+          }
+        },
+        {
+          "id": "chapter01-block-55",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "서버 자원 낭비"
+              },
+              {
+                "text": "환경 변경 어려움"
+              },
+              {
+                "text": "확장 불가능"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-35",
+      "level": 3,
+      "title": "11.2 가상머신(Virtual Machine) 등장",
+      "anchor": "112-가상머신virtual-machine-등장",
+      "content": [
+        {
+          "id": "chapter01-block-57",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter01-diagram-7"
+          }
+        },
+        {
+          "id": "chapter01-block-58",
+          "type": "text",
+          "data": {
+            "markdown": "장점:"
+          }
+        },
+        {
+          "id": "chapter01-block-59",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "서버 통합"
+              },
+              {
+                "text": "OS 단위 격리"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter01-block-60",
+          "type": "text",
+          "data": {
+            "markdown": "단점:"
+          }
+        },
+        {
+          "id": "chapter01-block-61",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "OS 포함 → 무거움"
+              },
+              {
+                "text": "부팅 느림"
+              },
+              {
+                "text": "자원 낭비"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-36",
+      "level": 3,
+      "title": "11.3 컨테이너(Container)의 등장",
+      "anchor": "113-컨테이너container의-등장",
+      "content": [
+        {
+          "id": "chapter01-block-63",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter01-diagram-8"
+          }
+        },
+        {
+          "id": "chapter01-block-64",
+          "type": "text",
+          "data": {
+            "markdown": "핵심:"
+          }
+        },
+        {
+          "id": "chapter01-block-65",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "OS Kernel 공유"
+              },
+              {
+                "text": "프로세스 단위 격리"
+              },
+              {
+                "text": "매우 빠름"
+              },
+              {
+                "text": "가볍다"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-37",
+      "level": 2,
+      "title": "12. 컨테이너 격리 기술",
+      "anchor": "12-컨테이너-격리-기술",
+      "content": []
+    },
+    {
+      "id": "chapter01-section-38",
+      "level": 3,
+      "title": "12.1 컨테이너의 기술적 본질",
+      "anchor": "121-컨테이너의-기술적-본질",
+      "content": [
+        {
+          "id": "chapter01-block-67",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "컨테이너 =\n격리된 네임스페이스에서 실행되는 리눅스 프로세스"
+          }
+        },
+        {
+          "id": "chapter01-block-68",
+          "type": "text",
+          "data": {
+            "markdown": "Docker는:"
+          }
+        },
+        {
+          "id": "chapter01-block-69",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "프로세스를 생성하고"
+              },
+              {
+                "text": "네임스페이스로 격리하고"
+              },
+              {
+                "text": "리소스를 제한한다"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-39",
+      "level": 3,
+      "title": "12.2 컨테이너 격리 기술 (개념)",
+      "anchor": "122-컨테이너-격리-기술-개념",
+      "content": [
+        {
+          "id": "chapter01-block-70",
+          "type": "table",
+          "data": {
+            "tableId": "chapter01-table-70"
+          }
+        },
+        {
+          "id": "chapter01-block-71",
+          "type": "text",
+          "data": {
+            "markdown": "👉 컨테이너는 OS가 아니라 \"프로세스\""
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-40",
+      "level": 2,
+      "title": "13. PWD (Play with Docker)",
+      "anchor": "13-pwd-play-with-docker",
+      "content": []
+    },
+    {
+      "id": "chapter01-section-41",
+      "level": 3,
+      "title": "13.1 Docker 컨테이너 놀이터",
+      "anchor": "131-docker-컨테이너-놀이터",
+      "content": [
+        {
+          "id": "chapter01-block-73",
+          "type": "text",
+          "data": {
+            "markdown": "Docker는 웹에서 제공하는 인스턴스 형태의 Docker 랩실을 제공합니다."
+          }
+        },
+        {
+          "id": "chapter01-block-74",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "한 인스턴스 당 4시간의 시간을 제공하며, 언제든 무료로 사용 가능"
+              },
+              {
+                "text": "외부에서 접근 가능한 웹 주소 제공"
+              },
+              {
+                "text": "URL: https://www.docker.com/play-with-docker/"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-42",
+      "level": 3,
+      "title": "13.2 PWD 사용 방법",
+      "anchor": "132-pwd-사용-방법",
+      "content": [
+        {
+          "id": "chapter01-block-75",
+          "type": "list",
+          "data": {
+            "ordered": true,
+            "items": [
+              {
+                "text": "https://www.docker.com/play-with-docker/ 접속"
+              },
+              {
+                "text": "Lab Environment 선택 (hub.docker.com 계정 요구)"
+              },
+              {
+                "text": "Get Started 클릭"
+              },
+              {
+                "text": "+ ADD NEW INSTANCE 클릭하여 인스턴스 생성"
+              },
+              {
+                "text": "터미널에서 Docker 명령어 실습"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-43",
+      "level": 3,
+      "title": "13.3 PWD 실습 예시",
+      "anchor": "133-pwd-실습-예시",
+      "content": [
+        {
+          "id": "chapter01-block-76",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# nginx 이미지 다운로드\ndocker pull nginx:1.19\n\n# nginx 컨테이너 실행 (포트 8000 매핑)\ndocker run -d -p 8000:80 nginx:1.19\n\n# 웹 브라우저에서 접근 확인\ncurl localhost:8000",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-44",
+      "level": 3,
+      "title": "13.4 Docker Swarm 실습",
+      "anchor": "134-docker-swarm-실습",
+      "content": [
+        {
+          "id": "chapter01-block-77",
+          "type": "text",
+          "data": {
+            "markdown": "PWD에서는 Docker Swarm 클러스터 실습도 가능합니다."
+          }
+        },
+        {
+          "id": "chapter01-block-78",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "URL: https://training.play-with-docker.com/swarm-mode-intro/"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter01-block-79",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# Swarm 초기화\ndocker swarm init --advertise-addr $(hostname -i)\n\n# 노드 목록 확인\ndocker node ls\n\n# 서비스 생성\ndocker service create -p 80:80 --name web nginx:latest\ndocker service ls",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-45",
+      "level": 2,
+      "title": "14. 실습 1 – 컨테이너는 정말 프로세스인가?",
+      "anchor": "14-실습-1-컨테이너는-정말-프로세스인가",
+      "content": []
+    },
+    {
+      "id": "chapter01-section-46",
+      "level": 3,
+      "title": "14.1 컨테이너 실행",
+      "anchor": "141-컨테이너-실행",
+      "content": [
+        {
+          "id": "chapter01-block-81",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker run -it alpine sh",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter01-block-82",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "alpine: 초경량 Linux"
+              },
+              {
+                "text": "sh: 쉘 실행"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-47",
+      "level": 3,
+      "title": "14.2 컨테이너 내부에서 프로세스 확인",
+      "anchor": "142-컨테이너-내부에서-프로세스-확인",
+      "content": [
+        {
+          "id": "chapter01-block-84",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "ps",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter01-block-85",
+          "type": "text",
+          "data": {
+            "markdown": "출력 예:"
+          }
+        },
+        {
+          "id": "chapter01-block-86",
+          "type": "code",
+          "data": {
+            "language": "text",
+            "code": "PID   USER     COMMAND\n1     root     sh",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter01-block-87",
+          "type": "text",
+          "data": {
+            "markdown": "❗ 놀라운 점:"
+          }
+        },
+        {
+          "id": "chapter01-block-88",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "PID 1부터 시작"
+              },
+              {
+                "text": "init 프로세스처럼 보임"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-48",
+      "level": 3,
+      "title": "14.3 Host에서 프로세스 확인",
+      "anchor": "143-host에서-프로세스-확인",
+      "content": [
+        {
+          "id": "chapter01-block-90",
+          "type": "text",
+          "data": {
+            "markdown": "컨테이너를 열어둔 상태에서, Host 터미널에서:"
+          }
+        },
+        {
+          "id": "chapter01-block-91",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "ps -ef | grep sh",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter01-block-92",
+          "type": "text",
+          "data": {
+            "markdown": "👉 컨테이너 프로세스가 Host에 존재함"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-49",
+      "level": 2,
+      "title": "15. 실습 2 – 컨테이너와 Host의 경계 확인",
+      "anchor": "15-실습-2-컨테이너와-host의-경계-확인",
+      "content": []
+    },
+    {
+      "id": "chapter01-section-50",
+      "level": 3,
+      "title": "15.1 Host OS 확인",
+      "anchor": "151-host-os-확인",
+      "content": [
+        {
+          "id": "chapter01-block-94",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "uname -a",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-51",
+      "level": 3,
+      "title": "15.2 컨테이너 내부에서 OS 확인",
+      "anchor": "152-컨테이너-내부에서-os-확인",
+      "content": [
+        {
+          "id": "chapter01-block-96",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "uname -a",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter01-block-97",
+          "type": "text",
+          "data": {
+            "markdown": "✔ 결과가 거의 동일"
+          }
+        },
+        {
+          "id": "chapter01-block-98",
+          "type": "text",
+          "data": {
+            "markdown": "👉 Kernel은 Host 것임을 확인"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-52",
+      "level": 3,
+      "title": "15.3 파일 시스템 격리 확인",
+      "anchor": "153-파일-시스템-격리-확인",
+      "content": [
+        {
+          "id": "chapter01-block-100",
+          "type": "text",
+          "data": {
+            "markdown": "컨테이너 내부:"
+          }
+        },
+        {
+          "id": "chapter01-block-101",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "ls /",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter01-block-102",
+          "type": "text",
+          "data": {
+            "markdown": "Host에서:"
+          }
+        },
+        {
+          "id": "chapter01-block-103",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "ls /",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter01-block-104",
+          "type": "text",
+          "data": {
+            "markdown": "👉 서로 다름 (RootFS 격리)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-53",
+      "level": 2,
+      "title": "16. 실습 3 – 컨테이너는 격리되었는가?",
+      "anchor": "16-실습-3-컨테이너는-격리되었는가",
+      "content": []
+    },
+    {
+      "id": "chapter01-section-54",
+      "level": 3,
+      "title": "16.1 컨테이너에서 네트워크 확인",
+      "anchor": "161-컨테이너에서-네트워크-확인",
+      "content": [
+        {
+          "id": "chapter01-block-106",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "ip addr",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-55",
+      "level": 3,
+      "title": "16.2 Host 네트워크와 비교",
+      "anchor": "162-host-네트워크와-비교",
+      "content": [
+        {
+          "id": "chapter01-block-108",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "ip addr",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter01-block-109",
+          "type": "text",
+          "data": {
+            "markdown": "👉 인터페이스 구조가 다름\n→ 네트워크 네임스페이스 격리"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-56",
+      "level": 2,
+      "title": "8. 실습 4 – 컨테이너는 얼마나 가벼운가?",
+      "anchor": "8-실습-4-컨테이너는-얼마나-가벼운가",
+      "content": []
+    },
+    {
+      "id": "chapter01-section-57",
+      "level": 3,
+      "title": "8.1 실행 시간 측정",
+      "anchor": "81-실행-시간-측정",
+      "content": [
+        {
+          "id": "chapter01-block-111",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "time docker run --rm alpine echo \"hello\"",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter01-block-112",
+          "type": "text",
+          "data": {
+            "markdown": "출력 예:"
+          }
+        },
+        {
+          "id": "chapter01-block-113",
+          "type": "code",
+          "data": {
+            "language": "text",
+            "code": "real    0.2s",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter01-block-114",
+          "type": "text",
+          "data": {
+            "markdown": "VM에서는 불가능한 속도"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-58",
+      "level": 2,
+      "title": "9. 실습 5 – 컨테이너 삭제 확인",
+      "anchor": "9-실습-5-컨테이너-삭제-확인",
+      "content": [
+        {
+          "id": "chapter01-block-116",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "exit\ndocker ps -a",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter01-block-117",
+          "type": "text",
+          "data": {
+            "markdown": "컨테이너 없음 확인"
+          }
+        },
+        {
+          "id": "chapter01-block-118",
+          "type": "text",
+          "data": {
+            "markdown": "👉 컨테이너는 휘발성"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-59",
+      "level": 2,
+      "title": "10. 반드시 이해해야 할 핵심 정리",
+      "anchor": "10-반드시-이해해야-할-핵심-정리",
+      "content": []
+    },
+    {
+      "id": "chapter01-section-60",
+      "level": 3,
+      "title": "컨테이너 핵심 요약",
+      "anchor": "컨테이너-핵심-요약",
+      "content": [
+        {
+          "id": "chapter01-block-120",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "컨테이너는 VM이 아니다"
+              },
+              {
+                "text": "컨테이너는 프로세스다"
+              },
+              {
+                "text": "Kernel은 Host 것"
+              },
+              {
+                "text": "파일시스템은 격리됨"
+              },
+              {
+                "text": "빠르고 가볍다"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-61",
+      "level": 2,
+      "title": "11. 체크리스트 (미통과 시 다음 장 금지)",
+      "anchor": "11-체크리스트-미통과-시-다음-장-금지",
+      "content": [
+        {
+          "id": "chapter01-block-122",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "VM과 컨테이너 차이를 설명할 수 있다"
+              },
+              {
+                "text": "컨테이너 = 프로세스임을 이해했다"
+              },
+              {
+                "text": "Kernel 공유 개념을 이해했다"
+              },
+              {
+                "text": "docker run -it alpine sh 실습 성공"
+              },
+              {
+                "text": "Host/Container 차이를 직접 확인했다"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter01-section-62",
+      "level": 2,
+      "title": "12. 다음 챕터 예고",
+      "anchor": "12-다음-챕터-예고",
+      "content": []
+    },
+    {
+      "id": "chapter01-section-63",
+      "level": 3,
+      "title": "Chapter 02. Docker 플랫폼 구성",
+      "anchor": "chapter-02-docker-플랫폼-구성",
+      "content": [
+        {
+          "id": "chapter01-block-124",
+          "type": "text",
+          "data": {
+            "markdown": "다음 장에서는:"
+          }
+        },
+        {
+          "id": "chapter01-block-125",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Docker 내부 구조"
+              },
+              {
+                "text": "Client / Daemon 관계"
+              },
+              {
+                "text": "docker run 명령의 실제 흐름"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter01-block-126",
+          "type": "text",
+          "data": {
+            "markdown": "을 아키텍처 + 실습으로 파헤칩니다."
+          }
+        }
+      ]
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "chapter01-diagram-1",
+      "type": "network",
+      "title": "HostOS",
+      "asciiOriginal": "HostOS\n ├─ Ubuntu 20.04 container\n ├─ CentOS 7 container\n └─ RHEL 8 container",
+      "mermaidCode": "flowchart TB\n    subgraph System[\"🖥️ 시스템 컨테이너\"]\n        direction TB\n        S_Host[\"Host OS\"]\n        S_C1[\"Ubuntu 20.04<br/>Container\"]\n        S_C2[\"CentOS 7<br/>Container\"]\n        S_C3[\"RHEL 8<br/>Container\"]\n    end\n\n    subgraph App[\"📦 애플리케이션 컨테이너\"]\n        direction TB\n        A_Host[\"Host OS\"]\n        A_C1[\"🌐 Nginx<br/>(Frontend)\"]\n        A_C2[\"🐍 Python<br/>(Backend)\"]\n        A_C3[\"🗄️ MySQL<br/>(Database)\"]\n    end\n\n    S_Host --> S_C1\n    S_Host --> S_C2\n    S_Host --> S_C3\n\n    A_Host --> A_C1\n    A_Host --> A_C2\n    A_Host --> A_C3\n    A_C1 --> A_C2\n    A_C2 --> A_C3\n\n    style System fill:#e0f2fe,stroke:#0284c7\n    style App fill:#dcfce7,stroke:#16a34a",
+      "data": {
+        "nodes": [],
+        "connections": []
+      }
+    },
+    {
+      "id": "chapter01-diagram-2",
+      "type": "network",
+      "title": "HostOS",
+      "asciiOriginal": "HostOS\n ├─ Nginx container (Frontend)\n ├─ Python container (Backend)\n └─ MySQL container (Database)",
+      "mermaidCode": "flowchart LR\n    subgraph App[\"🐙 멀티 컨테이너 애플리케이션\"]\n        direction LR\n\n        Nginx[\"🌐 Nginx<br/>(Proxy)\"]\n        Flask[\"🐍 App<br/>(Flask)\"]\n        Redis[\"⚡ Redis<br/>(Cache)\"]\n        MySQL[\"🗄️ MySQL<br/>(DB)\"]\n    end\n\n    Client[\"👤 Client\"] --> Nginx\n    Nginx --> Flask\n    Flask --> Redis\n    Flask --> MySQL\n\n    style App fill:#f8fafc,stroke:#64748b\n    style Nginx fill:#dcfce7,stroke:#16a34a\n    style Flask fill:#dbeafe,stroke:#2563eb\n    style Redis fill:#fee2e2,stroke:#dc2626\n    style MySQL fill:#fef3c7,stroke:#d97706",
+      "data": {
+        "nodes": [],
+        "connections": []
+      }
+    },
+    {
+      "id": "chapter01-diagram-3",
+      "type": "network",
+      "title": "docker run  →  [Docker Container]",
+      "asciiOriginal": "[Dockerfile]  →  Build  →  [Docker Image]  →  Push  →  [Docker Hub]\n     ↓                                                        ↓\nApplication                                                 Pull\nInfra 구성                                                    ↓\n                                            docker run  →  [Docker Container]\n                                                              ↓\n                                                        Application 배포",
+      "mermaidCode": "flowchart LR\n    subgraph Development[\"👨‍💻 개발\"]\n        Dockerfile[\"📄 Dockerfile\"]\n        AppCode[\"💻 Application<br/>+ Infra 구성\"]\n    end\n\n    subgraph Build[\"🔨 빌드\"]\n        BuildProcess[\"docker build\"]\n        Image[\"🐳 Docker Image\"]\n    end\n\n    subgraph Registry[\"📦 레지스트리\"]\n        Push[\"docker push\"]\n        Hub[\"Docker Hub\"]\n        Pull[\"docker pull\"]\n    end\n\n    subgraph Deploy[\"🚀 배포\"]\n        Run[\"docker run\"]\n        Container[\"📦 Container\"]\n        Service[\"🌐 Application<br/>서비스 제공\"]\n    end\n\n    AppCode --> Dockerfile\n    Dockerfile --> BuildProcess\n    BuildProcess --> Image\n    Image --> Push\n    Push --> Hub\n    Hub --> Pull\n    Pull --> Run\n    Run --> Container\n    Container --> Service\n\n    style Development fill:#fef3c7,stroke:#d97706\n    style Build fill:#dbeafe,stroke:#2563eb\n    style Registry fill:#e0e7ff,stroke:#6366f1\n    style Deploy fill:#dcfce7,stroke:#16a34a",
+      "data": {
+        "nodes": [],
+        "connections": []
+      }
+    },
+    {
+      "id": "chapter01-diagram-4",
+      "type": "tree",
+      "asciiOriginal": "┌─────────────────┐  ┌─────────────────────────────┐  ┌─────────────────────────────┐\n│  일반 서버      │  │      가상머신 (GB)          │  │      컨테이너 (MB)          │\n│  (온프레미스)   │  │                             │  │                             │\n├─────────────────┤  ├─────────────────────────────┤  ├─────────────────────────────┤\n│ App.1 App.2 App.3│ │ VM1      VM2      VM3       │  │Container Container Container│\n│                 │  │ App.1    App.2    App.3     │  │ App.1    App.2    App.3     │\n│                 │  │Bins/Libs Bins/Libs Bins/Libs│  │Bins/Libs Bins/Libs Bins/Libs│\n│                 │  │ Guest OS Guest OS Guest OS  │  │                             │\n│                 │  ├─────────────────────────────┤  ├─────────────────────────────┤\n│                 │  │        Hypervisor           │  │       Docker engine         │\n├─────────────────┤  ├─────────────────────────────┤  ├─────────────────────────────┤\n│     Host OS     │  │     Host OS (Yes / No)      │  │         Host OS             │\n├─────────────────┤  ├─────────────────────────────┤  ├─────────────────────────────┤\n│ Server HW       │  │     Server Infrastructure HW│  │   Server Infrastructure HW  │\n└─────────────────┘  └─────────────────────────────┘  └─────────────────────────────┘",
+      "mermaidCode": "flowchart TB\n    subgraph Traditional[\"🖥️ 일반 서버<br/>(온프레미스)\"]\n        direction TB\n        T_Apps[\"App 1 | App 2 | App 3\"]\n        T_OS[\"Host OS\"]\n        T_HW[\"Server Hardware\"]\n    end\n\n    subgraph VM[\"💿 가상머신 (GB)\"]\n        direction TB\n        subgraph VM1[\"VM1\"]\n            VM1_App[\"App\"]\n            VM1_Libs[\"Bins/Libs\"]\n            VM1_OS[\"Guest OS\"]\n        end\n        subgraph VM2[\"VM2\"]\n            VM2_App[\"App\"]\n            VM2_Libs[\"Bins/Libs\"]\n            VM2_OS[\"Guest OS\"]\n        end\n        Hypervisor[\"Hypervisor\"]\n        VM_OS[\"Host OS\"]\n        VM_HW[\"Server Hardware\"]\n    end\n\n    subgraph Container[\"📦 컨테이너 (MB)\"]\n        direction TB\n        subgraph C1[\"Container 1\"]\n            C1_App[\"App\"]\n            C1_Libs[\"Bins/Libs\"]\n        end\n        subgraph C2[\"Container 2\"]\n            C2_App[\"App\"]\n            C2_Libs[\"Bins/Libs\"]\n        end\n        Docker[\"Docker Engine\"]\n        C_OS[\"Host OS\"]\n        C_HW[\"Server Hardware\"]\n    end\n\n    style Traditional fill:#f3f4f6,stroke:#6b7280\n    style VM fill:#fef3c7,stroke:#d97706\n    style Container fill:#dcfce7,stroke:#16a34a\n    style Hypervisor fill:#fed7aa,stroke:#ea580c\n    style Docker fill:#bbf7d0,stroke:#16a34a",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "┌─────────────────┐  ┌─────────────────────────────┐  ┌─────────────────────────────┐",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "일반 서버      │  │      가상머신 (GB)          │  │      컨테이너 (MB)          │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "(온프레미스)   │  │                             │  │                             │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┤  ├─────────────────────────────┤  ├─────────────────────────────┤",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "App.1 App.2 App.3│ │ VM1      VM2      VM3       │  │Container Container Container│",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "App.1    App.2    App.3     │  │ App.1    App.2    App.3     │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Bins/Libs Bins/Libs Bins/Libs│  │Bins/Libs Bins/Libs Bins/Libs│",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Guest OS Guest OS Guest OS  │  │                             │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┤  ├─────────────────────────────┤",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Hypervisor           │  │       Docker engine         │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┤  ├─────────────────────────────┤  ├─────────────────────────────┤",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-4",
+                      "label": "Host OS     │  │     Host OS (Yes / No)      │  │         Host OS             │",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "id": "node-5",
+                  "label": "┤  ├─────────────────────────────┤  ├─────────────────────────────┤",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "node-4",
+              "label": "Server HW       │  │     Server Infrastructure HW│  │   Server Infrastructure HW  │",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "┘  └─────────────────────────────┘  └─────────────────────────────┘",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter01-diagram-5",
+      "type": "tree",
+      "asciiOriginal": "[LXC 기반]              [libcontainer 기반]        [containerd, runC 기반]\n┌──────────────┐        ┌──────────────┐          ┌──────────────┐\n│  Container   │        │  Container   │          │  Container   │\n│  App + Libs  │        │  App + Libs  │          │  App + Libs  │\n├──────────────┤        ├──────────────┤          ├──────────────┤\n│     LXC      │        │ libcontainer │          │containerd,runC│\n├──────────────┤        ├──────────────┤          ├──────────────┤\n│   Kernel     │        │   Kernel     │          │   Kernel     │\n│  (cgroup,ns) │        │  (cgroup,ns) │          │  (cgroup,ns) │\n├──────────────┤        ├──────────────┤          ├──────────────┤\n│   Host OS    │        │   Host OS    │          │   Host OS    │\n└──────────────┘        └──────────────┘          └──────────────┘",
+      "mermaidCode": "flowchart LR\n    subgraph LXC[\"LXC 기반<br/>(초기)\"]\n        direction TB\n        L_Container[\"Container<br/>App + Libs\"]\n        L_LXC[\"LXC\"]\n        L_Kernel[\"Kernel<br/>(cgroup, ns)\"]\n        L_OS[\"Host OS\"]\n    end\n\n    subgraph Libcontainer[\"libcontainer 기반<br/>(중기)\"]\n        direction TB\n        M_Container[\"Container<br/>App + Libs\"]\n        M_Lib[\"libcontainer\"]\n        M_Kernel[\"Kernel<br/>(cgroup, ns)\"]\n        M_OS[\"Host OS\"]\n    end\n\n    subgraph Containerd[\"containerd 기반<br/>(현재)\"]\n        direction TB\n        C_Container[\"Container<br/>App + Libs\"]\n        C_Runtime[\"containerd<br/>+ runC\"]\n        C_Kernel[\"Kernel<br/>(cgroup, ns)\"]\n        C_OS[\"Host OS\"]\n    end\n\n    LXC -->|발전| Libcontainer\n    Libcontainer -->|발전| Containerd\n\n    style LXC fill:#f3f4f6,stroke:#6b7280\n    style Libcontainer fill:#fef3c7,stroke:#d97706\n    style Containerd fill:#dcfce7,stroke:#16a34a",
+      "data": {
+        "root": {
+          "id": "root",
+          "label": "Root",
+          "type": "root",
+          "children": [
+            {
+              "id": "node-1",
+              "label": "[LXC 기반]              [libcontainer 기반]        [containerd, runC 기반]",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-2",
+              "label": "┌──────────────┐        ┌──────────────┐          ┌──────────────┐",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "Container   │        │  Container   │          │  Container   │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "App + Libs  │        │  App + Libs  │          │  App + Libs  │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "┤        ├──────────────┤          ├──────────────┤",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-3",
+                      "label": "LXC      │        │ libcontainer │          │containerd,runC│",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "id": "node-4",
+                  "label": "┤        ├──────────────┤          ├──────────────┤",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-3",
+                      "label": "Kernel     │        │   Kernel     │          │   Kernel     │",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "id": "node-4",
+                  "label": "(cgroup,ns) │        │  (cgroup,ns) │          │  (cgroup,ns) │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "┤        ├──────────────┤          ├──────────────┤",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-3",
+                      "label": "Host OS    │        │   Host OS    │          │   Host OS    │",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "id": "node-4",
+                  "label": "┘        └──────────────┘          └──────────────┘",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter01-diagram-6",
+      "type": "architecture",
+      "title": "물리 서버 1대",
+      "asciiOriginal": "물리 서버 1대\n └─ OS 1개\n     └─ Application 1개",
+      "mermaidCode": "flowchart TB\n    subgraph Server[\"🖥️ 물리 서버\"]\n        direction TB\n        App[\"📦 Application\"]\n        OS[\"🐧 Operating System\"]\n        HW[\"⚙️ Hardware\"]\n    end\n\n    App --> OS\n    OS --> HW\n\n    style Server fill:#f3f4f6,stroke:#6b7280\n    style App fill:#dbeafe,stroke:#2563eb\n    style OS fill:#fef3c7,stroke:#d97706\n    style HW fill:#e5e7eb,stroke:#9ca3af",
+      "data": {
+        "components": [],
+        "connections": []
+      }
+    },
+    {
+      "id": "chapter01-diagram-7",
+      "type": "architecture",
+      "title": "물리 서버",
+      "asciiOriginal": "물리 서버\n └─ Hypervisor\n     ├─ VM1 (OS + App)\n     ├─ VM2 (OS + App)\n     └─ VM3 (OS + App)",
+      "mermaidCode": "flowchart TB\n    subgraph Traditional[\"🖥️ 일반 서버<br/>(온프레미스)\"]\n        direction TB\n        T_Apps[\"App 1 | App 2 | App 3\"]\n        T_OS[\"Host OS\"]\n        T_HW[\"Server Hardware\"]\n    end\n\n    subgraph VM[\"💿 가상머신 (GB)\"]\n        direction TB\n        subgraph VM1[\"VM1\"]\n            VM1_App[\"App\"]\n            VM1_Libs[\"Bins/Libs\"]\n            VM1_OS[\"Guest OS\"]\n        end\n        subgraph VM2[\"VM2\"]\n            VM2_App[\"App\"]\n            VM2_Libs[\"Bins/Libs\"]\n            VM2_OS[\"Guest OS\"]\n        end\n        Hypervisor[\"Hypervisor\"]\n        VM_OS[\"Host OS\"]\n        VM_HW[\"Server Hardware\"]\n    end\n\n    subgraph Container[\"📦 컨테이너 (MB)\"]\n        direction TB\n        subgraph C1[\"Container 1\"]\n            C1_App[\"App\"]\n            C1_Libs[\"Bins/Libs\"]\n        end\n        subgraph C2[\"Container 2\"]\n            C2_App[\"App\"]\n            C2_Libs[\"Bins/Libs\"]\n        end\n        Docker[\"Docker Engine\"]\n        C_OS[\"Host OS\"]\n        C_HW[\"Server Hardware\"]\n    end\n\n    style Traditional fill:#f3f4f6,stroke:#6b7280\n    style VM fill:#fef3c7,stroke:#d97706\n    style Container fill:#dcfce7,stroke:#16a34a\n    style Hypervisor fill:#fed7aa,stroke:#ea580c\n    style Docker fill:#bbf7d0,stroke:#16a34a",
+      "data": {
+        "components": [],
+        "connections": []
+      }
+    },
+    {
+      "id": "chapter01-diagram-8",
+      "type": "network",
+      "title": "물리 서버",
+      "asciiOriginal": "물리 서버\n └─ Host OS (Kernel)\n     ├─ Container A (Process)\n     ├─ Container B (Process)\n     └─ Container C (Process)",
+      "mermaidCode": "flowchart TB\n    subgraph Server[\"🖥️ 물리 서버\"]\n        direction TB\n        subgraph Containers[\"Containers\"]\n            C1[\"Container A<br/>(Process)\"]\n            C2[\"Container B<br/>(Process)\"]\n            C3[\"Container C<br/>(Process)\"]\n        end\n        Kernel[\"🐧 Host OS (Kernel)\"]\n        HW[\"🔧 Hardware\"]\n    end\n\n    C1 --> Kernel\n    C2 --> Kernel\n    C3 --> Kernel\n    Kernel --> HW\n\n    style Server fill:#f8fafc,stroke:#64748b\n    style Containers fill:#dcfce7,stroke:#16a34a\n    style Kernel fill:#dbeafe,stroke:#2563eb",
+      "data": {
+        "nodes": [],
+        "connections": []
+      }
+    }
+  ],
+  "tables": [
+    {
+      "id": "chapter01-table-1",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "Clip",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "내용",
+          "align": "left"
+        },
+        {
+          "key": "col2",
+          "label": "설명",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "Clip 1",
+          "col1": "컨테이너 기술 이란?",
+          "col2": "컨테이너 기술에 대한 why, what, when"
+        },
+        {
+          "col0": "Clip 2",
+          "col1": "docker 컨테이너 가상화와 VM 가상화 비교",
+          "col2": "컨테이너 가상화와 VM을 비교하고 가상화 기술에 대해 알아보기"
+        },
+        {
+          "col0": "Clip 3",
+          "col1": "PWD (Play with Docker)",
+          "col2": "PWD 사용해 보기"
+        }
+      ]
+    },
+    {
+      "id": "chapter01-table-2",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "기업",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "서비스",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "구글",
+          "col1": "웹·앱 서비스"
+        },
+        {
+          "col0": "에어비앤비",
+          "col1": "추천 서비스"
+        },
+        {
+          "col0": "넷플릭스",
+          "col1": "추천 서비스"
+        },
+        {
+          "col0": "당근마켓",
+          "col1": "딥러닝 기반 추천 서비스"
+        },
+        {
+          "col0": "엔씨소프트",
+          "col1": "게임 서비스"
+        },
+        {
+          "col0": "삼성전자",
+          "col1": "헬스 케어 서비스"
+        },
+        {
+          "col0": "타다",
+          "col1": "배차 서비스"
+        },
+        {
+          "col0": "토스",
+          "col1": "금융 서비스"
+        }
+      ]
+    },
+    {
+      "id": "chapter01-table-3",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "시기",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "기술",
+          "align": "left"
+        },
+        {
+          "key": "col2",
+          "label": "설명",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "1991~",
+          "col1": "Linux 프로세스 격리",
+          "col2": "cgroup, namespace, chroot, LXC"
+        },
+        {
+          "col0": "2010~",
+          "col1": "Virtual Machine 가상화 기술",
+          "col2": "VMware, VirtualBox, Xen, KVM"
+        },
+        {
+          "col0": "2013~",
+          "col1": "Container 가상화 기술",
+          "col2": "dotCloud → Docker"
+        },
+        {
+          "col0": "2015~",
+          "col1": "Container Orchestration tool",
+          "col2": "Kubernetes, Docker Swarm, AWS, Azure, GCP → CI/CD"
+        }
+      ]
+    },
+    {
+      "id": "chapter01-table-4",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "구분",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "VM 가상화",
+          "align": "left"
+        },
+        {
+          "key": "col2",
+          "label": "컨테이너 가상화",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "가상화 수준",
+          "col1": "하드웨어 수준",
+          "col2": "운영체제(OS) 수준"
+        },
+        {
+          "col0": "Guest OS",
+          "col1": "별도의 GuestOS 필요",
+          "col2": "Host 커널 공유"
+        },
+        {
+          "col0": "무게",
+          "col1": "무거움 (GB 단위)",
+          "col2": "경량 (MB 단위)"
+        },
+        {
+          "col0": "속도",
+          "col1": "부팅 느림 (수십 초)",
+          "col2": "빠름 (수 ms)"
+        }
+      ]
+    },
+    {
+      "id": "chapter01-table-5",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "구성요소",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "역할",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "runC",
+          "col1": "커널 기술의 공유를 통해 컨테이너 생성을 지원"
+        },
+        {
+          "col0": "containerd",
+          "col1": "생성된 컨테이너의 라이프사이클 관리를 지원"
+        },
+        {
+          "col0": "dockerd",
+          "col1": "사용자 환경에서의 명령을 전달"
+        }
+      ]
+    },
+    {
+      "id": "chapter01-table-6",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "기능",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "설명",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "Docker CLI API",
+          "col1": "사용자 명령 처리"
+        },
+        {
+          "col0": "swarmkit",
+          "col1": "클러스터 관리"
+        },
+        {
+          "col0": "Logs mgmt",
+          "col1": "로그 관리"
+        },
+        {
+          "col0": "Storage mgmt",
+          "col1": "스토리지 관리"
+        },
+        {
+          "col0": "libnetwork",
+          "col1": "네트워크 관리"
+        },
+        {
+          "col0": "buildkit",
+          "col1": "이미지 빌드"
+        },
+        {
+          "col0": "DCT",
+          "col1": "Docker Content Trust (보안)"
+        },
+        {
+          "col0": "Image mgmt",
+          "col1": "이미지 관리"
+        }
+      ]
+    },
+    {
+      "id": "chapter01-table-7",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "기술",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "역할",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "Namespace",
+          "col1": "프로세스 격리"
+        },
+        {
+          "col0": "Cgroups",
+          "col1": "CPU / Memory 제한"
+        },
+        {
+          "col0": "RootFS",
+          "col1": "파일시스템 분리"
+        }
+      ]
+    }
+  ]
+}

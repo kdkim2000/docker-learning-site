@@ -1,0 +1,1202 @@
+{
+  "meta": {
+    "id": "chapter00",
+    "number": 0,
+    "title": "Chapter 00. Docker 컨테이너 빌드업",
+    "description": "",
+    "phase": "buildup",
+    "objectives": [
+      "Docker 학습의 필요성과 가치 이해",
+      "CI/CD와 컨테이너 기술의 연관성 파악",
+      "전체 커리큘럼 구조와 학습 로드맵 이해",
+      "Docker를 활용한 MSA 구성 목표 설정"
+    ]
+  },
+  "sections": [
+    {
+      "id": "chapter00-section-1",
+      "level": 2,
+      "title": "0. 강의 소개",
+      "anchor": "0-강의-소개",
+      "content": [
+        {
+          "id": "chapter00-block-1",
+          "type": "text",
+          "data": {
+            "markdown": "한 번에 끝내는 CI/CD Docker 컨테이너 빌드업!"
+          }
+        },
+        {
+          "id": "chapter00-block-2",
+          "type": "text",
+          "data": {
+            "markdown": "이 강의는 Docker 엔진에 대한 이해와 CLI를 통해 컨테이너 기술을 습득하고, 컨테이너 MSA 구성에 대한 실무를 익히는 것을 목표로 합니다."
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter00-section-2",
+      "level": 3,
+      "title": "강의 구성",
+      "anchor": "강의-구성",
+      "content": [
+        {
+          "id": "chapter00-block-3",
+          "type": "table",
+          "data": {
+            "tableId": "chapter00-table-3"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter00-section-3",
+      "level": 2,
+      "title": "1. 이 챕터의 목적",
+      "anchor": "1-이-챕터의-목적",
+      "content": [
+        {
+          "id": "chapter00-block-5",
+          "type": "text",
+          "data": {
+            "markdown": "이 챕터는 Docker를 왜 배우는지,\n그리고 앞으로 1~14장에서 무엇을 어떻게 실습하게 되는지를 명확히 이해하는 것이 목표입니다."
+          }
+        },
+        {
+          "id": "chapter00-block-6",
+          "type": "callout",
+          "data": {
+            "type": "danger",
+            "emoji": "❗",
+            "content": "❗ 이 챕터를 이해하지 못하면\n이후 실습에서 \"이걸 왜 하는지\"를 계속 잃어버리게 됩니다."
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter00-section-4",
+      "level": 2,
+      "title": "2. 왜 Docker를 배우는가? (실무 관점)",
+      "anchor": "2-왜-docker를-배우는가-실무-관점",
+      "content": []
+    },
+    {
+      "id": "chapter00-section-5",
+      "level": 3,
+      "title": "2.1 전통적인 개발·운영의 문제",
+      "anchor": "21-전통적인-개발운영의-문제",
+      "content": [
+        {
+          "id": "chapter00-block-8",
+          "type": "text",
+          "data": {
+            "markdown": "아래 상황을 한 번이라도 겪었다면 Docker가 필요합니다."
+          }
+        },
+        {
+          "id": "chapter00-block-9",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "내 PC에서는 정상 동작"
+              },
+              {
+                "text": "서버에 배포하면 오류 발생"
+              },
+              {
+                "text": "개발자 / 운영자 환경이 다름"
+              },
+              {
+                "text": "라이브러리 버전 충돌"
+              },
+              {
+                "text": "서버 재설치 시 동일 환경 재구성 불가"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter00-block-10",
+          "type": "text",
+          "data": {
+            "markdown": "👉 환경 불일치(Environment Drift) 문제"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter00-section-6",
+      "level": 3,
+      "title": "2.2 Docker가 해결하는 핵심 문제",
+      "anchor": "22-docker가-해결하는-핵심-문제",
+      "content": [
+        {
+          "id": "chapter00-block-12",
+          "type": "text",
+          "data": {
+            "markdown": "Docker는 다음을 하나의 패키지로 묶습니다."
+          }
+        },
+        {
+          "id": "chapter00-block-13",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "애플리케이션"
+              },
+              {
+                "text": "실행에 필요한 라이브러리"
+              },
+              {
+                "text": "OS 환경 일부"
+              },
+              {
+                "text": "실행 명령"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter00-block-14",
+          "type": "text",
+          "data": {
+            "markdown": "즉,"
+          }
+        },
+        {
+          "id": "chapter00-block-15",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "“이 환경 그대로 어디서든 실행”"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter00-section-7",
+      "level": 2,
+      "title": "3. Docker가 사용되는 실제 위치",
+      "anchor": "3-docker가-사용되는-실제-위치",
+      "content": []
+    },
+    {
+      "id": "chapter00-section-8",
+      "level": 3,
+      "title": "3.1 서비스 전체 흐름에서의 Docker 위치",
+      "anchor": "31-서비스-전체-흐름에서의-docker-위치",
+      "content": [
+        {
+          "id": "chapter00-block-17",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter00-diagram-1"
+          }
+        },
+        {
+          "id": "chapter00-block-18",
+          "type": "text",
+          "data": {
+            "markdown": "Docker는 중앙 연결 고리 역할을 합니다."
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter00-section-9",
+      "level": 3,
+      "title": "3.2 실무 사용 사례",
+      "anchor": "32-실무-사용-사례",
+      "content": [
+        {
+          "id": "chapter00-block-20",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "웹 서비스 배포 (Nginx, Spring, Node.js)"
+              },
+              {
+                "text": "DB 테스트 환경 (MySQL, PostgreSQL)"
+              },
+              {
+                "text": "CI/CD 파이프라인"
+              },
+              {
+                "text": "MSA 환경"
+              },
+              {
+                "text": "Kubernetes 기반 운영"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter00-section-10",
+      "level": 2,
+      "title": "4. 이 교재의 학습 방식",
+      "anchor": "4-이-교재의-학습-방식",
+      "content": []
+    },
+    {
+      "id": "chapter00-section-11",
+      "level": 3,
+      "title": "4.1 이론 비중",
+      "anchor": "41-이론-비중",
+      "content": [
+        {
+          "id": "chapter00-block-22",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "최소한의 이론"
+              },
+              {
+                "text": "반드시 실습에 필요한 개념만 설명"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter00-section-12",
+      "level": 3,
+      "title": "4.2 실습 비중",
+      "anchor": "42-실습-비중",
+      "content": [
+        {
+          "id": "chapter00-block-23",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "모든 챕터는 명령어 실습 포함"
+              },
+              {
+                "text": "복사 → 실행 → 결과 확인 구조"
+              },
+              {
+                "text": "실습 실패 시 점검 포인트 제공"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter00-section-13",
+      "level": 2,
+      "title": "5. 전체 커리큘럼 구성 안내 (1~14장 로드맵)",
+      "anchor": "5-전체-커리큘럼-구성-안내-114장-로드맵",
+      "content": []
+    },
+    {
+      "id": "chapter00-section-14",
+      "level": 3,
+      "title": "Chapter 1. Docker 빌드업 (입문~실무)",
+      "anchor": "chapter-1-docker-빌드업-입문실무",
+      "content": [
+        {
+          "id": "chapter00-block-25",
+          "type": "table",
+          "data": {
+            "tableId": "chapter00-table-25"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter00-section-15",
+      "level": 3,
+      "title": "Chapter 2. Docker 실전 (입문~실무)",
+      "anchor": "chapter-2-docker-실전-입문실무",
+      "content": [
+        {
+          "id": "chapter00-block-26",
+          "type": "table",
+          "data": {
+            "tableId": "chapter00-table-26"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter00-section-16",
+      "level": 3,
+      "title": "Chapter 3. Docker 마스터 (입문~실무)",
+      "anchor": "chapter-3-docker-마스터-입문실무",
+      "content": [
+        {
+          "id": "chapter00-block-27",
+          "type": "table",
+          "data": {
+            "tableId": "chapter00-table-27"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter00-section-17",
+      "level": 2,
+      "title": "6. 프로젝트 개요",
+      "anchor": "6-프로젝트-개요",
+      "content": []
+    },
+    {
+      "id": "chapter00-section-18",
+      "level": 3,
+      "title": "6.1 \"My Diary\" 애플리케이션 서비스 프로젝트",
+      "anchor": "61-my-diary-애플리케이션-서비스-프로젝트",
+      "content": [
+        {
+          "id": "chapter00-block-29",
+          "type": "text",
+          "data": {
+            "markdown": "이 강의의 최종 목표는 \"My Diary\" 애플리케이션을 컨테이너 기반으로 구축하고 배포하는 것입니다."
+          }
+        },
+        {
+          "id": "chapter00-block-30",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Frontend를 통해 입력된 데이터는 Backend를 거쳐 Database에 기록됩니다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter00-section-19",
+      "level": 3,
+      "title": "6.2 프로젝트 구성 - VM based",
+      "anchor": "62-프로젝트-구성---vm-based",
+      "content": [
+        {
+          "id": "chapter00-block-31",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter00-diagram-2"
+          }
+        },
+        {
+          "id": "chapter00-block-32",
+          "type": "text",
+          "data": {
+            "markdown": "구성 요소:"
+          }
+        },
+        {
+          "id": "chapter00-block-33",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "VCS: GitHub"
+              },
+              {
+                "text": "CI/CD: Jenkins (Build → Test → Deploy)"
+              },
+              {
+                "text": "Registry: Private Registry 또는 Docker Hub (hub.docker.com)"
+              },
+              {
+                "text": "Runtime: VirtualBox + Docker"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter00-section-20",
+      "level": 3,
+      "title": "6.3 프로젝트 구성 - AWS based",
+      "anchor": "63-프로젝트-구성---aws-based",
+      "content": [
+        {
+          "id": "chapter00-block-34",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter00-diagram-3"
+          }
+        },
+        {
+          "id": "chapter00-block-35",
+          "type": "text",
+          "data": {
+            "markdown": "구성 요소:"
+          }
+        },
+        {
+          "id": "chapter00-block-36",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "개발환경: AWS Cloud9"
+              },
+              {
+                "text": "VCS: AWS CodeCommit"
+              },
+              {
+                "text": "Trigger: CodeCommit Trigger (SNS → SQS)"
+              },
+              {
+                "text": "CI/CD: Jenkins (Build → Test → Deploy)"
+              },
+              {
+                "text": "Registry: Amazon ECR"
+              },
+              {
+                "text": "Runtime: AWS ECS (Docker 컨테이너)"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter00-section-21",
+      "level": 2,
+      "title": "7. 실습 환경 준비 (필수)",
+      "anchor": "7-실습-환경-준비-필수",
+      "content": [
+        {
+          "id": "chapter00-block-38",
+          "type": "callout",
+          "data": {
+            "type": "warning",
+            "emoji": "⚠️",
+            "content": "⚠️ 이후 모든 실습은 Linux 기준으로 설명합니다.\n(Windows 사용자는 WSL2 또는 VM 권장)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter00-section-22",
+      "level": 3,
+      "title": "7.1 강의 소스코드",
+      "anchor": "71-강의-소스코드",
+      "content": [
+        {
+          "id": "chapter00-block-39",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "GitHub: https://github.com/hylee-kevin/fastcampus"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter00-section-23",
+      "level": 3,
+      "title": "7.2 강의에 사용하는 기술 스택",
+      "anchor": "72-강의에-사용하는-기술-스택",
+      "content": [
+        {
+          "id": "chapter00-block-40",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Oracle VM + Ubuntu 22.04 + Docker latest"
+              },
+              {
+                "text": "hub.docker.com 기반의 다양한 \"application base image\" 활용"
+              },
+              {
+                "text": "각종 Client tools"
+              },
+              {
+                "text": "AWS Cloud ECS & ECR"
+              },
+              {
+                "text": "Github + GitAction + Jenkins CI/CD"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter00-section-24",
+      "level": 3,
+      "title": "7.3 실습 환경 옵션",
+      "anchor": "73-실습-환경-옵션",
+      "content": []
+    },
+    {
+      "id": "chapter00-section-25",
+      "level": 4,
+      "title": "권장 환경",
+      "anchor": "권장-환경",
+      "content": [
+        {
+          "id": "chapter00-block-42",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Ubuntu 20.04 / 22.04"
+              },
+              {
+                "text": "CentOS 7 / Rocky Linux"
+              },
+              {
+                "text": "클라우드 VM (AWS, GCP)"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter00-section-26",
+      "level": 4,
+      "title": "대안 환경",
+      "anchor": "대안-환경",
+      "content": [
+        {
+          "id": "chapter00-block-43",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Windows + WSL2"
+              },
+              {
+                "text": "Docker Desktop"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter00-section-27",
+      "level": 2,
+      "title": "8. Docker 설치 확인 실습",
+      "anchor": "8-docker-설치-확인-실습",
+      "content": []
+    },
+    {
+      "id": "chapter00-section-28",
+      "level": 3,
+      "title": "8.1 Docker 설치 여부 확인",
+      "anchor": "81-docker-설치-여부-확인",
+      "content": [
+        {
+          "id": "chapter00-block-45",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker --version",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter00-block-46",
+          "type": "text",
+          "data": {
+            "markdown": "정상 출력 예:"
+          }
+        },
+        {
+          "id": "chapter00-block-47",
+          "type": "code",
+          "data": {
+            "language": "text",
+            "code": "Docker version 24.0.x, build xxxx",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter00-section-29",
+      "level": 3,
+      "title": "8.2 Docker 데몬 동작 확인",
+      "anchor": "82-docker-데몬-동작-확인",
+      "content": [
+        {
+          "id": "chapter00-block-49",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker info",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter00-block-50",
+          "type": "text",
+          "data": {
+            "markdown": "확인 포인트:"
+          }
+        },
+        {
+          "id": "chapter00-block-51",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Server 정보 출력"
+              },
+              {
+                "text": "오류 메시지 없음"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter00-section-30",
+      "level": 3,
+      "title": "8.3 Docker 권한 문제 점검",
+      "anchor": "83-docker-권한-문제-점검",
+      "content": [
+        {
+          "id": "chapter00-block-53",
+          "type": "text",
+          "data": {
+            "markdown": "아래 오류가 발생한다면:"
+          }
+        },
+        {
+          "id": "chapter00-block-54",
+          "type": "code",
+          "data": {
+            "language": "text",
+            "code": "permission denied while trying to connect to the Docker daemon",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter00-block-55",
+          "type": "text",
+          "data": {
+            "markdown": "해결:"
+          }
+        },
+        {
+          "id": "chapter00-block-56",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "sudo usermod -aG docker $USER",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter00-block-57",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "이후 로그아웃 후 재접속 필수"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter00-section-31",
+      "level": 2,
+      "title": "9. 첫 번째 Docker 실습 (중요)",
+      "anchor": "9-첫-번째-docker-실습-중요",
+      "content": []
+    },
+    {
+      "id": "chapter00-section-32",
+      "level": 3,
+      "title": "9.1 hello-world 컨테이너 실행",
+      "anchor": "91-hello-world-컨테이너-실행",
+      "content": [
+        {
+          "id": "chapter00-block-59",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker run hello-world",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter00-block-60",
+          "type": "text",
+          "data": {
+            "markdown": "이 명령이 의미하는 것:"
+          }
+        },
+        {
+          "id": "chapter00-block-61",
+          "type": "list",
+          "data": {
+            "ordered": true,
+            "items": [
+              {
+                "text": "로컬에 이미지 존재 여부 확인"
+              },
+              {
+                "text": "없으면 Docker Hub에서 자동 다운로드"
+              },
+              {
+                "text": "컨테이너 생성"
+              },
+              {
+                "text": "실행"
+              },
+              {
+                "text": "종료"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter00-section-33",
+      "level": 3,
+      "title": "9.2 결과 해석",
+      "anchor": "92-결과-해석",
+      "content": [
+        {
+          "id": "chapter00-block-63",
+          "type": "text",
+          "data": {
+            "markdown": "정상 출력 시:"
+          }
+        },
+        {
+          "id": "chapter00-block-64",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Docker Engine 정상"
+              },
+              {
+                "text": "네트워크 정상"
+              },
+              {
+                "text": "이미지 Pull 정상"
+              },
+              {
+                "text": "컨테이너 실행 성공"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter00-block-65",
+          "type": "text",
+          "data": {
+            "markdown": "👉 이 실습이 실패하면 이후 모든 실습이 불가"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter00-section-34",
+      "level": 2,
+      "title": "10. 실습 디렉토리 구조 준비",
+      "anchor": "10-실습-디렉토리-구조-준비",
+      "content": [
+        {
+          "id": "chapter00-block-67",
+          "type": "text",
+          "data": {
+            "markdown": "앞으로의 실습을 위해 디렉토리를 하나 만듭니다."
+          }
+        },
+        {
+          "id": "chapter00-block-68",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "mkdir docker-labs\ncd docker-labs",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter00-block-69",
+          "type": "text",
+          "data": {
+            "markdown": "이 디렉토리는:"
+          }
+        },
+        {
+          "id": "chapter00-block-70",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Dockerfile"
+              },
+              {
+                "text": "실습 소스"
+              },
+              {
+                "text": "설정 파일"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter00-block-71",
+          "type": "text",
+          "data": {
+            "markdown": "을 저장하는 공간입니다."
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter00-section-35",
+      "level": 2,
+      "title": "11. 이 챕터 체크리스트",
+      "anchor": "11-이-챕터-체크리스트",
+      "content": [
+        {
+          "id": "chapter00-block-73",
+          "type": "text",
+          "data": {
+            "markdown": "반드시 아래 항목을 모두 만족해야 다음 챕터로 이동하세요."
+          }
+        },
+        {
+          "id": "chapter00-block-74",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Docker가 설치되어 있다"
+              },
+              {
+                "text": "docker 명령이 sudo 없이 실행된다"
+              },
+              {
+                "text": "docker info 오류 없음"
+              },
+              {
+                "text": "hello-world 컨테이너 실행 성공"
+              },
+              {
+                "text": "실습 디렉토리 생성 완료"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter00-section-36",
+      "level": 2,
+      "title": "12. 다음 챕터 예고",
+      "anchor": "12-다음-챕터-예고",
+      "content": []
+    },
+    {
+      "id": "chapter00-section-37",
+      "level": 3,
+      "title": "Chapter 01에서는 다음을 직접 확인합니다.",
+      "anchor": "chapter-01에서는-다음을-직접-확인합니다",
+      "content": [
+        {
+          "id": "chapter00-block-76",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "VM과 컨테이너의 실제 차이"
+              },
+              {
+                "text": "컨테이너가 프로세스라는 의미"
+              },
+              {
+                "text": "컨테이너 내부와 Host의 경계"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter00-block-77",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "👉 다음 장부터는 이론 + 실습 비중이 더 커집니다."
+          }
+        }
+      ]
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "chapter00-diagram-1",
+      "type": "network",
+      "title": "개발자 코드 작성",
+      "asciiOriginal": "개발자 코드 작성\n        ↓\nGit Commit / Push\n        ↓\nCI (Build / Test)\n        ↓\nDocker Image 생성\n        ↓\nImage Registry (Docker Hub, ECR)\n        ↓\n운영 서버에서 Container 실행",
+      "mermaidCode": "flowchart LR\n    subgraph Development[\"👨‍💻 개발\"]\n        Dockerfile[\"📄 Dockerfile\"]\n        AppCode[\"💻 Application<br/>+ Infra 구성\"]\n    end\n\n    subgraph Build[\"🔨 빌드\"]\n        BuildProcess[\"docker build\"]\n        Image[\"🐳 Docker Image\"]\n    end\n\n    subgraph Registry[\"📦 레지스트리\"]\n        Push[\"docker push\"]\n        Hub[\"Docker Hub\"]\n        Pull[\"docker pull\"]\n    end\n\n    subgraph Deploy[\"🚀 배포\"]\n        Run[\"docker run\"]\n        Container[\"📦 Container\"]\n        Service[\"🌐 Application<br/>서비스 제공\"]\n    end\n\n    AppCode --> Dockerfile\n    Dockerfile --> BuildProcess\n    BuildProcess --> Image\n    Image --> Push\n    Push --> Hub\n    Hub --> Pull\n    Pull --> Run\n    Run --> Container\n    Container --> Service\n\n    style Development fill:#fef3c7,stroke:#d97706\n    style Build fill:#dbeafe,stroke:#2563eb\n    style Registry fill:#e0e7ff,stroke:#6366f1\n    style Deploy fill:#dcfce7,stroke:#16a34a",
+      "data": {
+        "nodes": [],
+        "connections": []
+      }
+    },
+    {
+      "id": "chapter00-diagram-2",
+      "type": "flow",
+      "title": "↓                    ↓                      ↓",
+      "asciiOriginal": "[개발자] → [GitHub] → [Jenkins (Build/Test/Deploy)] → [VirtualBox]\n                ↓                    ↓                      ↓\n           git commit           CI/CD 상태점검          Frontend\n           git push                  ↓                 Backend\n                              Image Registry           Database\n                                    ↓\n                         Private Registry 또는\n                         Public Registry (hub.docker.com)",
+      "mermaidCode": "flowchart TB\n    subgraph ThreeTier[\"🏗️ 3-Tier 아키텍처\"]\n        direction TB\n\n        subgraph Frontend[\"Frontend Tier\"]\n            FE[\"🌐 Nginx<br/>:80\"]\n        end\n\n        subgraph Backend[\"Backend Tier\"]\n            BE[\"⚙️ Node.js API<br/>:8080\"]\n        end\n\n        subgraph Data[\"Data Tier\"]\n            DB[\"🗄️ MySQL<br/>:3306\"]\n        end\n    end\n\n    Client[\"👤 Client\"] --> FE\n    FE -->|\"/api/*\"| BE\n    BE --> DB\n\n    style ThreeTier fill:#f8fafc,stroke:#64748b\n    style Frontend fill:#dcfce7,stroke:#16a34a\n    style Backend fill:#dbeafe,stroke:#2563eb\n    style Data fill:#fef3c7,stroke:#d97706",
+      "data": {
+        "steps": [],
+        "connections": [],
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter00-diagram-3",
+      "type": "flow",
+      "title": "↓                              ↓            ↓",
+      "asciiOriginal": "[개발자] → [AWS CodeCommit] → [SNS → SQS] → [Jenkins] → [AWS ECS]\n                ↓                              ↓            ↓\n          git push                    Build/Test/Deploy  Frontend\n               ↓                              ↓          Backend\n         AWS Cloud9                     Amazon ECR       Database",
+      "mermaidCode": "flowchart TB\n    subgraph ThreeTier[\"🏗️ 3-Tier 아키텍처\"]\n        direction TB\n\n        subgraph Frontend[\"Frontend Tier\"]\n            FE[\"🌐 Nginx<br/>:80\"]\n        end\n\n        subgraph Backend[\"Backend Tier\"]\n            BE[\"⚙️ Node.js API<br/>:8080\"]\n        end\n\n        subgraph Data[\"Data Tier\"]\n            DB[\"🗄️ MySQL<br/>:3306\"]\n        end\n    end\n\n    Client[\"👤 Client\"] --> FE\n    FE -->|\"/api/*\"| BE\n    BE --> DB\n\n    style ThreeTier fill:#f8fafc,stroke:#64748b\n    style Frontend fill:#dcfce7,stroke:#16a34a\n    style Backend fill:#dbeafe,stroke:#2563eb\n    style Data fill:#fef3c7,stroke:#d97706",
+      "data": {
+        "steps": [],
+        "connections": [],
+        "orientation": "vertical"
+      }
+    }
+  ],
+  "tables": [
+    {
+      "id": "chapter00-table-1",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "Chapter",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "내용",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "Chapter 1",
+          "col1": "Docker 빌드업"
+        },
+        {
+          "col0": "Chapter 2",
+          "col1": "Docker 실전"
+        },
+        {
+          "col0": "Chapter 3",
+          "col1": "Docker 마스터"
+        }
+      ]
+    },
+    {
+      "id": "chapter00-table-2",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "단계",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "Chapter",
+          "align": "left"
+        },
+        {
+          "key": "col2",
+          "label": "내용",
+          "align": "left"
+        },
+        {
+          "key": "col3",
+          "label": "학습 목표",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "입문",
+          "col1": "01",
+          "col2": "컨테이너 가상화 이해",
+          "col3": "컨테이너 가상화 기술 리뷰"
+        },
+        {
+          "col0": "입문",
+          "col1": "02",
+          "col2": "Docker 플랫폼 구성",
+          "col3": "Docker 엔진 구성을 위한 환경 구성"
+        },
+        {
+          "col0": "기본",
+          "col1": "03",
+          "col2": "Docker 엔진",
+          "col3": "최신 Docker 엔진 사용"
+        },
+        {
+          "col0": "실무",
+          "col1": "04",
+          "col2": "Docker 이미지 관리",
+          "col3": "이미지 pull / push와 registry 이해"
+        },
+        {
+          "col0": "실무",
+          "col1": "05",
+          "col2": "Docker 컨테이너 관리",
+          "col3": "컨테이너 관리를 위한 CLI"
+        }
+      ]
+    },
+    {
+      "id": "chapter00-table-3",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "단계",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "Chapter",
+          "align": "left"
+        },
+        {
+          "key": "col2",
+          "label": "내용",
+          "align": "left"
+        },
+        {
+          "key": "col3",
+          "label": "학습 목표",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "입문",
+          "col1": "06",
+          "col2": "Docker network",
+          "col3": "컨테이너 서비스를 위한 네트워크"
+        },
+        {
+          "col0": "입문",
+          "col1": "07",
+          "col2": "컨테이너 자원관리",
+          "col3": "컨테이너 자원관리와 모니터링"
+        },
+        {
+          "col0": "기본",
+          "col1": "08",
+          "col2": "Docker Volume",
+          "col3": "데이터 지속성을 위한 Docker Volume"
+        },
+        {
+          "col0": "실무",
+          "col1": "09",
+          "col2": "Dockerfile",
+          "col3": "컨테이너 인프라 구성, Dockerfile"
+        },
+        {
+          "col0": "실무",
+          "col1": "10",
+          "col2": "docker compose",
+          "col3": "멀티컨테이너 서비스, docker compose"
+        }
+      ]
+    },
+    {
+      "id": "chapter00-table-4",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "단계",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "Chapter",
+          "align": "left"
+        },
+        {
+          "key": "col2",
+          "label": "내용",
+          "align": "left"
+        },
+        {
+          "key": "col3",
+          "label": "학습 목표",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "입문",
+          "col1": "11",
+          "col2": "Docker swarm",
+          "col3": "컨테이너 orchestration 도구 활용"
+        },
+        {
+          "col0": "입문",
+          "col1": "12",
+          "col2": "Docker CI",
+          "col3": "Docker CI를 위한 Gitaction workflow"
+        },
+        {
+          "col0": "기본",
+          "col1": "13",
+          "col2": "AWS ECS 서비스",
+          "col3": "AWS ECS와 ECR 구성"
+        },
+        {
+          "col0": "실무",
+          "col1": "14-1",
+          "col2": "My Diary pilot project",
+          "col3": "VM 기반의 3-tier pilot project"
+        },
+        {
+          "col0": "실무",
+          "col1": "14-2",
+          "col2": "My Diary pilot project",
+          "col3": "AWS ECS 기반의 3-tier pilot project"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,2658 @@
+{
+  "meta": {
+    "id": "chapter05",
+    "number": 5,
+    "title": "Chapter 05. 컨테이너 생명주기와 관리",
+    "description": "",
+    "phase": "buildup",
+    "objectives": [
+      "컨테이너의 생명주기(Lifecycle) 상태를 이해한다",
+      "create / start / stop / restart / rm 명령을 자유롭게 사용한다",
+      "docker logs로 컨테이너 로그를 분석한다",
+      "docker exec로 실행 중인 컨테이너에 접속한다",
+      "docker inspect로 컨테이너 상세 정보를 확인한다",
+      "장애 발생 시 기본적인 분석을 수행한다"
+    ]
+  },
+  "sections": [
+    {
+      "id": "chapter05-section-1",
+      "level": 2,
+      "title": "1. 이 챕터의 목표",
+      "anchor": "1-이-챕터의-목표",
+      "content": [
+        {
+          "id": "chapter05-block-1",
+          "type": "text",
+          "data": {
+            "markdown": "이 챕터를 마치면 다음을 실제로 할 수 있어야 합니다."
+          }
+        },
+        {
+          "id": "chapter05-block-2",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "컨테이너의 생명주기(Lifecycle) 상태를 이해한다"
+              },
+              {
+                "text": "create / start / stop / restart / rm 명령을 자유롭게 사용한다"
+              },
+              {
+                "text": "docker logs로 컨테이너 로그를 분석한다"
+              },
+              {
+                "text": "docker exec로 실행 중인 컨테이너에 접속한다"
+              },
+              {
+                "text": "docker inspect로 컨테이너 상세 정보를 확인한다"
+              },
+              {
+                "text": "장애 발생 시 기본적인 분석을 수행한다"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter05-block-3",
+          "type": "callout",
+          "data": {
+            "type": "danger",
+            "emoji": "❗",
+            "content": "❗ 이 챕터는\nDocker 운영의 기본기를 다룬다."
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-2",
+      "level": 2,
+      "title": "2. 컨테이너 생명주기(Lifecycle) 개요",
+      "anchor": "2-컨테이너-생명주기lifecycle-개요",
+      "content": []
+    },
+    {
+      "id": "chapter05-section-3",
+      "level": 3,
+      "title": "2.1 컨테이너 상태 전이도",
+      "anchor": "21-컨테이너-상태-전이도",
+      "content": [
+        {
+          "id": "chapter05-block-5",
+          "type": "text",
+          "data": {
+            "markdown": "Docker 컨테이너는 다음과 같은 상태를 가진다:"
+          }
+        },
+        {
+          "id": "chapter05-block-6",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter05-diagram-1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-4",
+      "level": 3,
+      "title": "2.2 컨테이너 상태 종류",
+      "anchor": "22-컨테이너-상태-종류",
+      "content": [
+        {
+          "id": "chapter05-block-8",
+          "type": "table",
+          "data": {
+            "tableId": "chapter05-table-8"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-5",
+      "level": 2,
+      "title": "3. 컨테이너 생성과 실행",
+      "anchor": "3-컨테이너-생성과-실행",
+      "content": []
+    },
+    {
+      "id": "chapter05-section-6",
+      "level": 3,
+      "title": "3.1 docker run vs docker create + start",
+      "anchor": "31-docker-run-vs-docker-create-start",
+      "content": [
+        {
+          "id": "chapter05-block-10",
+          "type": "text",
+          "data": {
+            "markdown": "docker run = docker create + docker start"
+          }
+        },
+        {
+          "id": "chapter05-block-11",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter05-diagram-2"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-7",
+      "level": 3,
+      "title": "3.2 docker create - 컨테이너 생성만",
+      "anchor": "32-docker-create---컨테이너-생성만",
+      "content": [
+        {
+          "id": "chapter05-block-13",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker create [옵션] 이미지명[:태그] [명령]",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter05-block-14",
+          "type": "text",
+          "data": {
+            "markdown": "예시:"
+          }
+        },
+        {
+          "id": "chapter05-block-15",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker create --name mycontainer nginx:alpine",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter05-block-16",
+          "type": "text",
+          "data": {
+            "markdown": "특징:"
+          }
+        },
+        {
+          "id": "chapter05-block-17",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "컨테이너를 생성만 하고 시작하지 않음"
+              },
+              {
+                "text": "상태: Created"
+              },
+              {
+                "text": "나중에 docker start로 시작"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-8",
+      "level": 3,
+      "title": "3.3 docker start - 컨테이너 시작",
+      "anchor": "33-docker-start---컨테이너-시작",
+      "content": [
+        {
+          "id": "chapter05-block-19",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker start [옵션] 컨테이너명|컨테이너ID",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter05-block-20",
+          "type": "text",
+          "data": {
+            "markdown": "예시:"
+          }
+        },
+        {
+          "id": "chapter05-block-21",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker start mycontainer",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter05-block-22",
+          "type": "text",
+          "data": {
+            "markdown": "옵션:"
+          }
+        },
+        {
+          "id": "chapter05-block-23",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "-a, --attach: 표준 출력/에러에 연결"
+              },
+              {
+                "text": "-i, --interactive: 표준 입력 활성화"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-9",
+      "level": 3,
+      "title": "3.4 docker run - 생성과 동시에 실행",
+      "anchor": "34-docker-run---생성과-동시에-실행",
+      "content": [
+        {
+          "id": "chapter05-block-25",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker run [옵션] 이미지명[:태그] [명령]",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter05-block-26",
+          "type": "text",
+          "data": {
+            "markdown": "자주 사용하는 옵션:"
+          }
+        },
+        {
+          "id": "chapter05-block-27",
+          "type": "table",
+          "data": {
+            "tableId": "chapter05-table-27"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-10",
+      "level": 2,
+      "title": "4. 실습 1 - 컨테이너 생성과 실행 분리",
+      "anchor": "4-실습-1---컨테이너-생성과-실행-분리",
+      "content": []
+    },
+    {
+      "id": "chapter05-section-11",
+      "level": 3,
+      "title": "4.1 create로 컨테이너 생성",
+      "anchor": "41-create로-컨테이너-생성",
+      "content": [
+        {
+          "id": "chapter05-block-29",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker create --name web1 nginx:alpine",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter05-block-30",
+          "type": "text",
+          "data": {
+            "markdown": "상태 확인:"
+          }
+        },
+        {
+          "id": "chapter05-block-31",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker ps -a",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter05-block-32",
+          "type": "text",
+          "data": {
+            "markdown": "출력:"
+          }
+        },
+        {
+          "id": "chapter05-block-33",
+          "type": "code",
+          "data": {
+            "language": "text",
+            "code": "CONTAINER ID   IMAGE          COMMAND                  CREATED         STATUS    NAMES\nabc123...      nginx:alpine   \"/docker-entrypoint.…\"   5 seconds ago   Created   web1",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter05-block-34",
+          "type": "text",
+          "data": {
+            "markdown": "👉 STATUS가 Created 상태"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-12",
+      "level": 3,
+      "title": "4.2 start로 컨테이너 시작",
+      "anchor": "42-start로-컨테이너-시작",
+      "content": [
+        {
+          "id": "chapter05-block-36",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker start web1",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter05-block-37",
+          "type": "text",
+          "data": {
+            "markdown": "상태 확인:"
+          }
+        },
+        {
+          "id": "chapter05-block-38",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker ps",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter05-block-39",
+          "type": "text",
+          "data": {
+            "markdown": "출력:"
+          }
+        },
+        {
+          "id": "chapter05-block-40",
+          "type": "code",
+          "data": {
+            "language": "text",
+            "code": "CONTAINER ID   IMAGE          STATUS         NAMES\nabc123...      nginx:alpine   Up 3 seconds   web1",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter05-block-41",
+          "type": "text",
+          "data": {
+            "markdown": "👉 STATUS가 Up (Running) 상태"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-13",
+      "level": 3,
+      "title": "4.3 정리",
+      "anchor": "43-정리",
+      "content": [
+        {
+          "id": "chapter05-block-43",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker stop web1\ndocker rm web1",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-14",
+      "level": 2,
+      "title": "5. 컨테이너 중지와 재시작",
+      "anchor": "5-컨테이너-중지와-재시작",
+      "content": []
+    },
+    {
+      "id": "chapter05-section-15",
+      "level": 3,
+      "title": "5.1 docker stop - 컨테이너 정상 종료",
+      "anchor": "51-docker-stop---컨테이너-정상-종료",
+      "content": [
+        {
+          "id": "chapter05-block-45",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker stop [옵션] 컨테이너명|컨테이너ID",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter05-block-46",
+          "type": "text",
+          "data": {
+            "markdown": "예시:"
+          }
+        },
+        {
+          "id": "chapter05-block-47",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker stop web1",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter05-block-48",
+          "type": "text",
+          "data": {
+            "markdown": "특징:"
+          }
+        },
+        {
+          "id": "chapter05-block-49",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "SIGTERM 신호 전송 (graceful shutdown)"
+              },
+              {
+                "text": "기본 10초 대기 후 SIGKILL"
+              },
+              {
+                "text": "-t 옵션으로 대기 시간 조절 가능"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter05-block-50",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 5초 대기 후 강제 종료\ndocker stop -t 5 web1",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-16",
+      "level": 3,
+      "title": "5.2 docker kill - 컨테이너 강제 종료",
+      "anchor": "52-docker-kill---컨테이너-강제-종료",
+      "content": [
+        {
+          "id": "chapter05-block-52",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker kill [옵션] 컨테이너명|컨테이너ID",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter05-block-53",
+          "type": "text",
+          "data": {
+            "markdown": "예시:"
+          }
+        },
+        {
+          "id": "chapter05-block-54",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker kill web1",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter05-block-55",
+          "type": "text",
+          "data": {
+            "markdown": "특징:"
+          }
+        },
+        {
+          "id": "chapter05-block-56",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "SIGKILL 신호 전송 (즉시 종료)"
+              },
+              {
+                "text": "데이터 손실 가능성 있음"
+              },
+              {
+                "text": "비정상 상황에서만 사용 권장"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-17",
+      "level": 3,
+      "title": "5.3 docker restart - 컨테이너 재시작",
+      "anchor": "53-docker-restart---컨테이너-재시작",
+      "content": [
+        {
+          "id": "chapter05-block-58",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker restart [옵션] 컨테이너명|컨테이너ID",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter05-block-59",
+          "type": "text",
+          "data": {
+            "markdown": "예시:"
+          }
+        },
+        {
+          "id": "chapter05-block-60",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker restart web1",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter05-block-61",
+          "type": "text",
+          "data": {
+            "markdown": "특징:"
+          }
+        },
+        {
+          "id": "chapter05-block-62",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "stop + start를 순차적으로 수행"
+              },
+              {
+                "text": "-t 옵션으로 stop 대기 시간 조절"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-18",
+      "level": 3,
+      "title": "5.4 docker pause / unpause - 일시 정지",
+      "anchor": "54-docker-pause-unpause---일시-정지",
+      "content": [
+        {
+          "id": "chapter05-block-64",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 일시 정지\ndocker pause web1\n\n# 재개\ndocker unpause web1",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter05-block-65",
+          "type": "text",
+          "data": {
+            "markdown": "특징:"
+          }
+        },
+        {
+          "id": "chapter05-block-66",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "컨테이너 프로세스를 일시 중단 (SIGSTOP)"
+              },
+              {
+                "text": "메모리 상태 유지"
+              },
+              {
+                "text": "디버깅이나 리소스 일시 확보에 유용"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-19",
+      "level": 2,
+      "title": "6. 실습 2 - 컨테이너 상태 전이 체험",
+      "anchor": "6-실습-2---컨테이너-상태-전이-체험",
+      "content": []
+    },
+    {
+      "id": "chapter05-section-20",
+      "level": 3,
+      "title": "6.1 컨테이너 생성 및 실행",
+      "anchor": "61-컨테이너-생성-및-실행",
+      "content": [
+        {
+          "id": "chapter05-block-68",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker run -d --name lifecycle-test nginx:alpine",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-21",
+      "level": 3,
+      "title": "6.2 상태 확인",
+      "anchor": "62-상태-확인",
+      "content": [
+        {
+          "id": "chapter05-block-69",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker ps --format \"table {{.Names}}\\t{{.Status}}\"",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter05-block-70",
+          "type": "text",
+          "data": {
+            "markdown": "출력:"
+          }
+        },
+        {
+          "id": "chapter05-block-71",
+          "type": "code",
+          "data": {
+            "language": "text",
+            "code": "NAMES            STATUS\nlifecycle-test   Up 5 seconds",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-22",
+      "level": 3,
+      "title": "6.3 일시 정지",
+      "anchor": "63-일시-정지",
+      "content": [
+        {
+          "id": "chapter05-block-73",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker pause lifecycle-test\ndocker ps --format \"table {{.Names}}\\t{{.Status}}\"",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter05-block-74",
+          "type": "text",
+          "data": {
+            "markdown": "출력:"
+          }
+        },
+        {
+          "id": "chapter05-block-75",
+          "type": "code",
+          "data": {
+            "language": "text",
+            "code": "NAMES            STATUS\nlifecycle-test   Up 30 seconds (Paused)",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-23",
+      "level": 3,
+      "title": "6.4 재개",
+      "anchor": "64-재개",
+      "content": [
+        {
+          "id": "chapter05-block-77",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker unpause lifecycle-test\ndocker ps --format \"table {{.Names}}\\t{{.Status}}\"",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-24",
+      "level": 3,
+      "title": "6.5 중지",
+      "anchor": "65-중지",
+      "content": [
+        {
+          "id": "chapter05-block-79",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker stop lifecycle-test\ndocker ps -a --format \"table {{.Names}}\\t{{.Status}}\"",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter05-block-80",
+          "type": "text",
+          "data": {
+            "markdown": "출력:"
+          }
+        },
+        {
+          "id": "chapter05-block-81",
+          "type": "code",
+          "data": {
+            "language": "text",
+            "code": "NAMES            STATUS\nlifecycle-test   Exited (0) 5 seconds ago",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-25",
+      "level": 3,
+      "title": "6.6 재시작",
+      "anchor": "66-재시작",
+      "content": [
+        {
+          "id": "chapter05-block-83",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker start lifecycle-test\ndocker ps --format \"table {{.Names}}\\t{{.Status}}\"",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-26",
+      "level": 3,
+      "title": "6.7 정리",
+      "anchor": "67-정리",
+      "content": [
+        {
+          "id": "chapter05-block-85",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker rm -f lifecycle-test",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-27",
+      "level": 2,
+      "title": "7. 컨테이너 삭제",
+      "anchor": "7-컨테이너-삭제",
+      "content": []
+    },
+    {
+      "id": "chapter05-section-28",
+      "level": 3,
+      "title": "7.1 docker rm - 컨테이너 삭제",
+      "anchor": "71-docker-rm---컨테이너-삭제",
+      "content": [
+        {
+          "id": "chapter05-block-87",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker rm [옵션] 컨테이너명|컨테이너ID",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter05-block-88",
+          "type": "text",
+          "data": {
+            "markdown": "옵션:"
+          }
+        },
+        {
+          "id": "chapter05-block-89",
+          "type": "table",
+          "data": {
+            "tableId": "chapter05-table-89"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-29",
+      "level": 3,
+      "title": "7.2 실행 중인 컨테이너 삭제 시도",
+      "anchor": "72-실행-중인-컨테이너-삭제-시도",
+      "content": [
+        {
+          "id": "chapter05-block-91",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker run -d --name running-web nginx:alpine\ndocker rm running-web",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter05-block-92",
+          "type": "text",
+          "data": {
+            "markdown": "출력:"
+          }
+        },
+        {
+          "id": "chapter05-block-93",
+          "type": "code",
+          "data": {
+            "language": "text",
+            "code": "Error response from daemon: cannot remove container \"/running-web\": container is running",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter05-block-94",
+          "type": "text",
+          "data": {
+            "markdown": "👉 실행 중인 컨테이너는 삭제 불가"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-30",
+      "level": 3,
+      "title": "7.3 강제 삭제",
+      "anchor": "73-강제-삭제",
+      "content": [
+        {
+          "id": "chapter05-block-96",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker rm -f running-web",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter05-block-97",
+          "type": "text",
+          "data": {
+            "markdown": "또는:"
+          }
+        },
+        {
+          "id": "chapter05-block-98",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker stop running-web && docker rm running-web",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-31",
+      "level": 3,
+      "title": "7.4 여러 컨테이너 한번에 삭제",
+      "anchor": "74-여러-컨테이너-한번에-삭제",
+      "content": [
+        {
+          "id": "chapter05-block-100",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 특정 컨테이너들 삭제\ndocker rm container1 container2 container3\n\n# 종료된 모든 컨테이너 삭제\ndocker rm $(docker ps -aq -f status=exited)\n\n# 모든 컨테이너 강제 삭제 (주의!)\ndocker rm -f $(docker ps -aq)",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-32",
+      "level": 3,
+      "title": "7.5 컨테이너 자동 삭제 옵션",
+      "anchor": "75-컨테이너-자동-삭제-옵션",
+      "content": [
+        {
+          "id": "chapter05-block-102",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker run --rm -it ubuntu:22.04 bash",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter05-block-103",
+          "type": "text",
+          "data": {
+            "markdown": "특징:"
+          }
+        },
+        {
+          "id": "chapter05-block-104",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "컨테이너 종료 시 자동으로 삭제"
+              },
+              {
+                "text": "일회성 작업에 유용"
+              },
+              {
+                "text": "테스트나 빌드 환경에서 자주 사용"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-33",
+      "level": 2,
+      "title": "8. 컨테이너 목록 조회",
+      "anchor": "8-컨테이너-목록-조회",
+      "content": []
+    },
+    {
+      "id": "chapter05-section-34",
+      "level": 3,
+      "title": "8.1 docker ps - 컨테이너 목록",
+      "anchor": "81-docker-ps---컨테이너-목록",
+      "content": [
+        {
+          "id": "chapter05-block-106",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 실행 중인 컨테이너만\ndocker ps\n\n# 모든 컨테이너 (종료된 것 포함)\ndocker ps -a\n\n# 최근 생성된 n개\ndocker ps -n 5\n\n# 컨테이너 ID만 출력\ndocker ps -q\ndocker ps -aq",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-35",
+      "level": 3,
+      "title": "8.2 필터링 옵션",
+      "anchor": "82-필터링-옵션",
+      "content": [
+        {
+          "id": "chapter05-block-108",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 특정 이름으로 필터\ndocker ps -f name=web\n\n# 특정 상태로 필터\ndocker ps -f status=running\ndocker ps -f status=exited\ndocker ps -f status=paused\n\n# 특정 이미지 기반 컨테이너\ndocker ps -f ancestor=nginx\n\n# 레이블로 필터\ndocker ps -f label=env=prod",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-36",
+      "level": 3,
+      "title": "8.3 출력 형식 지정",
+      "anchor": "83-출력-형식-지정",
+      "content": [
+        {
+          "id": "chapter05-block-110",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 테이블 형식\ndocker ps --format \"table {{.ID}}\\t{{.Names}}\\t{{.Status}}\\t{{.Ports}}\"\n\n# JSON 형식\ndocker ps --format \"{{json .}}\"\n\n# 커스텀 형식\ndocker ps --format \"{{.Names}}: {{.Status}}\"",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter05-block-111",
+          "type": "text",
+          "data": {
+            "markdown": "사용 가능한 플레이스홀더:"
+          }
+        },
+        {
+          "id": "chapter05-block-112",
+          "type": "table",
+          "data": {
+            "tableId": "chapter05-table-112"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-37",
+      "level": 2,
+      "title": "9. 실습 3 - 컨테이너 로그 분석",
+      "anchor": "9-실습-3---컨테이너-로그-분석",
+      "content": []
+    },
+    {
+      "id": "chapter05-section-38",
+      "level": 3,
+      "title": "9.1 docker logs - 로그 조회",
+      "anchor": "91-docker-logs---로그-조회",
+      "content": [
+        {
+          "id": "chapter05-block-114",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker logs [옵션] 컨테이너명|컨테이너ID",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter05-block-115",
+          "type": "text",
+          "data": {
+            "markdown": "주요 옵션:"
+          }
+        },
+        {
+          "id": "chapter05-block-116",
+          "type": "table",
+          "data": {
+            "tableId": "chapter05-table-116"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-39",
+      "level": 3,
+      "title": "9.2 로그 조회 실습",
+      "anchor": "92-로그-조회-실습",
+      "content": [
+        {
+          "id": "chapter05-block-118",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 테스트용 컨테이너 실행\ndocker run -d --name log-test nginx:alpine\n\n# 기본 로그 조회\ndocker logs log-test\n\n# 마지막 10줄\ndocker logs --tail 10 log-test\n\n# 실시간 스트리밍\ndocker logs -f log-test\n\n# 타임스탬프 포함\ndocker logs -t log-test\n\n# 최근 5분 로그\ndocker logs --since 5m log-test\n\n# 특정 시간 범위\ndocker logs --since 2024-01-01T00:00:00 --until 2024-01-01T23:59:59 log-test",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-40",
+      "level": 3,
+      "title": "9.3 로그 발생시키기",
+      "anchor": "93-로그-발생시키기",
+      "content": [
+        {
+          "id": "chapter05-block-120",
+          "type": "text",
+          "data": {
+            "markdown": "새 터미널에서:"
+          }
+        },
+        {
+          "id": "chapter05-block-121",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# HTTP 요청 발생\ncurl http://localhost:80",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter05-block-122",
+          "type": "text",
+          "data": {
+            "markdown": "원래 터미널에서 실시간 로그 확인 (docker logs -f 실행 중이라면)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-41",
+      "level": 3,
+      "title": "9.4 정리",
+      "anchor": "94-정리",
+      "content": [
+        {
+          "id": "chapter05-block-124",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker rm -f log-test",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-42",
+      "level": 2,
+      "title": "10. 실습 4 - 실행 중인 컨테이너 접속",
+      "anchor": "10-실습-4---실행-중인-컨테이너-접속",
+      "content": []
+    },
+    {
+      "id": "chapter05-section-43",
+      "level": 3,
+      "title": "10.1 docker exec - 컨테이너 내부 명령 실행",
+      "anchor": "101-docker-exec---컨테이너-내부-명령-실행",
+      "content": [
+        {
+          "id": "chapter05-block-126",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker exec [옵션] 컨테이너명 명령어 [인자...]",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter05-block-127",
+          "type": "text",
+          "data": {
+            "markdown": "주요 옵션:"
+          }
+        },
+        {
+          "id": "chapter05-block-128",
+          "type": "table",
+          "data": {
+            "tableId": "chapter05-table-128"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-44",
+      "level": 3,
+      "title": "10.2 컨테이너 내부 접속 실습",
+      "anchor": "102-컨테이너-내부-접속-실습",
+      "content": [
+        {
+          "id": "chapter05-block-130",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 테스트용 컨테이너 실행\ndocker run -d --name exec-test nginx:alpine\n\n# 단일 명령 실행\ndocker exec exec-test ls -la /usr/share/nginx/html\n\n# 대화형 셸 접속\ndocker exec -it exec-test /bin/sh",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-45",
+      "level": 3,
+      "title": "10.3 셸 접속 후 내부 탐색",
+      "anchor": "103-셸-접속-후-내부-탐색",
+      "content": [
+        {
+          "id": "chapter05-block-132",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 컨테이너 내부에서\npwd\nls -la\ncat /etc/nginx/nginx.conf\nps aux\nexit",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-46",
+      "level": 3,
+      "title": "10.4 실용적인 exec 사용 예시",
+      "anchor": "104-실용적인-exec-사용-예시",
+      "content": [
+        {
+          "id": "chapter05-block-134",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 프로세스 확인\ndocker exec exec-test ps aux\n\n# 환경 변수 확인\ndocker exec exec-test env\n\n# 설정 파일 확인\ndocker exec exec-test cat /etc/nginx/nginx.conf\n\n# 네트워크 상태 확인\ndocker exec exec-test netstat -tlnp\n\n# 디스크 사용량 확인\ndocker exec exec-test df -h\n\n# 특정 사용자로 명령 실행\ndocker exec -u root exec-test whoami",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-47",
+      "level": 3,
+      "title": "10.5 정리",
+      "anchor": "105-정리",
+      "content": [
+        {
+          "id": "chapter05-block-136",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker rm -f exec-test",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-48",
+      "level": 2,
+      "title": "11. 실습 5 - 컨테이너 상세 정보 확인",
+      "anchor": "11-실습-5---컨테이너-상세-정보-확인",
+      "content": []
+    },
+    {
+      "id": "chapter05-section-49",
+      "level": 3,
+      "title": "11.1 docker inspect - 상세 정보 조회",
+      "anchor": "111-docker-inspect---상세-정보-조회",
+      "content": [
+        {
+          "id": "chapter05-block-138",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker inspect [옵션] 컨테이너명|컨테이너ID",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter05-block-139",
+          "type": "text",
+          "data": {
+            "markdown": "출력: JSON 형식의 상세 정보"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-50",
+      "level": 3,
+      "title": "11.2 전체 정보 조회",
+      "anchor": "112-전체-정보-조회",
+      "content": [
+        {
+          "id": "chapter05-block-141",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker run -d --name inspect-test -p 8080:80 nginx:alpine\ndocker inspect inspect-test",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-51",
+      "level": 3,
+      "title": "11.3 --format으로 특정 정보 추출",
+      "anchor": "113---format으로-특정-정보-추출",
+      "content": [
+        {
+          "id": "chapter05-block-143",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 컨테이너 IP 주소\ndocker inspect --format '{{.NetworkSettings.IPAddress}}' inspect-test\n\n# 컨테이너 상태\ndocker inspect --format '{{.State.Status}}' inspect-test\n\n# 포트 매핑 정보\ndocker inspect --format '{{.NetworkSettings.Ports}}' inspect-test\n\n# 마운트 정보\ndocker inspect --format '{{.Mounts}}' inspect-test\n\n# 환경 변수\ndocker inspect --format '{{.Config.Env}}' inspect-test\n\n# 시작 시간\ndocker inspect --format '{{.State.StartedAt}}' inspect-test\n\n# 이미지 ID\ndocker inspect --format '{{.Image}}' inspect-test\n\n# 호스트명\ndocker inspect --format '{{.Config.Hostname}}' inspect-test",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-52",
+      "level": 3,
+      "title": "11.4 여러 정보 한번에 추출",
+      "anchor": "114-여러-정보-한번에-추출",
+      "content": [
+        {
+          "id": "chapter05-block-145",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker inspect --format 'Name: {{.Name}}, IP: {{.NetworkSettings.IPAddress}}, Status: {{.State.Status}}' inspect-test",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-53",
+      "level": 3,
+      "title": "11.5 JSON 파싱과 조합",
+      "anchor": "115-json-파싱과-조합",
+      "content": [
+        {
+          "id": "chapter05-block-147",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# jq와 조합 (jq 설치 필요)\ndocker inspect inspect-test | jq '.[0].NetworkSettings.IPAddress'\n\n# 모든 컨테이너 IP 출력\ndocker inspect --format '{{.Name}} - {{.NetworkSettings.IPAddress}}' $(docker ps -q)",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-54",
+      "level": 3,
+      "title": "11.6 정리",
+      "anchor": "116-정리",
+      "content": [
+        {
+          "id": "chapter05-block-149",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker rm -f inspect-test",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-55",
+      "level": 2,
+      "title": "12. 실습 6 - 컨테이너 리소스 모니터링",
+      "anchor": "12-실습-6---컨테이너-리소스-모니터링",
+      "content": []
+    },
+    {
+      "id": "chapter05-section-56",
+      "level": 3,
+      "title": "12.1 docker stats - 실시간 리소스 사용량",
+      "anchor": "121-docker-stats---실시간-리소스-사용량",
+      "content": [
+        {
+          "id": "chapter05-block-151",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker stats [옵션] [컨테이너명...]",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-57",
+      "level": 3,
+      "title": "12.2 리소스 모니터링 실습",
+      "anchor": "122-리소스-모니터링-실습",
+      "content": [
+        {
+          "id": "chapter05-block-153",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 테스트 컨테이너 실행\ndocker run -d --name stats-test1 nginx:alpine\ndocker run -d --name stats-test2 nginx:alpine\n\n# 실시간 모니터링\ndocker stats\n\n# 특정 컨테이너만\ndocker stats stats-test1\n\n# 한 번만 출력 (스냅샷)\ndocker stats --no-stream\n\n# 형식 지정\ndocker stats --format \"table {{.Name}}\\t{{.CPUPerc}}\\t{{.MemUsage}}\"",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter05-block-154",
+          "type": "text",
+          "data": {
+            "markdown": "출력 예시:"
+          }
+        },
+        {
+          "id": "chapter05-block-155",
+          "type": "code",
+          "data": {
+            "language": "text",
+            "code": "CONTAINER ID   NAME          CPU %   MEM USAGE / LIMIT     MEM %   NET I/O       BLOCK I/O   PIDS\nabc123...      stats-test1   0.00%   3.441MiB / 7.773GiB   0.04%   1.05kB / 0B   0B / 0B     3\ndef456...      stats-test2   0.00%   3.512MiB / 7.773GiB   0.04%   1.05kB / 0B   0B / 0B     3",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-58",
+      "level": 3,
+      "title": "12.3 docker top - 컨테이너 내 프로세스 확인",
+      "anchor": "123-docker-top---컨테이너-내-프로세스-확인",
+      "content": [
+        {
+          "id": "chapter05-block-157",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker top stats-test1",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter05-block-158",
+          "type": "text",
+          "data": {
+            "markdown": "출력:"
+          }
+        },
+        {
+          "id": "chapter05-block-159",
+          "type": "code",
+          "data": {
+            "language": "text",
+            "code": "UID     PID     PPID    C   STIME   TTY   TIME      CMD\nroot    12345   12300   0   10:00   ?     00:00:00  nginx: master process\nnginx   12346   12345   0   10:00   ?     00:00:00  nginx: worker process",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-59",
+      "level": 3,
+      "title": "12.4 정리",
+      "anchor": "124-정리",
+      "content": [
+        {
+          "id": "chapter05-block-161",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker rm -f stats-test1 stats-test2",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-60",
+      "level": 2,
+      "title": "13. 컨테이너 재시작 정책",
+      "anchor": "13-컨테이너-재시작-정책",
+      "content": []
+    },
+    {
+      "id": "chapter05-section-61",
+      "level": 3,
+      "title": "13.1 재시작 정책 종류",
+      "anchor": "131-재시작-정책-종류",
+      "content": [
+        {
+          "id": "chapter05-block-163",
+          "type": "table",
+          "data": {
+            "tableId": "chapter05-table-163"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-62",
+      "level": 3,
+      "title": "13.2 재시작 정책 설정",
+      "anchor": "132-재시작-정책-설정",
+      "content": [
+        {
+          "id": "chapter05-block-165",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 컨테이너 생성 시 설정\ndocker run -d --restart=always --name restart-test nginx:alpine\n\n# 실행 중인 컨테이너에 설정 변경\ndocker update --restart=on-failure:3 restart-test",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-63",
+      "level": 3,
+      "title": "13.3 재시작 정책 비교",
+      "anchor": "133-재시작-정책-비교",
+      "content": [
+        {
+          "id": "chapter05-block-167",
+          "type": "text",
+          "data": {
+            "markdown": "always vs unless-stopped:"
+          }
+        },
+        {
+          "id": "chapter05-block-168",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "always: Docker 데몬 재시작 시에도 자동 시작"
+              },
+              {
+                "text": "unless-stopped: 수동으로 stop한 경우 Docker 재시작 후에도 시작 안 함"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-64",
+      "level": 3,
+      "title": "13.4 실습 - 재시작 정책 테스트",
+      "anchor": "134-실습---재시작-정책-테스트",
+      "content": [
+        {
+          "id": "chapter05-block-170",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# always 정책으로 컨테이너 생성\ndocker run -d --restart=always --name restart-always nginx:alpine\n\n# 컨테이너 강제 종료 (kill)\ndocker kill restart-always\n\n# 상태 확인 - 자동 재시작됨\ndocker ps",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-65",
+      "level": 2,
+      "title": "14. 장애 분석 기본기",
+      "anchor": "14-장애-분석-기본기",
+      "content": []
+    },
+    {
+      "id": "chapter05-section-66",
+      "level": 3,
+      "title": "14.1 컨테이너가 시작되지 않을 때",
+      "anchor": "141-컨테이너가-시작되지-않을-때",
+      "content": [
+        {
+          "id": "chapter05-block-172",
+          "type": "text",
+          "data": {
+            "markdown": "1단계: 상태 확인"
+          }
+        },
+        {
+          "id": "chapter05-block-173",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker ps -a",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter05-block-174",
+          "type": "text",
+          "data": {
+            "markdown": "2단계: 로그 확인"
+          }
+        },
+        {
+          "id": "chapter05-block-175",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker logs 컨테이너명",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter05-block-176",
+          "type": "text",
+          "data": {
+            "markdown": "3단계: 상세 정보 확인"
+          }
+        },
+        {
+          "id": "chapter05-block-177",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker inspect 컨테이너명",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-67",
+      "level": 3,
+      "title": "14.2 컨테이너가 계속 재시작될 때",
+      "anchor": "142-컨테이너가-계속-재시작될-때",
+      "content": [
+        {
+          "id": "chapter05-block-179",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 재시작 횟수 확인\ndocker inspect --format '{{.RestartCount}}' 컨테이너명\n\n# 마지막 종료 이유 확인\ndocker inspect --format '{{.State.ExitCode}}' 컨테이너명\ndocker inspect --format '{{.State.Error}}' 컨테이너명",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-68",
+      "level": 3,
+      "title": "14.3 일반적인 Exit Code 의미",
+      "anchor": "143-일반적인-exit-code-의미",
+      "content": [
+        {
+          "id": "chapter05-block-181",
+          "type": "table",
+          "data": {
+            "tableId": "chapter05-table-181"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-69",
+      "level": 3,
+      "title": "14.4 OOM (Out of Memory) 확인",
+      "anchor": "144-oom-out-of-memory-확인",
+      "content": [
+        {
+          "id": "chapter05-block-183",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker inspect --format '{{.State.OOMKilled}}' 컨테이너명",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter05-block-184",
+          "type": "text",
+          "data": {
+            "markdown": "출력이 true면 메모리 부족으로 종료됨"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-70",
+      "level": 3,
+      "title": "14.5 디버깅을 위한 컨테이너 실행",
+      "anchor": "145-디버깅을-위한-컨테이너-실행",
+      "content": [
+        {
+          "id": "chapter05-block-186",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 실패하는 컨테이너를 대화형으로 실행\ndocker run -it --entrypoint /bin/sh 이미지명\n\n# 또는 명령을 sleep으로 오버라이드\ndocker run -d --entrypoint sleep 이미지명 infinity\ndocker exec -it 컨테이너명 /bin/sh",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-71",
+      "level": 3,
+      "title": "14.6 컨테이너 파일 시스템 확인",
+      "anchor": "146-컨테이너-파일-시스템-확인",
+      "content": [
+        {
+          "id": "chapter05-block-188",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 컨테이너에서 파일 복사\ndocker cp 컨테이너명:/path/to/file ./local_file\n\n# 로컬에서 컨테이너로 복사\ndocker cp ./local_file 컨테이너명:/path/to/file\n\n# 변경된 파일 확인\ndocker diff 컨테이너명",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter05-block-189",
+          "type": "text",
+          "data": {
+            "markdown": "docker diff 출력 의미:"
+          }
+        },
+        {
+          "id": "chapter05-block-190",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "A: 추가됨 (Added)"
+              },
+              {
+                "text": "C: 변경됨 (Changed)"
+              },
+              {
+                "text": "D: 삭제됨 (Deleted)"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-72",
+      "level": 2,
+      "title": "15. 실습 7 - 종합 장애 분석 시나리오",
+      "anchor": "15-실습-7---종합-장애-분석-시나리오",
+      "content": []
+    },
+    {
+      "id": "chapter05-section-73",
+      "level": 3,
+      "title": "15.1 시나리오: 웹 서버가 응답하지 않음",
+      "anchor": "151-시나리오-웹-서버가-응답하지-않음",
+      "content": [
+        {
+          "id": "chapter05-block-192",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 테스트 환경 구성\ndocker run -d --name troubled-web -p 8888:80 nginx:alpine",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-74",
+      "level": 3,
+      "title": "15.2 문제 분석 순서",
+      "anchor": "152-문제-분석-순서",
+      "content": [
+        {
+          "id": "chapter05-block-193",
+          "type": "text",
+          "data": {
+            "markdown": "1. 컨테이너 상태 확인"
+          }
+        },
+        {
+          "id": "chapter05-block-194",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker ps -f name=troubled-web",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter05-block-195",
+          "type": "text",
+          "data": {
+            "markdown": "2. 로그 확인"
+          }
+        },
+        {
+          "id": "chapter05-block-196",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker logs --tail 50 troubled-web",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter05-block-197",
+          "type": "text",
+          "data": {
+            "markdown": "3. 프로세스 확인"
+          }
+        },
+        {
+          "id": "chapter05-block-198",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker top troubled-web",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter05-block-199",
+          "type": "text",
+          "data": {
+            "markdown": "4. 리소스 사용량 확인"
+          }
+        },
+        {
+          "id": "chapter05-block-200",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker stats --no-stream troubled-web",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter05-block-201",
+          "type": "text",
+          "data": {
+            "markdown": "5. 네트워크 확인"
+          }
+        },
+        {
+          "id": "chapter05-block-202",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker inspect --format '{{.NetworkSettings.Ports}}' troubled-web",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter05-block-203",
+          "type": "text",
+          "data": {
+            "markdown": "6. 내부 접속하여 상세 확인"
+          }
+        },
+        {
+          "id": "chapter05-block-204",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker exec -it troubled-web /bin/sh\n# 내부에서\ncurl localhost:80\ncat /var/log/nginx/error.log\nexit",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-75",
+      "level": 3,
+      "title": "15.3 정리",
+      "anchor": "153-정리",
+      "content": [
+        {
+          "id": "chapter05-block-206",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "docker rm -f troubled-web",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-76",
+      "level": 2,
+      "title": "16. 유용한 컨테이너 관리 명령어 모음",
+      "anchor": "16-유용한-컨테이너-관리-명령어-모음",
+      "content": []
+    },
+    {
+      "id": "chapter05-section-77",
+      "level": 3,
+      "title": "16.1 일괄 작업 명령어",
+      "anchor": "161-일괄-작업-명령어",
+      "content": [
+        {
+          "id": "chapter05-block-208",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 모든 컨테이너 중지\ndocker stop $(docker ps -q)\n\n# 종료된 컨테이너 모두 삭제\ndocker rm $(docker ps -aq -f status=exited)\n\n# 모든 컨테이너 삭제 (강제)\ndocker rm -f $(docker ps -aq)\n\n# 사용하지 않는 리소스 정리\ndocker system prune\n\n# 컨테이너, 이미지, 볼륨, 네트워크 모두 정리\ndocker system prune -a --volumes",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-78",
+      "level": 3,
+      "title": "16.2 별칭(alias) 설정 추천",
+      "anchor": "162-별칭alias-설정-추천",
+      "content": [
+        {
+          "id": "chapter05-block-210",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# ~/.bashrc 또는 ~/.zshrc에 추가\nalias dps='docker ps'\nalias dpsa='docker ps -a'\nalias dimg='docker images'\nalias dlog='docker logs -f'\nalias dexec='docker exec -it'\nalias dstop='docker stop $(docker ps -q)'\nalias dclean='docker rm $(docker ps -aq -f status=exited)'",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-79",
+      "level": 2,
+      "title": "17. 반드시 이해해야 할 핵심 요약",
+      "anchor": "17-반드시-이해해야-할-핵심-요약",
+      "content": [
+        {
+          "id": "chapter05-block-212",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "컨테이너 상태: Created → Running → Paused/Exited → Deleted"
+              },
+              {
+                "text": "docker run = docker create + docker start"
+              },
+              {
+                "text": "docker stop: 정상 종료 (SIGTERM → SIGKILL)"
+              },
+              {
+                "text": "docker kill: 강제 종료 (SIGKILL)"
+              },
+              {
+                "text": "docker logs: 로그 분석의 시작점"
+              },
+              {
+                "text": "docker exec -it: 컨테이너 내부 접속"
+              },
+              {
+                "text": "docker inspect: 모든 정보 조회"
+              },
+              {
+                "text": "docker stats: 실시간 리소스 모니터링"
+              },
+              {
+                "text": "재시작 정책으로 고가용성 확보"
+              },
+              {
+                "text": "Exit Code로 종료 원인 파악"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-80",
+      "level": 2,
+      "title": "18. 체크리스트 (통과 필수)",
+      "anchor": "18-체크리스트-통과-필수",
+      "content": [
+        {
+          "id": "chapter05-block-214",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "컨테이너 생명주기 상태를 설명할 수 있다"
+              },
+              {
+                "text": "create / start / stop / rm 구분하여 사용 가능"
+              },
+              {
+                "text": "docker logs로 로그 분석 가능"
+              },
+              {
+                "text": "docker exec로 컨테이너 내부 접속 가능"
+              },
+              {
+                "text": "docker inspect로 필요한 정보 추출 가능"
+              },
+              {
+                "text": "docker stats로 리소스 모니터링 가능"
+              },
+              {
+                "text": "재시작 정책 설정 및 차이점 이해"
+              },
+              {
+                "text": "Exit Code 의미 파악 가능"
+              },
+              {
+                "text": "기본적인 장애 분석 절차 수행 가능"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter05-section-81",
+      "level": 2,
+      "title": "19. 다음 챕터 예고",
+      "anchor": "19-다음-챕터-예고",
+      "content": []
+    },
+    {
+      "id": "chapter05-section-82",
+      "level": 3,
+      "title": "Chapter 06. Docker 네트워크",
+      "anchor": "chapter-06-docker-네트워크",
+      "content": [
+        {
+          "id": "chapter05-block-216",
+          "type": "text",
+          "data": {
+            "markdown": "다음 장에서는:"
+          }
+        },
+        {
+          "id": "chapter05-block-217",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Docker 네트워크 종류 (bridge, host, none)"
+              },
+              {
+                "text": "컨테이너 간 통신"
+              },
+              {
+                "text": "포트 포워딩 심화"
+              },
+              {
+                "text": "사용자 정의 네트워크"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter05-block-218",
+          "type": "text",
+          "data": {
+            "markdown": "를 실습 중심으로 다룹니다."
+          }
+        }
+      ]
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "chapter05-diagram-1",
+      "type": "tree",
+      "title": "docker create",
+      "asciiOriginal": "                docker create\n                     │\n                     ▼\n┌────────────────────────────────────────┐\n│              Created                   │\n│         (생성됨, 실행 대기)            │\n└────────────────┬───────────────────────┘\n                 │ docker start\n                 ▼\n┌────────────────────────────────────────┐\n│              Running                   │◄──────┐\n│           (실행 중)                    │       │\n└────────┬───────────────┬───────────────┘       │\n         │               │                       │\ndocker stop│        docker pause                 │ docker restart\n         │               │                       │ docker start\n         ▼               ▼                       │\n┌─────────────┐  ┌─────────────┐                 │\n│   Exited    │  │   Paused    │                 │\n│  (종료됨)   │  │  (일시정지) │                 │\n└──────┬──────┘  └──────┬──────┘                 │\n       │                │ docker unpause         │\n       │                └────────────────────────┘\n       │\n       │ docker rm\n       ▼\n┌─────────────┐\n│   Deleted   │\n│   (삭제됨)  │\n└─────────────┘",
+      "mermaidCode": "flowchart TB\n    subgraph Lifecycle[\"🔄 컨테이너 생명주기\"]\n        direction TB\n\n        Create[\"docker create\"]\n        Created[\"📦 Created<br/>(생성됨, 실행 대기)\"]\n        Running[\"▶️ Running<br/>(실행 중)\"]\n        Paused[\"⏸️ Paused<br/>(일시정지)\"]\n        Exited[\"⏹️ Exited<br/>(종료됨)\"]\n        Deleted[\"🗑️ Deleted<br/>(삭제됨)\"]\n    end\n\n    Create --> Created\n    Created -->|\"docker start\"| Running\n    Running -->|\"docker stop\"| Exited\n    Running -->|\"docker pause\"| Paused\n    Paused -->|\"docker unpause\"| Running\n    Exited -->|\"docker start<br/>docker restart\"| Running\n    Exited -->|\"docker rm\"| Deleted\n\n    style Lifecycle fill:#f8fafc,stroke:#64748b\n    style Created fill:#dbeafe,stroke:#2563eb\n    style Running fill:#dcfce7,stroke:#16a34a\n    style Paused fill:#fef3c7,stroke:#d97706\n    style Exited fill:#fee2e2,stroke:#dc2626\n    style Deleted fill:#f3f4f6,stroke:#6b7280",
+      "data": {
+        "root": {
+          "id": "root",
+          "label": "Root",
+          "type": "root",
+          "children": [
+            {
+              "id": "node-1",
+              "label": "docker create",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "▼",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "node-3",
+              "label": "┌────────────────────────────────────────┐",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "Created                   │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "(생성됨, 실행 대기)            │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "┬───────────────────────┘",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-3",
+                      "label": "docker start",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-4",
+                      "label": "▼",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "node-4",
+              "label": "┌────────────────────────────────────────┐",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "Running                   │◄──────┐",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "(실행 중)                    │       │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "┬───────────────┬───────────────┘       │",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "node-3",
+              "label": "docker stop│        docker pause                 │ docker restart",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "docker start",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "▼               ▼                       │",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "node-3",
+              "label": "┌─────────────┐  ┌─────────────┐                 │",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "Exited    │  │   Paused    │                 │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "(종료됨)   │  │  (일시정지) │                 │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "┬──────┘  └──────┬──────┘                 │",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-3",
+                      "label": "docker unpause         │",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-4",
+                      "label": "┘",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-4",
+                      "label": "docker rm",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-4",
+                      "label": "▼",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "node-4",
+              "label": "┌─────────────┐",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "Deleted   │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "(삭제됨)  │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "┘",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter05-diagram-2",
+      "type": "tree",
+      "asciiOriginal": "┌─────────────────────────────────────────────────────┐\n│                    docker run                       │\n│  ┌─────────────────┐     ┌─────────────────┐        │\n│  │  docker create  │ ──► │  docker start   │        │\n│  │ (컨테이너 생성) │     │ (컨테이너 시작) │        │\n│  └─────────────────┘     └─────────────────┘        │\n└─────────────────────────────────────────────────────┘",
+      "mermaidCode": "flowchart TB\n    subgraph Lifecycle[\"🔄 컨테이너 생명주기\"]\n        direction TB\n\n        Create[\"docker create\"]\n        Created[\"📦 Created<br/>(생성됨, 실행 대기)\"]\n        Running[\"▶️ Running<br/>(실행 중)\"]\n        Paused[\"⏸️ Paused<br/>(일시정지)\"]\n        Exited[\"⏹️ Exited<br/>(종료됨)\"]\n        Deleted[\"🗑️ Deleted<br/>(삭제됨)\"]\n    end\n\n    Create --> Created\n    Created -->|\"docker start\"| Running\n    Running -->|\"docker stop\"| Exited\n    Running -->|\"docker pause\"| Paused\n    Paused -->|\"docker unpause\"| Running\n    Exited -->|\"docker start<br/>docker restart\"| Running\n    Exited -->|\"docker rm\"| Deleted\n\n    style Lifecycle fill:#f8fafc,stroke:#64748b\n    style Created fill:#dbeafe,stroke:#2563eb\n    style Running fill:#dcfce7,stroke:#16a34a\n    style Paused fill:#fef3c7,stroke:#d97706\n    style Exited fill:#fee2e2,stroke:#dc2626\n    style Deleted fill:#f3f4f6,stroke:#6b7280",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "┌─────────────────────────────────────────────────────┐",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "docker run                       │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┌─────────────────┐     ┌─────────────────┐        │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "docker create  │ ──► │  docker start   │        │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "(컨테이너 생성) │     │ (컨테이너 시작) │        │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┘     └─────────────────┘        │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┘",
+              "type": "branch",
+              "children": []
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    }
+  ],
+  "tables": [
+    {
+      "id": "chapter05-table-1",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "상태",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "설명",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "Created",
+          "col1": "컨테이너가 생성되었지만 시작되지 않음"
+        },
+        {
+          "col0": "Running",
+          "col1": "컨테이너가 실행 중"
+        },
+        {
+          "col0": "Paused",
+          "col1": "컨테이너가 일시 정지됨"
+        },
+        {
+          "col0": "Restarting",
+          "col1": "컨테이너가 재시작 중"
+        },
+        {
+          "col0": "Exited",
+          "col1": "컨테이너가 종료됨"
+        },
+        {
+          "col0": "Dead",
+          "col1": "컨테이너가 비정상 종료됨"
+        }
+      ]
+    },
+    {
+      "id": "chapter05-table-2",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "옵션",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "설명",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "-d, --detach",
+          "col1": "백그라운드 실행"
+        },
+        {
+          "col0": "-it",
+          "col1": "대화형 터미널 모드"
+        },
+        {
+          "col0": "--name",
+          "col1": "컨테이너 이름 지정"
+        },
+        {
+          "col0": "-p, --publish",
+          "col1": "포트 매핑"
+        },
+        {
+          "col0": "-v, --volume",
+          "col1": "볼륨 마운트"
+        },
+        {
+          "col0": "-e, --env",
+          "col1": "환경 변수 설정"
+        },
+        {
+          "col0": "--rm",
+          "col1": "종료 시 자동 삭제"
+        },
+        {
+          "col0": "--restart",
+          "col1": "재시작 정책"
+        }
+      ]
+    },
+    {
+      "id": "chapter05-table-3",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "옵션",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "설명",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "-f, --force",
+          "col1": "실행 중인 컨테이너도 강제 삭제"
+        },
+        {
+          "col0": "-v, --volumes",
+          "col1": "연결된 익명 볼륨도 함께 삭제"
+        }
+      ]
+    },
+    {
+      "id": "chapter05-table-4",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "플레이스홀더",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "설명",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": ".ID",
+          "col1": "컨테이너 ID"
+        },
+        {
+          "col0": ".Image",
+          "col1": "이미지명"
+        },
+        {
+          "col0": ".Command",
+          "col1": "실행 명령"
+        },
+        {
+          "col0": ".CreatedAt",
+          "col1": "생성 시간"
+        },
+        {
+          "col0": ".Status",
+          "col1": "상태"
+        },
+        {
+          "col0": ".Ports",
+          "col1": "포트 매핑"
+        },
+        {
+          "col0": ".Names",
+          "col1": "컨테이너명"
+        },
+        {
+          "col0": ".Size",
+          "col1": "디스크 사용량"
+        }
+      ]
+    },
+    {
+      "id": "chapter05-table-5",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "옵션",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "설명",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "-f, --follow",
+          "col1": "실시간 로그 스트리밍"
+        },
+        {
+          "col0": "--tail n",
+          "col1": "마지막 n줄만 출력"
+        },
+        {
+          "col0": "-t, --timestamps",
+          "col1": "타임스탬프 표시"
+        },
+        {
+          "col0": "--since",
+          "col1": "특정 시간 이후 로그"
+        },
+        {
+          "col0": "--until",
+          "col1": "특정 시간까지 로그"
+        }
+      ]
+    },
+    {
+      "id": "chapter05-table-6",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "옵션",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "설명",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "-i, --interactive",
+          "col1": "표준 입력 활성화"
+        },
+        {
+          "col0": "-t, --tty",
+          "col1": "가상 터미널 할당"
+        },
+        {
+          "col0": "-d, --detach",
+          "col1": "백그라운드 실행"
+        },
+        {
+          "col0": "-e, --env",
+          "col1": "환경 변수 설정"
+        },
+        {
+          "col0": "-w, --workdir",
+          "col1": "작업 디렉토리 지정"
+        },
+        {
+          "col0": "-u, --user",
+          "col1": "실행 사용자 지정"
+        }
+      ]
+    },
+    {
+      "id": "chapter05-table-7",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "정책",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "설명",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "no",
+          "col1": "재시작 안 함 (기본값)"
+        },
+        {
+          "col0": "on-failure[:max]",
+          "col1": "비정상 종료 시 재시작 (최대 횟수 지정 가능)"
+        },
+        {
+          "col0": "always",
+          "col1": "항상 재시작 (수동 중지 제외)"
+        },
+        {
+          "col0": "unless-stopped",
+          "col1": "수동 중지 전까지 항상 재시작"
+        }
+      ]
+    },
+    {
+      "id": "chapter05-table-8",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "Exit Code",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "의미",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "0",
+          "col1": "정상 종료"
+        },
+        {
+          "col0": "1",
+          "col1": "일반적인 에러"
+        },
+        {
+          "col0": "125",
+          "col1": "Docker 데몬 에러"
+        },
+        {
+          "col0": "126",
+          "col1": "명령 실행 불가"
+        },
+        {
+          "col0": "127",
+          "col1": "명령을 찾을 수 없음"
+        },
+        {
+          "col0": "137",
+          "col1": "SIGKILL로 종료 (OOM 등)"
+        },
+        {
+          "col0": "139",
+          "col1": "세그먼테이션 폴트"
+        },
+        {
+          "col0": "143",
+          "col1": "SIGTERM으로 종료"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,3330 @@
+{
+  "meta": {
+    "id": "chapter06",
+    "number": 6,
+    "title": "Chapter 06. Docker 네트워크",
+    "description": "",
+    "phase": "practical",
+    "objectives": [
+      "CNM(Container Network Model) 구조와 동작 원리 이해",
+      "Bridge, Host, None, Overlay 네트워크 드라이버 차이점 파악",
+      "컨테이너 간 통신을 위한 포트 포워딩 설정",
+      "사용자 정의 네트워크 생성 및 DNS 기반 서비스 디스커버리",
+      "Docker Swarm 환경에서의 Overlay 네트워크 구성"
+    ]
+  },
+  "sections": [
+    {
+      "id": "chapter06-section-1",
+      "level": 2,
+      "title": "컨테이너 서비스를 위한 docker network 관리",
+      "anchor": "컨테이너-서비스를-위한-docker-network-관리",
+      "content": []
+    },
+    {
+      "id": "chapter06-section-2",
+      "level": 3,
+      "title": "목차",
+      "anchor": "목차",
+      "content": [
+        {
+          "id": "chapter06-block-1",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Clip1 | 컨테이너 네트워크 - 컨테이너 네트워크 이해하기"
+              },
+              {
+                "text": "Clip2 | 사용자 정의 네트워크 - 사용자 정의 네트워크 생성과 조회하기"
+              },
+              {
+                "text": "Clip3 | [실습] docker DNS - docker DNS 이해와 활용하기"
+              },
+              {
+                "text": "Clip4 | 컨테이너 Proxy - HAProxy 및 Nginx를 이용한 컨테이너 proxy 이해"
+              },
+              {
+                "text": "Clip5 | [실습] Nginx를 활용한 컨테이너 proxy - Nginx를 이용한 컨테이너 proxy 구성하기"
+              },
+              {
+                "text": "Clip6 | [실습] HAProxy를 활용한 컨테이너 proxy - HAProxy를 이용한 컨테이너 proxy 구성하기"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-3",
+      "level": 2,
+      "title": "1. 컨테이너 네트워크",
+      "anchor": "1-컨테이너-네트워크",
+      "content": []
+    },
+    {
+      "id": "chapter06-section-4",
+      "level": 3,
+      "title": "Docker 컨테이너 네트워크",
+      "anchor": "docker-컨테이너-네트워크",
+      "content": [
+        {
+          "id": "chapter06-block-3",
+          "type": "text",
+          "data": {
+            "markdown": "Docker 컨테이너의 기본 네트워크 구성에 대해 알아본다."
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-5",
+      "level": 4,
+      "title": "docker network 개요",
+      "anchor": "docker-network-개요",
+      "content": [
+        {
+          "id": "chapter06-block-4",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Docker network는 커널의 네트워크 스택의 하위로, 상위에는 네트워크 드라이버를 생성한다.즉, docker network = Linux network 와 같다."
+              },
+              {
+                "text": "Docker network 아키텍처는 CNM(Container Networking Model)이라고 하는 인터페이스 집합 위에 구축한다. OS 및 인프라에 구애 받지 않으므로 인프라 스택에 관계없이 애플리케이션이 동일한 환경을 가질 수 있다."
+              },
+              {
+                "text": "리눅스 네트워킹 빌딩 블록: 리눅스 브리지, 네트워크 네임스페이스, veth pair 및 iptables가 포함. 이 조합은 복잡한 네트워크 정책을 위한 전달 규칙, 네트워크 분할 및 관리 도구를 제공한다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-6",
+      "level": 4,
+      "title": "Linux bridge",
+      "anchor": "linux-bridge",
+      "content": [
+        {
+          "id": "chapter06-block-5",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "리눅스 브리지는 커널 내부의 물리적 스위치를 가상으로 구현한 OSI Layer 2 Device다."
+              },
+              {
+                "text": "트래픽을 검사하여 동적으로 학습되는 MAC 주소를 기반으로 트래픽을 전달."
+              },
+              {
+                "text": "bridge network의 기본 대역?172.{17-31}.0.0/16(65536개)192.168.{0-240}.0/20(4096개)"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter06-block-6",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter06-diagram-1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-7",
+      "level": 4,
+      "title": "Network namespace",
+      "anchor": "network-namespace",
+      "content": [
+        {
+          "id": "chapter06-block-7",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "커널에 격리된 네트워크 스택으로 자체 인터페이스, 라우트 및 방화벽 규칙을 보유"
+              },
+              {
+                "text": "컨테이너와 리눅스의 보안적인 측면으로, 컨테이너를 격리하는데 사용"
+              },
+              {
+                "text": "네트워크 네임스페이스는 도커 네트워크를 통해 구성된 경우가 아니면 동일한 호스트의 두 컨테이너가 서로 통신하거나 호스트 자체와 통신할 수 없음을 보장"
+              },
+              {
+                "text": "일반적으로 CNM(Container Network Model) 네트워크 드라이버는 각 컨테이너에 대해 별도의 네임스페이스를 구현"
+              },
+              {
+                "text": "[참고] https://github.com/moby/libnetwork/blob/master/docs/design.md"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-8",
+      "level": 4,
+      "title": "CNM(Container Network Model)",
+      "anchor": "cnmcontainer-network-model",
+      "content": [
+        {
+          "id": "chapter06-block-8",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter06-diagram-2"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-9",
+      "level": 4,
+      "title": "CNM, libnetwork",
+      "anchor": "cnm-libnetwork",
+      "content": [
+        {
+          "id": "chapter06-block-9",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "CNM이 설계 문서라면, Libnetwork는 그에 대한 표준 구현체다."
+              },
+              {
+                "text": "https://github.com/moby/libnetwork"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter06-block-10",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter06-diagram-3"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-10",
+      "level": 4,
+      "title": "veth(virtual ethernet device)",
+      "anchor": "vethvirtual-ethernet-device",
+      "content": [
+        {
+          "id": "chapter06-block-11",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "veth는 OSI 2계층 서비스로 컨테이너 내부에 제공되는 네트워크 인터페이스 eth0와 한 쌍(pair)으로 제공되어 docker0와 가상의 \"터널링 네트워크\"를 제공한다."
+              },
+              {
+                "text": "각 영역 조회 명령어"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter06-block-12",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter06-diagram-4"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-11",
+      "level": 4,
+      "title": "veth 실습 명령어",
+      "anchor": "veth-실습-명령어",
+      "content": [
+        {
+          "id": "chapter06-block-13",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "~$ sudo apt install bridge-utils\n~$ brctl show\n\n~$ docker run -it -d --name=fast-ubuntu ubuntu:14.04\n~$ docker exec -it fast-ubuntu route\nDestination     Gateway         Genmask         Flags Metric Ref    Use Iface\ndefault         172.17.0.1      0.0.0.0         UG    0      0        0 eth0\n172.17.0.0      *               255.255.0.0     U     0      0        0 eth0\n\n~$ docker exec -it fast-ubuntu ip addr\n1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000\n    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00\n    inet 127.0.0.1/8 scope host lo\n       valid_lft forever preferred_lft forever\n13: eth0@if14: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default\n    link/ether 02:42:ac:11:00:04 brd ff:ff:ff:ff:ff:ff\n\n~$ ifconfig",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-12",
+      "level": 4,
+      "title": "브리지 및 컨테이너 정보 조회",
+      "anchor": "브리지-및-컨테이너-정보-조회",
+      "content": [
+        {
+          "id": "chapter06-block-14",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "~$ brctl show\nbridge name     bridge id               STP enabled     interfaces\ndocker0         8000.0242101789af       no              veth236eb4f\n                                                        veth2f127d4\n                                                        vethf60d64f\n\n~$ docker network inspect bridge\n~$ docker inspect -f \"{{ .NetworkSettings.IPAddress }}\" fast-ubuntu\n172.17.0.3\n\n~$ docker inspect fast-ubuntu | grep IPAddress\n            \"SecondaryIPAddresses\": null,\n            \"IPAddress\": \"172.17.0.3\",\n                    \"IPAddress\": \"172.17.0.4\",\n\n~$ docker inspect fast-ubuntu | grep Mac\n            \"MacAddress\": \"02:42:ac:11:00:04\",\n                    \"MacAddress\": \"02:42:ac:11:00:04\",",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-13",
+      "level": 4,
+      "title": "veth 상세 설명",
+      "anchor": "veth-상세-설명",
+      "content": [
+        {
+          "id": "chapter06-block-15",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "두 네트워크 네임스페이스 사이의 연결선으로 동작하는 리눅스 네트워킹 인터페이스"
+              },
+              {
+                "text": "veth는 각 네임스페이스에 단일 인터페이스가 있는 전이중 링크(full duplex link)"
+              },
+              {
+                "text": "한 인터페이스의 트래픽을 다른 인터페이스로 전달"
+              },
+              {
+                "text": "도커 네트워크를 만들 때 도커 네트워크 드라이버는 veth를 사용하여 네임스페이스 간에 명시적인 연결을 제공"
+              },
+              {
+                "text": "컨테이너가 도커 네트워크에 연결되면 veth의 한쪽 끝은 컨테이너 내부에 배치되며, (일반적으로 ethN 인터페이스로 표시) 다른 쪽은 도커 네트워크에 연결된다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-14",
+      "level": 4,
+      "title": "Container의 네트워크(eth0)와 veth 연결 확인",
+      "anchor": "container의-네트워크eth0와-veth-연결-확인",
+      "content": [
+        {
+          "id": "chapter06-block-16",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# Container의 네트워크(eth0)는 vethxxxxxxx의 숫자보다 하나 작은 값을 가진다.\n~$ brctl show\n~$ docker run -itd --name=veth_test1 ubuntu:14.04\n~$ brctl show\ndocker0         8000.024248fce1ca       no              veth12d01b0\n                                                        veth44e8aa8\n                                                        vethdc3aced\n\n~$ docker exec veth_test1 ip addr show eth0\n240: eth0@if241: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default\n    link/ether 02:42:ac:11:00:07 brd ff:ff:ff:ff:ff:ff\n    inet 172.17.0.7/16 brd 172.17.255.255 scope global eth0\n\n~$ sudo su -\nroot@hostos1:~# cat /sys/class/net/vethdc3aced/ifindex\n241\n\n~$ docker exec -it veth_test1 bash\nroot@5276a27ab05c:/# cat /sys/class/net/eth0/iflink\n241",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-15",
+      "level": 4,
+      "title": "iptables NAT 규칙 확인",
+      "anchor": "iptables-nat-규칙-확인",
+      "content": [
+        {
+          "id": "chapter06-block-17",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "~$ sudo iptables -t nat -L -n\nChain PREROUTING (policy ACCEPT)\ntarget     prot opt source               destination\nDOCKER     all  --  0.0.0.0/0            0.0.0.0/0            ADDRTYPE match dst-type LOCAL\n\nChain INPUT (policy ACCEPT)\ntarget     prot opt source               destination\n\nChain OUTPUT (policy ACCEPT)\ntarget     prot opt source               destination\nDOCKER     all  --  0.0.0.0/0           !127.0.0.0/8          ADDRTYPE match dst-type LOCAL\n\nChain POSTROUTING (policy ACCEPT)\ntarget     prot opt source               destination\nMASQUERADE  all  --  172.17.0.0/16        0.0.0.0/0\nMASQUERADE  tcp  --  172.17.0.2           172.17.0.2           tcp dpt:5000\nMASQUERADE  tcp  --  172.17.0.3           172.17.0.3           tcp dpt:9000\n…\nMASQUERADE  tcp  --  172.17.0.8           172.17.0.8           tcp dpt:6060\nMASQUERADE  tcp  --  172.17.0.9           172.17.0.9           tcp dpt:6060\nMASQUERADE  tcp  --  172.17.0.10          172.17.0.10          tcp dpt:6060\n\nChain DOCKER (2 references)\ntarget     prot opt source               destination\nRETURN     all  --  0.0.0.0/0            0.0.0.0/0\nDNAT       tcp  --  0.0.0.0/0            0.0.0.0/0            tcp dpt:5000 to:172.17.0.2:5000\nDNAT       tcp  --  0.0.0.0/0            0.0.0.0/0            tcp dpt:9000 to:172.17.0.3:9000\n…\nDNAT       tcp  --  0.0.0.0/0            0.0.0.0/0            tcp dpt:6060 to:172.17.0.8:6060\nDNAT       tcp  --  0.0.0.0/0            0.0.0.0/0            tcp dpt:6064 to:172.17.0.9:6060\nDNAT       tcp  --  0.0.0.0/0            0.0.0.0/0            tcp dpt:6065 to:172.17.0.10:6060",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-16",
+      "level": 4,
+      "title": "docker network 주요 옵션",
+      "anchor": "docker-network-주요-옵션",
+      "content": [
+        {
+          "id": "chapter06-block-18",
+          "type": "table",
+          "data": {
+            "tableId": "chapter06-table-18"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-17",
+      "level": 4,
+      "title": "네트워크 옵션 실습",
+      "anchor": "네트워크-옵션-실습",
+      "content": [
+        {
+          "id": "chapter06-block-19",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# container DNS 서버 설정\nkevin@hostos1:~$ docker run -it --dns=8.8.8.8 centos bash\n[root@83417a39224b /]# cat /etc/resolv.conf\nnameserver 8.8.8.8\n\n# container MAC Address 설정\n~$ docker run -d --mac-address=\"92:d0:c6:0a:29:33\" centos:7\n~$ docker inspect --format=\"{{ .Config.MacAddress }}\" c268f1\n92:d0:c6:0a:29:33\n\n# Host명과 IP Address 설정\n~$ docker container run -it --add-host=fastcampus.co.kr:192.168.0.100 centos:7 bash\n[root@4e0aaf8a3b17 /]# cat /etc/hosts\n127.0.0.1       localhost\n::1             localhost ip6-localhost ip6-loopback\nfe00::0         ip6-localnet\nff00::0         ip6-mcastprefix\nff02::1         ip6-allnodes\nff02::2         ip6-allrouters\n192.168.0.100   fastcampus.co.kr\n172.17.0.8      4e0aaf8a3b17",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-18",
+      "level": 4,
+      "title": "docker-proxy",
+      "anchor": "docker-proxy",
+      "content": [
+        {
+          "id": "chapter06-block-20",
+          "type": "text",
+          "data": {
+            "markdown": "docker-proxy는 kernel이 아닌 사용자 환경에서 수행되기 때문에 kernel과 상관없이 host가 받은 패킷을 그대로 container의 port로 전달. port를 외부로 노출하도록 설정하게 되면, docker host에는 docker-proxy 라는 프로세스가 자동으로 생성"
+          }
+        },
+        {
+          "id": "chapter06-block-21",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ docker run -d -P --name=myweb --expose=40001 nginx:1.25.0\nkevin@hostos1:~$ docker port myweb\n80/tcp -> 0.0.0.0:32773\n80/tcp -> [::]:32773\n40001/tcp -> 0.0.0.0:32772\n40001/tcp -> [::]:32772\n\nkevin@hostos1:~$ docker ps | grep myweb\ncb6070461f30   nginx:1.25.0   \"/docker-entrypoint.…\"   About a minute ago   Up About a minute\n0.0.0.0:32773->80/tcp, :::32773->80/tcp, 0.0.0.0:32772->40001/tcp, :::32772->40001/tcp   myweb\n\nkevin@hostos1:~$ sudo netstat -nlp | grep 32773\ntcp        0      0 0.0.0.0:32773           0.0.0.0:*               LISTEN      75516/docker-proxy\ntcp6       0      0 :::32773                :::*                    LISTEN      75523/docker-proxy\n\nkevin@hostos1:~$ ps -ef | grep 75516\nroot       75516   58622  0 20:14 ?        00:00:00 /usr/bin/docker-proxy -proto tcp -host-ip 0.0.0.0 -host-port 32773 -container-ip 172.17.0.11 -container-port 80",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-19",
+      "level": 4,
+      "title": "docker network, overlay",
+      "anchor": "docker-network-overlay",
+      "content": [
+        {
+          "id": "chapter06-block-22",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Overlay network는 서로 다른 Host(node)에서 서비스되는 컨테이너를 네트워크로 연결하는데 사용 되고, 이런 네트워크 생성을 위해 overlay network driver 를 사용 한다."
+              },
+              {
+                "text": "네트워크로 연결된 여러 Docker Host 안에 있는 Docker Daemon 간의 통신을 관리하는 가상 네트워크다."
+              },
+              {
+                "text": "컨테이너는 overlay network의 서브넷에 해당하는 IP 대역을 할당 받고, 받은 IP를 통해 상호간의 내부 통신을 수행한다."
+              },
+              {
+                "text": "따라서, overlay network에 포함되어 있는 모든 컨테이너들은 서로 다른 Docker Host에 있는 컨테이너와 같은 서버에 있는 것처럼 통신이 가능해 진다."
+              },
+              {
+                "text": "Docker swarm을 통해 구현할 수 있다. (ch.11)"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter06-block-23",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "~$ docker network inspect {network-ID} 를 통해 조회 가능",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter06-block-24",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter06-diagram-5"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-20",
+      "level": 2,
+      "title": "2. 사용자 정의 네트워크",
+      "anchor": "2-사용자-정의-네트워크",
+      "content": []
+    },
+    {
+      "id": "chapter06-section-21",
+      "level": 3,
+      "title": "사용자 정의 docker network",
+      "anchor": "사용자-정의-docker-network",
+      "content": [
+        {
+          "id": "chapter06-block-26",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "docker는 기본적으로 Host OS와 bridge 연결을 하며, --net 옵션을 통해 네트워크 설정 가능"
+              },
+              {
+                "text": "docker network create로 \"사용자 정의 bridge network\" 생성"
+              },
+              {
+                "text": "사용자 정의 네트워크에 연결하면 Container는 Container의 이름이나 IP 주소로 서로 통신 가능"
+              },
+              {
+                "text": "Overlay network(docker swarm)나 커스텀 플러그인 사용 시 multi-host 연결 가능"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter06-block-27",
+          "type": "table",
+          "data": {
+            "tableId": "chapter06-table-27"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-22",
+      "level": 4,
+      "title": "docker network, \"host\"",
+      "anchor": "docker-network-host",
+      "content": [
+        {
+          "id": "chapter06-block-28",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# nginx 이미지에 노출된 포트 80번을 호스트 포트 80번에 연결 호스트 IP를 이용하여 서비스.\n~$ docker run -d --name=nginx_host --net=host nginx:1.25.0\n~$ sudo netstat –nlp | grep 80\nTcp        0      0 0.0.0.0:80              0.0.0.0:*               LISTEN      8967/nginx: master\nTcp6       0      0 :::80                   :::*                    LISTEN      8967/nginx: master\n\n~$ curl localhost:80\n<!DOCTYPE html>\n<html>\n<head>\n…\n\n# -p 옵션으로 포트를 연결한 경우에는 docker-proxy를 이용했지만, 출력된 결과를 보면 호스트\n# 운영체제에 직접 PID를 할당 받아 서비스하는 것을 알 수 있고, Docker0를 사용하지 않는다.\n~$ ps -ef | grep 8967\nRoot        8967  8945  0 17:10 ?        00:00:00 nginx: master process nginx –g daemon off;\nSystemd+    9007  8967  0 17:10 ?        00:00:00 nginx: worker process\n\n# 따라서 컨테이너에는 별도의 IP가 부여되지 않는다.\n~$ docker inspect nginx_host | grep IPAddress\n            \"IPAddress\": \"\",\n                    \"IPAddress\": \"\",",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-23",
+      "level": 4,
+      "title": "docker network create",
+      "anchor": "docker-network-create",
+      "content": [
+        {
+          "id": "chapter06-block-29",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "T1] ~$ docker network create [-d(--driver) bridge] mynet\n~$ docker network ls\nNETWORK ID          NAME                DRIVER              SCOPE\nb04e3178d1f9        mynet               bridge              local\n\n~$ route\n~$ docker network inspect b04e3178d1f9\n\n~$ ifconfig\nbr-b04e3178d1f9 Link encap:Ethernet  HWaddr 02:42:12:53:06:ec\n          inet addr:172.18.0.1  Bcast:172.18.255.255  Mask:255.255.0.0\n\nT2] ~$ docker run --net=mynet -it --name=net-check1 ubuntu:14.04 bash\n[root@0ea81e6a34a1 /]# ifconfig\n[root@0ea81e6a34a1 /]# route\n\nT3] ~$ docker run --net=mynet -it --name=net-check2 ubuntu:14.04 bash\n\nT1] ~$ brctl show\nbridge name     bridge id               STP enabled     interfaces\nbr-b04e3178d1f9 8000.0242dbf56cbe       no              veth67fd328\n                                                        vethe246900\ndocker0         8000.02427a754b23       no              veth4bdc34e\n\n~$ docker network inspect mynet  # \"Subnet\": \"172.18.0.0/16\"",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-24",
+      "level": 4,
+      "title": "사용자 정의 네트워크를 통한 컨테이너 이름으로 통신",
+      "anchor": "사용자-정의-네트워크를-통한-컨테이너-이름으로-통신",
+      "content": [
+        {
+          "id": "chapter06-block-30",
+          "type": "text",
+          "data": {
+            "markdown": "사용자 정의 네트워크 구성을 통해 컨테이너 이름으로 통신이 가능, Docker DNS에 의한 Service Discovery(서비스 검색) 기능을 사용할 수 있다."
+          }
+        },
+        {
+          "id": "chapter06-block-31",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "T2] ~$ docker run --net=mynet -it --name=net-check1 ubuntu:14.04 bash\nroot@f327d40f9a60:/# ping -c 3 net-check2\nPING net-check2 (172.18.0.3) 56(84) bytes of data.\n64 bytes from net-check2.mynet (172.18.0.3): icmp_seq=1 ttl=64 time=0.184 ms\n64 bytes from net-check2.mynet (172.18.0.3): icmp_seq=2 ttl=64 time=0.068 ms\n64 bytes from net-check2.mynet (172.18.0.3): icmp_seq=3 ttl=64 time=0.051 ms\n\nT3] ~$ docker run --net=mynet -it --name=net-check2 ubuntu:14.04 bash\nroot@683bb3438a52:/# ping -c 3 net-check1\nPING net-check1 (172.18.0.2) 56(84) bytes of data.\n64 bytes from net-check1.mynet (172.18.0.2): icmp_seq=1 ttl=64 time=0.071 ms\n64 bytes from net-check1.mynet (172.18.0.2): icmp_seq=2 ttl=64 time=0.050 ms\n64 bytes from net-check1.mynet (172.18.0.2): icmp_seq=3 ttl=64 time=0.145 ms",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-25",
+      "level": 4,
+      "title": "특정 IP 대역 지정 네트워크 생성",
+      "anchor": "특정-ip-대역-지정-네트워크-생성",
+      "content": [
+        {
+          "id": "chapter06-block-32",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter06-diagram-6"
+          }
+        },
+        {
+          "id": "chapter06-block-33",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 사용자 정의 네트워크 구성을 통해 특정 IP 대역 지정도 가능하다.\n~$ docker inspect net1 | grep IPAddress\n~$ docker inspect net2 | grep IPAddress\n\n~$ brctl show\n~$ route\n~$ ip route\n\n~$ docker exec net1 ip addr\n72: eth0@if73: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default\n    link/ether 02:42:ac:11:00:09 brd ff:ff:ff:ff:ff:ff\n    inet 172.30.1.2/24 brd 172.17.255.255 scope global eth0\n       valid_lft forever preferred_lft forever",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-26",
+      "level": 4,
+      "title": "docker network topology",
+      "anchor": "docker-network-topology",
+      "content": [
+        {
+          "id": "chapter06-block-34",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter06-diagram-7"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-27",
+      "level": 4,
+      "title": "docker network connect | disconnect",
+      "anchor": "docker-network-connect-disconnect",
+      "content": [
+        {
+          "id": "chapter06-block-35",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 실행 중인 컨테이너에 새로운 네트워크 대역의 docker network를 연결해 본다.\n~$ docker run -it --name=add-net ubuntu:14.04 bash\nroot@a84f6ea63266:/# ifconfig\neth0      Link encap:Ethernet  HWaddr 02:42:ac:11:00:02\n          inet addr:172.17.0.2  Bcast:172.17.255.255  Mask:255.255.0.0\n\n# 다른 터미널\n~$ docker ps\nCONTAINER ID   IMAGE          COMMAND   CREATED          STATUS          PORTS     NAMES\na84f6ea63266   ubuntu:14.04   \"bash\"    27 seconds ago   Up 26 seconds             add-net\n\n~$ docker network create --driver=bridge fc-net2\n~$ docker netwrok ls\n~$ route\n172.20.0.0      0.0.0.0         255.255.0.0     U     0      0        0 br-7d8f5d97de28\n\n~$ ifconfig\nbr-7d8f5d97de28: flags=4099<UP,BROADCAST,MULTICAST>  mtu 1500\n        inet 172.20.0.1  netmask 255.255.0.0  broadcast 172.20.255.255",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter06-block-36",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 실행 중인 컨테이너에 새로운 네트워크 대역의 docker network를 연결해 본다.\n~$ docker network connect fc-net2 add-net\n\nroot@a84f6ea63266:/# ifconfig\neth0      Link encap:Ethernet  HWaddr 02:42:ac:11:00:02\n          inet addr:172.17.0.2  Bcast:172.17.255.255  Mask:255.255.0.0\n…\neth1      Link encap:Ethernet  HWaddr 02:42:ac:14:00:02\n          inet addr:172.20.0.2  Bcast:172.20.255.255  Mask:255.255.0.0\n\n~$ docker network inspect fc-net2\n\n~$ docker network rm fc-net2\nError response from daemon: error while removing network: network fc-net2 id\n7d8f5d97de28e7b49612b2bf0fabe5db16b5cce6d24af2fc7e4063163237d4b1 has active endpoints\n\n~$ docker network disconnect fc-net2 add-net\n\nroot@a84f6ea63266:/# ifconfig\neth0      Link encap:Ethernet  HWaddr 02:42:ac:11:00:02\n          inet addr:172.17.0.2  Bcast:172.17.255.255  Mask:255.255.0.0",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-28",
+      "level": 4,
+      "title": "다중 네트워크 연결 구성",
+      "anchor": "다중-네트워크-연결-구성",
+      "content": [
+        {
+          "id": "chapter06-block-37",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter06-diagram-8"
+          }
+        },
+        {
+          "id": "chapter06-block-38",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "~$ docker network create --driver=bridge back-net\n~$ docker network create --driver=bridge front-net\n~$ docker run --name=my-web -itd --net=front-net ubuntu:14.04\n~$ docker run --name=my-was -itd --net=back-net ubuntu:14.04\n~$ docker run --name=my-db -itd --net=back-net ubuntu:14.04\n~$ docker network connect back-net my-web\n~$ docker exec my-web route\n~$ docker exec my-was route\n~$ docker exec my-db route\n~$ docker network inspect front-net  # my-web\n~$ docker network inspect back-net   # my-web / my-was / my-db",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter06-block-39",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "~$ docker exec -it my-web bash\nroot@175d24fcf62a:/# ping -c 1 my-was\n64 bytes from my-was.front-net (172.21.0.3): icmp_seq=1 ttl=64 time=0.163 ms\n\nroot@175d24fcf62a:/# ping -c 1 my-db\n64 bytes from my-db.back-net (172.22.0.3): icmp_seq=1 ttl=64 time=0.127 ms\n\n~$ docker exec –it my-was bash\nroot@7830705c564f:/# ping –c 1 my-web\n64 bytes from my-web.front-net (172.21.0.2): icmp_seq=2 ttl=64 time=0.122 ms\n\nroot@7830705c564f:/# ping –c 1 my-db\n64 bytes from my-db.back-net (172.22.0.3): icmp_seq=2 ttl=64 time=0.110 ms\n\n~$ docker network disconnect front-net my-was\n~$ docker stop my-web my-was my-db\n~$ docker rm my-web my-was my-db\n~$ docker network rm back-net\n~$ docker network rm front-net",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-29",
+      "level": 2,
+      "title": "3. Docker DNS",
+      "anchor": "3-docker-dns",
+      "content": []
+    },
+    {
+      "id": "chapter06-section-30",
+      "level": 3,
+      "title": "docker DNS 개요",
+      "anchor": "docker-dns-개요",
+      "content": [
+        {
+          "id": "chapter06-block-41",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Docker 컨테이너는 IP를 사용자 정의 네트워크의 컨테이너 이름으로 자동 확인하는 DNS 서버가 Docker 호스트에 생성된다. (127.0.0.11)Docker의 기본 docker0 bridge driver에는 DNS가 포함되어 있지 않으므로 DNS는 내장된 docker0 bridge driver에서 작동하지 않는다."
+              },
+              {
+                "text": "동일 네트워크 alias 할당을 통해 하나의 타겟 그룹을 만들어 요청에 Round Robin 방식으로 응답한다."
+              },
+              {
+                "text": "컨테이너 생성 시 호스트 시스템에서 다음 세 파일을 복사하여 컨테이너 내부에 적용하여 컨테이너 간에 이름으로 찾기가 가능해진다./etc/hostname/etc/hosts/etc/resolv.conf"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-31",
+      "level": 3,
+      "title": "docker DNS 동작 방식",
+      "anchor": "docker-dns-동작-방식",
+      "content": [
+        {
+          "id": "chapter06-block-42",
+          "type": "text",
+          "data": {
+            "markdown": "libnetwork는 핵심 네트워킹 뿐만 서비스 검색 기능 제공을 통해 모든 컨테이너가 이름으로 서로를 찾을 수 있게 한다. (--name or --net-alias 사용 시 DNS에 등록)"
+          }
+        },
+        {
+          "id": "chapter06-block-43",
+          "type": "text",
+          "data": {
+            "markdown": "다음은 컨테이너 내부에서 동일 네트워크의 다른 컨테이너명으로 ping을 수행하는 과정이다."
+          }
+        },
+        {
+          "id": "chapter06-block-44",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter06-diagram-9"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-32",
+      "level": 3,
+      "title": "[실습] 사용자 정의 네트워크의 docker DNS 확인",
+      "anchor": "실습-사용자-정의-네트워크의-docker-dns-확인",
+      "content": [
+        {
+          "id": "chapter06-block-45",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 사용자 정의 네트워크와 동일 target group(--net-alias)을 지정하여 DNS 응답을 확인해 본다.\n~$ docker network ls\n~$ docker network create fc-net\n~$ docker network ls\nNETWORK ID          NAME                DRIVER              SCOPE\n4de451a85832        fc-net              bridge              local\n\n~$ route\n172.19.0.0      0.0.0.0         255.255.0.0     U     0      0        0 br-4de451a85832\n\n~$ docker run -d --name=es1 --net=fc-net --net-alias=esnet-tg -p 9201:9200 -p 9301:9300 -e \"discovery.type=single-node\" elasticsearch:7.17.10\n\n~$ docker run -d --name=es2 --net=fc-net --net-alias=esnet-tg -p 9202:9200 -p 9302:9300 -e \"discovery.type=single-node\" elasticsearch:7.17.10\n\nkevin@hostos1:~$ docker ps | grep es\neca69cd10625   elasticsearch:7.17.10   \"/bin/tini -- /usr/l…\"   38 seconds ago   Up 36 seconds\n0.0.0.0:9202->9200/tcp, :::9202->9200/tcp, 0.0.0.0:9302->9300/tcp, :::9302->9300/tcp   es2\n26e671cf7be7   elasticsearch:7.17.10   \"/bin/tini -- /usr/l…\"   49 seconds ago   Up 47 seconds\n0.0.0.0:9201->9200/tcp, :::9201->9200/tcp, 0.0.0.0:9301->9300/tcp, :::9301->9300/tcp   es1",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-33",
+      "level": 4,
+      "title": "DNS 조회 테스트",
+      "anchor": "dns-조회-테스트",
+      "content": [
+        {
+          "id": "chapter06-block-46",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 사용자 정의 네트워크에 자동으로 DNS 기능이 활성화되는지 확인해 보자.\n~$ docker run -it --rm --name=request-container --net=fc-net busybox nslookup esnet-tg\nServer:         127.0.0.11\nAddress:        127.0.0.11:53   # Server & Address는 어느 DNS 서버에서 쿼리를 요청했는지를 의미\n\nNon-authoritative answer:\nName:   esnet-tg.xxxxxx         # 조회한 도메인과 IP 주소\nAddress: 218.38.x.x\n\n~$ docker run -it --rm --name=request-container --net=fc-net busybox nslookup 172.19.0.2\nServer:         127.0.0.11\nAddress:        127.0.0.11:53\n\nNon-authoritative answer:\n2.0.19.172.in-addr.arpa name = es1.fc-net\n\n~$ docker run -it --rm --name=request-container --net=fc-net busybox nslookup 172.19.0.3\nServer:         127.0.0.11\nAddress:        127.0.0.11:53\n\nNon-authoritative answer:\n3.0.19.172.in-addr.arpa name = es2.fc-net",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-34",
+      "level": 4,
+      "title": "curl을 통한 서비스 테스트",
+      "anchor": "curl을-통한-서비스-테스트",
+      "content": [
+        {
+          "id": "chapter06-block-47",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "~$ docker run -it --rm --name=request-container --net=fc-net centos:8 bash\n[root@104c39bda98c /]# curl -s esnet-tg:9200\n{\n  \"name\" : \"eca69cd10625\",\n  \"cluster_name\" : \"docker-cluster\",\n  \"cluster_uuid\" : \"uP9HrKhjSgylZbKDGEnsNw\",\n  \"version\" : {\n    \"number\" : \"7.17.10\",\n    …\n  },\n  \"tagline\" : \"You Know, for Search\"\n}\n\n[root@104c39bda98c /]# curl -s esnet-tg:9200\n{\n  \"name\" : \"26e671cf7be7\",\n  \"cluster_name\" : \"docker-cluster\",\n  \"cluster_uuid\" : \"99PUfxR4SRScfDH40Q1mwg\",\n  \"version\" : {\n    \"number\" : \"7.17.10\",\n    …\n  },\n  \"tagline\" : \"You Know, for Search\"\n}",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-35",
+      "level": 4,
+      "title": "net-alias 확인",
+      "anchor": "net-alias-확인",
+      "content": [
+        {
+          "id": "chapter06-block-48",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# target group으로 등록된 --net-alias를 조회한다.\n~$ docker inspect es1\n \"Networks\": {\n                \"fc-net\": {\n                    \"IPAMConfig\": null,\n                    \"Links\": null,\n                    \"Aliases\": [\n                        \"esnet-tg\",\n                        \"eca69cd10625\"\n\n~$ docker inspect es2",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-36",
+      "level": 3,
+      "title": "[실습] docker DNS를 활용한 docker proxy (Load balancing)",
+      "anchor": "실습-docker-dns를-활용한-docker-proxy-load-balancing",
+      "content": [
+        {
+          "id": "chapter06-block-49",
+          "type": "list",
+          "data": {
+            "ordered": true,
+            "items": [
+              {
+                "text": "사용자 정의 Bridge network 생성"
+              },
+              {
+                "text": "--net-alias를 이용한 target group 생성"
+              },
+              {
+                "text": "등록된 DNS 등록 확인 (\"dig\" tool)"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter06-block-50",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter06-diagram-10"
+          }
+        },
+        {
+          "id": "chapter06-block-51",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "~$ docker network create \\\n--driver bridge \\\n--subnet 172.200.1.0/24 \\\n--ip-range 172.200.1.0/24 \\\n--gateway 172.200.1.1 \\\nnetlb\n\n~$ route\n~$ docker network ls\ncb1db40f7156        netlb               bridge              local\n\n~$ docker run -itd --name=nettest1 --net=netlb --net-alias tg-net ubuntu:14.04\n~$ docker run -itd --name=nettest2 --net=netlb --net-alias tg-net ubuntu:14.04\n~$ docker run -itd --name=nettest3 --net=netlb --net-alias tg-net ubuntu:14.04\n~$ docker inspect nettest1 | grep IPAddress    # \"172.200.1.2\"\n~$ docker inspect nettest2 | grep IPAddress    # \"172.200.1.3\"\n~$ docker inspect nettest3 | grep IPAddress    # \"172.200.1.4\"",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-37",
+      "level": 4,
+      "title": "Round Robin 테스트",
+      "anchor": "round-robin-테스트",
+      "content": [
+        {
+          "id": "chapter06-block-52",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "~$ docker run -it --name=frontend --net=netlb ubuntu:14.04 bash\nroot@c50fde4215c8:/# ping -c 1 tg-net\nPING tg-net (172.200.1.3) 56(84) bytes of data.\n64 bytes from nettest2.netlb (172.200.1.3): icmp_seq=1 ttl=64 time=0.137 ms\n\nroot@c50fde4215c8:/# ping -c 1 tg-net\nPING tg-net (172.200.1.2) 56(84) bytes of data.\n64 bytes from nettest1.netlb (172.200.1.2): icmp_seq=1 ttl=64 time=0.072 ms\n\nroot@c50fde4215c8:/# ping -c 1 tg-net\nPING tg-net (172.200.1.4) 56(84) bytes of data.\n64 bytes from nettest3.netlb (172.200.1.4): icmp_seq=1 ttl=64 time=0.066 ms\n\nroot@c50fde4215c8:/# apt update\nroot@c50fde4215c8:/# apt-get -y install dnsutils",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-38",
+      "level": 4,
+      "title": "dig 명령어를 통한 DNS 레코드 확인",
+      "anchor": "dig-명령어를-통한-dns-레코드-확인",
+      "content": [
+        {
+          "id": "chapter06-block-53",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "root@c50fde4215c8:/# dig tg-net\n\n; <<>> DiG 9.9.5-3ubuntu0.19-Ubuntu <<>> tg-net\n;; global options: +cmd\n;; Got answer:\n;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 56972\n;; flags: qr rd ra; QUERY: 1, ANSWER: 3, AUTHORITY: 0, ADDITIONAL: 0\n\n;; QUESTION SECTION:\n;tg-net.                                IN      A\n\n;; ANSWER SECTION:\ntg-net.                 600     IN      A       172.200.1.3\ntg-net.                 600     IN      A       172.200.1.4\ntg-net.                 600     IN      A       172.200.1.2\n\n;; Query time: 0 msec\n;; SERVER: 127.0.0.11#53(127.0.0.11)\n;; WHEN: Sun Jun 11 02:41:27 UTC 2023\n;; MSG SIZE  rcvd: 90",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-39",
+      "level": 4,
+      "title": "새 컨테이너 추가 시 자동 DNS 등록",
+      "anchor": "새-컨테이너-추가-시-자동-dns-등록",
+      "content": [
+        {
+          "id": "chapter06-block-54",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 다른 터미널에서 새로운 컨테이너를 target group에 포함시킨다.\n~$ docker run –itd --name=nettest4 --net=netlb --net-alias=tg-net ubuntu:14.04\n\n# 자동으로 DNS에 등록 된다.\nroot@c50fde4215c8:/# dig tg-net\n...\n;; ANSWER SECTION:\ntg-net.                 600     IN      A       172.200.1.3\ntg-net.                 600     IN      A       172.200.1.6\ntg-net.                 600     IN      A       172.200.1.2\ntg-net.                 600     IN      A       172.200.1.4",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-40",
+      "level": 2,
+      "title": "4. 컨테이너 Proxy",
+      "anchor": "4-컨테이너-proxy",
+      "content": []
+    },
+    {
+      "id": "chapter06-section-41",
+      "level": 3,
+      "title": "Proxy 개요",
+      "anchor": "proxy-개요",
+      "content": [
+        {
+          "id": "chapter06-block-56",
+          "type": "text",
+          "data": {
+            "markdown": "Nginx 및 HAproxy 구성을 통해 Load Balancer (proxy) 컨테이너를 만들어 보자"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-42",
+      "level": 4,
+      "title": "No config proxy (no Load Balancer)?",
+      "anchor": "no-config-proxy-no-load-balancer",
+      "content": [
+        {
+          "id": "chapter06-block-57",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Proxy 구성이 없으면 사용자의 요청은 직접 웹서버에 전달되어 서버 부담을 가중하게 된다."
+              },
+              {
+                "text": "단일 웹서버 구성은 장애 발생 시 서비스 가용성에 치명적이다."
+              },
+              {
+                "text": "다중 웹서버 구성으로 여러 사용자의 요청을 처리할 경우에도 요청한 부하를 적절히 분산시켜 주지 못하면 한 서버에 부하가 몰리는 Hotspot이 발생하는 등의 문제가 발생 가능하다."
+              },
+              {
+                "text": "최종 사용자 관점의 응답 시간 만족을 얻기 힘들다."
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter06-block-58",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter06-diagram-11"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-43",
+      "level": 4,
+      "title": "Proxy ?",
+      "anchor": "proxy-",
+      "content": [
+        {
+          "id": "chapter06-block-59",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "요청자와 응답자 간의 중계 역할. 즉, 통신을 대리 수행하는 서버를 proxy server 라 함."
+              },
+              {
+                "text": "Proxy server의 위치에 따라 forward proxy 와 reverse proxy로 구분한다."
+              },
+              {
+                "text": "이를 활용하면…다중 호스트(Cluster)를 활용하여 트래픽 분산을 할 수 있는 Load Balancing 구현(R).클라이언트 요청 중 자주 사용되는 HTML, JS, CSS 등의 정적 파일을 caching하여 서버 부하 및 네트워크 트래픽을 줄여 빠른 응답을 할 수 있는 캐시 서버 구현.(F,R)학교 및 사내망에서 보안을 위한 특정 사이트 접근 차단 구현(F)무중단 배포를 통한 서비스 지속(R)SSL 암호화 적용으로 보안 강화 (R)"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-44",
+      "level": 4,
+      "title": "Forward Proxy ?",
+      "anchor": "forward-proxy-",
+      "content": [
+        {
+          "id": "chapter06-block-60",
+          "type": "text",
+          "data": {
+            "markdown": "forward proxy는 client와 internet 사이에 있어서 client 정보가 서버에 노출되지 않음."
+          }
+        },
+        {
+          "id": "chapter06-block-61",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter06-diagram-12"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-45",
+      "level": 4,
+      "title": "Reverse Proxy ?",
+      "anchor": "reverse-proxy-",
+      "content": [
+        {
+          "id": "chapter06-block-62",
+          "type": "text",
+          "data": {
+            "markdown": "Reverse Proxy는 client 요청을 서버 대신 받아서 전달. client에게 서버 노출 안됨."
+          }
+        },
+        {
+          "id": "chapter06-block-63",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter06-diagram-13"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-46",
+      "level": 3,
+      "title": "Nginx",
+      "anchor": "nginx",
+      "content": [
+        {
+          "id": "chapter06-block-64",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "기본 구성 값으로 \"웹 서버\"를 실행한다. 동일 계열 점유율이 제일 높다."
+              },
+              {
+                "text": "추가 구성으로 \"Reverse Proxy\" 구현이 가능하다."
+              },
+              {
+                "text": "Kubernetes의 ingress controller로 \"nginx ingress controller\" 선택이 가능하다."
+              },
+              {
+                "text": "API 트래픽 처리를 고급 HTTP 처리 기능으로 사용 가능한 \"API Gateway\" 구성이 가능하다."
+              },
+              {
+                "text": "MSA 트래픽 처리를 위한 MicroGateway로 사용 가능"
+              },
+              {
+                "text": "설정은 (linux 기준) /etc/nginx 하위에 nginx.conf 변경을 통해 구성할 수 있다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-47",
+      "level": 4,
+      "title": "Nginx reverse proxy",
+      "anchor": "nginx-reverse-proxy",
+      "content": [
+        {
+          "id": "chapter06-block-65",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "클라이언트 요청이 80 포트로 들어오면 준비해둔 애플리케이션 서버의 주소로 각 서버로 트래픽을 분배한다."
+              },
+              {
+                "text": "기본 분배 방식(LoadBalancing)은 round-robin 방식으로 처리."
+              },
+              {
+                "text": "요청이 적은 서버로 분배하는 least_conn 방식."
+              },
+              {
+                "text": "IP당 서버를 분배하는 ip_hash 등 여러가지 부하 분산 알고리즘을 사용할 수 있다."
+              },
+              {
+                "text": "(https://docs.nginx.com/nginx/admin-guide/load-balancer/http-load-balancer/)"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-48",
+      "level": 3,
+      "title": "HAProxy",
+      "anchor": "haproxy",
+      "content": [
+        {
+          "id": "chapter06-block-66",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "하드웨어 기반의 L4 / L7 스위치를 대체하기 위한 오픈소스 소프트웨어 솔루션"
+              },
+              {
+                "text": "TCP 및 HTTP 기반 애플리케이션을 위한 고가용성(Active-Passive), Load Balancing 및 프록시 기능을 제공하는 매우 빠르고 안정적인 무료 Reverse Proxy다."
+              },
+              {
+                "text": "주요 기능SSL 지원Load BalancingActive health checkKeepAlived (proxy 이중화)"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-49",
+      "level": 4,
+      "title": "HAproxy, L4",
+      "anchor": "haproxy-l4",
+      "content": [
+        {
+          "id": "chapter06-block-67",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "OSI 7 계층 중 Layer 4는 IP를 이용한 트래픽 전달이 특징이다."
+              },
+              {
+                "text": "Haproxy L4 구성 시 IP와 Port를 기반으로 사용자 요청 트래픽을 전달하도록 구성"
+              },
+              {
+                "text": "요청에 대한 처리는 웹서버로 구성된 web1~3에 round-robin 방식으로 부하 분산 된다."
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter06-block-68",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter06-diagram-14"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-50",
+      "level": 4,
+      "title": "HAproxy, L7",
+      "anchor": "haproxy-l7",
+      "content": [
+        {
+          "id": "chapter06-block-69",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "OSI 7 계층 중 Layer 7은 HTTP 기반의 URI를 이용한 트래픽 전달이 특징이다."
+              },
+              {
+                "text": "동일한 도메인(example.com)의 하위에 존재하는 여러 웹 애플리케이션 서버를 사용할 수 있다."
+              },
+              {
+                "text": "example.com/item or example.com/basket 으로 연결 된다."
+              },
+              {
+                "text": "사용자의 요청과 설정에 따른 부하 분산이다."
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter06-block-70",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter06-diagram-15"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-51",
+      "level": 2,
+      "title": "5. [실습] Nginx를 활용한 컨테이너 proxy",
+      "anchor": "5-실습-nginx를-활용한-컨테이너-proxy",
+      "content": []
+    },
+    {
+      "id": "chapter06-section-52",
+      "level": 3,
+      "title": "Host Nginx reverse proxy 구성",
+      "anchor": "host-nginx-reverse-proxy-구성",
+      "content": [
+        {
+          "id": "chapter06-block-72",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter06-diagram-16"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-53",
+      "level": 4,
+      "title": "nginx 설치",
+      "anchor": "nginx-설치",
+      "content": [
+        {
+          "id": "chapter06-block-73",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# Docker HostOS에 apt를 이용하여 nginx를 설치한다.\n~$ sudo apt update\n~$ sudo apt -y install nginx\n~$ sudo nginx -v\nnginx version: nginx/1.18.0 (Ubuntu)\n\n~$ sudo systemctl status nginx.service\n● nginx.service - A high performance web server and a reverse proxy server\n     Loaded: loaded (/lib/systemd/system/nginx.service; enabled; vendor preset: enabled)\n     Active: active (running)\n…\n\n~$ sudo netstat -nlp | grep 80\ntcp        0      0 0.0.0.0:80              0.0.0.0:*               LISTEN      88008/nginx: master\ntcp6       0      0 :::80                   :::*                    LISTEN      88008/nginx: master\n\n~$ curl localhost:80\n<!DOCTYPE html>\n<html>\n<head>\n<title>Welcome to nginx!</title>\n…",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-54",
+      "level": 4,
+      "title": "애플리케이션 컨테이너 생성",
+      "anchor": "애플리케이션-컨테이너-생성",
+      "content": [
+        {
+          "id": "chapter06-block-74",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# load balancing이 구현될 애플리케이션 컨테이너를 생성한다.\n~$ docker run -it -d -e SERVER_PORT=5001 -p 5001:5001 -h alb-node01 -u root --name=alb-node01 dbgurum/nginxlb:1.0\n~$ docker ps -a | grep node\nba61b1f47ed4   dbgurum/nginxlb:1.0   \"/cnb/lifecycle/laun…\"   4 seconds ago   Exited (1) 2 seconds ago             alb-node01\n\n~$ docker logs alb-node01\ncat: /sys/fs/cgroup/memory/memory.limit_in_bytes: No such file or directory\n\n~$ docker rm alb-node01\n~$ docker info\n...\n Cgroup Driver: systemd\n Cgroup Version: 2\n\n~$ sudo sed -i '/^GRUB_CMDLINE_LINUX/ s/\"$/ systemd.unified_cgroup_hierarchy=0\"/' /etc/default/grub\n~$ sudo update-grub\n~$ sudo reboot\n\n~$ docker info\n...\n Cgroup Driver: cgroupfs\n Cgroup Version: 1",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter06-block-75",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "~$ docker run -it -d -e SERVER_PORT=5001 -p 5001:5001 -h alb-node01 -u root --name=albnode01 dbgurum/nginxlb:1.0\n\n~$ docker run -it -d -e SERVER_PORT=5002 -p 5002:5002 -h alb-node02 -u root --name=albnode02 dbgurum/nginxlb:1.0\n\n~$ docker run -it -d -e SERVER_PORT=5003 -p 5003:5003 -h alb-node03 -u root --name=albnode03 dbgurum/nginxlb:1.0\n\n~$ docker ps -a | grep node\n84be5755c789   dbgurum/nginxlb:1.0   \"/cnb/lifecycle/laun…\"   5 seconds ago    Up 4 seconds    0.0.0.0:5003->5003/tcp, :::5003->5003/tcp   alb-node03\n0eff7905f458   dbgurum/nginxlb:1.0   \"/cnb/lifecycle/laun…\"   8 seconds ago    Up 8 seconds    0.0.0.0:5002->5002/tcp, :::5002->5002/tcp   alb-node02\nf6c4c0941d8b   dbgurum/nginxlb:1.0   \"/cnb/lifecycle/laun…\"   12 seconds ago   Up 11 seconds   0.0.0.0:5001->5001/tcp, :::5001->5001/tcp   alb-node01\n\n~$ sudo netstat -nlp | grep 5001\n~$ sudo netstat -nlp | grep 5002\n~$ sudo netstat -nlp | grep 5003",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-55",
+      "level": 4,
+      "title": "nginx.conf 설정",
+      "anchor": "nginxconf-설정",
+      "content": [
+        {
+          "id": "chapter06-block-76",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "~$ sudo mv /etc/nginx/nginx.conf /etc/nginx/nginx.conf.org\n~$ sudo vi /etc/nginx/nginx.conf\nevents { worker_connections 1024; }\nhttp {\n    # List of application servers\n    upstream backend-alb {\n        server 127.0.0.1:5001;\n        server 127.0.0.1:5002;\n        server 127.0.0.1:5003;\n    }\n    # Configuration for the server\n    server {\n        # Running port\n        listen 80  default_server;\n        # Proxying the connections\n        location / {\n            proxy_pass         http://backend-alb;\n        }\n    }\n}\n\n~$ sudo systemctl restart nginx.service\n~$ sudo systemctl status nginx.service",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter06-block-77",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "참고: proxy_pass를 이용하여 nginx를 proxy 서버로 삼고 upstream 리스트에 있는 서버로 통과시키도록 설정 한다."
+          }
+        },
+        {
+          "id": "chapter06-block-78",
+          "type": "text",
+          "data": {
+            "markdown": "테스트 결과 (브라우저에서 192.168.56.101 새로고침):"
+          }
+        },
+        {
+          "id": "chapter06-block-79",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Listening: 5001, Hosting: alb-node01"
+              },
+              {
+                "text": "Listening: 5002, Hosting: alb-node02"
+              },
+              {
+                "text": "Listening: 5003, Hosting: alb-node03"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter06-block-80",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 다음 실습을 위해 Docker hostOS에 설치된 nginx 삭제\n~$ sudo systemctl stop nginx.service\n~$ sudo apt autoremove nginx –y\n~$ sudo netstat -nlp | grep 80",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-56",
+      "level": 3,
+      "title": "Nginx container reverse proxy 구성",
+      "anchor": "nginx-container-reverse-proxy-구성",
+      "content": [
+        {
+          "id": "chapter06-block-81",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter06-diagram-17"
+          }
+        },
+        {
+          "id": "chapter06-block-82",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ docker run -d -p 8001:80 --name=proxy-container nginx:1.25.0-alpine\n\nkevin@hostos1:~$ vi nginx.conf\nevents { worker_connections 1024; }\nhttp {\n    upstream backend-alb {\n        server 192.168.56.101:5001;\n        server 192.168.56.101:5002;\n        server 192.168.56.101:5003;\n    }\n    server {\n        listen 80  default_server;\n        location / {\n            proxy_pass         http://backend-alb;\n        }\n    }\n}\n\nkevin@hostos1:~$ docker cp nginx.conf proxy-container:/etc/nginx/nginx.conf",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter06-block-83",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ sudo netstat -nlp | grep 8001\ntcp        0      0 0.0.0.0:8001            0.0.0.0:*               LISTEN      3906/docker-proxy\ntcp6       0      0 :::8001                 :::*                    LISTEN      3912/docker-proxy\n\nkevin@hostos1:~$ docker restart proxy-container\nproxy-container\n\nkevin@hostos1:~$ docker ps | grep proxy\n4dbf9d382383   nginx:1.25.0-alpine   \"/docker-entrypoint.…\"   47 seconds ago   Up 8 seconds\n0.0.0.0:8001->80/tcp, :::8001->80/tcp   proxy-container\n\nkevin@hostos1:~$ curl localhost:8001\nListening: 5001, Hosting: alb-node01\nkevin@hostos1:~$ curl localhost:8001\nListening: 5002, Hosting: alb-node02\nkevin@hostos1:~$ curl localhost:8001\nListening: 5003, Hosting: alb-node03",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-57",
+      "level": 4,
+      "title": "가중치 적용",
+      "anchor": "가중치-적용",
+      "content": [
+        {
+          "id": "chapter06-block-84",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 가중치 적용\nkevin@hostos1:~$ vi nginx.conf\nevents { worker_connections 1024; }\nhttp {\n    upstream backend-alb {\n        server 192.168.56.101:5001 weight=60;\n        server 192.168.56.101:5002 weight=20;\n        server 192.168.56.101:5003 weight=20;\n    }\n    server {\n        listen 80  default_server;\n        location / {\n            proxy_pass         http://backend-alb;\n        }\n    }\n}\n\nkevin@hostos1:~$ docker cp nginx.conf proxy-container:/etc/nginx/nginx.conf\nkevin@hostos1:~$ docker restart proxy-container\nkevin@hostos1:~$ docker ps | grep proxy\n4dbf9d382383   nginx:1.25.0-alpine   \"/docker-entrypoint.…\"   10 minutes ago   Up 3 seconds\n0.0.0.0:8001->80/tcp, :::8001->80/tcp   proxy-container",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-58",
+      "level": 2,
+      "title": "6. [실습] HAProxy를 활용한 컨테이너 proxy",
+      "anchor": "6-실습-haproxy를-활용한-컨테이너-proxy",
+      "content": []
+    },
+    {
+      "id": "chapter06-section-59",
+      "level": 3,
+      "title": "HAproxy container 구성",
+      "anchor": "haproxy-container-구성",
+      "content": [
+        {
+          "id": "chapter06-block-86",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch06$ docker network create proxy-net\nkevin@hostos1:~/fastcampus/ch06$ docker network ls\n42660fd744bd        proxy-net           bridge              local\n\nkevin@hostos1:~/fastcampus/ch06$ route\nKernel IP routing table\nDestination     Gateway         Genmask         Flags Metric Ref    Use Iface\n172.21.0.0      0.0.0.0         255.255.0.0     U     0      0        0 br-42660fd744bd\n\nkevin@hostos1:~/fastcampus/ch06$ docker run -d --name=echo-web1 --net=proxy-net -h echo-web1 dbgurum/haproxy:echo\nkevin@hostos1:~/fastcampus/ch06$ docker run -d --name=echo-web2 --net=proxy-net -h echo-web2 dbgurum/haproxy:echo\nkevin@hostos1:~/fastcampus/ch06$ docker run -d --name=echo-web3 --net=proxy-net -h echo-web3 dbgurum/haproxy:echo",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter06-block-87",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch06$ docker ps -a\nCONTAINER ID   IMAGE                 COMMAND             CREATED          STATUS          PORTS      NAMES\nd15065779dc4   dbgurum/haproxy:echo  \"/bin/echo-server\"  37 seconds ago   Up 36 seconds   8080/tcp   echo-web3\n603118f401b3   dbgurum/haproxy:echo  \"/bin/echo-server\"  41 seconds ago   Up 41 seconds   8080/tcp   echo-web2\n0cc87c72bff1   dbgurum/haproxy:echo  \"/bin/echo-server\"  52 seconds ago   Up 51 seconds   8080/tcp   echo-web1\n\nkevin@hostos1:~/fastcampus/ch06$ mkdir conf && cd $_\nkevin@hostos1:~/fastcampus/ch06/conf$ vi haproxy.cfg",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-60",
+      "level": 4,
+      "title": "haproxy.cfg 설정 (기본)",
+      "anchor": "haproxycfg-설정-기본",
+      "content": [
+        {
+          "id": "chapter06-block-88",
+          "type": "code",
+          "data": {
+            "language": "text",
+            "code": "global\n    stats socket /var/run/api.sock user haproxy group haproxy mode 660 level admin expose-fd listeners\n    log stdout format raw local0 info\n\ndefaults\n    mode http\n    timeout client 10s\n    timeout connect 5s\n    timeout server 10s\n    timeout http-request 10s\n    log global\n\nfrontend stats\n    bind *:8404\n    stats enable\n    stats uri /\n    stats refresh 10s\n\nfrontend myfrontend\n    bind :80\n    default_backend webservers\n\nbackend webservers\n    server s1 echo-web1:8080 check\n    server s2 echo-web2:8080 check\n    server s3 echo-web3:8080 check",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-61",
+      "level": 4,
+      "title": "HAProxy 컨테이너 실행",
+      "anchor": "haproxy-컨테이너-실행",
+      "content": [
+        {
+          "id": "chapter06-block-89",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch06/conf$ docker run -d --name=haproxy-container --net=proxy-net -p 80:80 -p 8404:8404 -v $(pwd):/usr/local/etc/haproxy:ro haproxytech/haproxy-alpine:2.5\n\nkevin@hostos1:~/fastcampus/ch06/conf$ docker ps\nCONTAINER ID   IMAGE                              COMMAND                  CREATED          STATUS          PORTS                                                                    NAMES\n3ce170249413   haproxytech/haproxy-alpine:2.4     \"/docker-entrypoint.…\"   21 seconds ago   Up 19 seconds   0.0.0.0:80->80/tcp, :::80->80/tcp, 0.0.0.0:8404->8404/tcp, :::8404->8404/tcp   haproxy-container\n\nkevin@hostos1:~/fastcampus/ch06/conf$ docker port haproxy-container\n80/tcp -> 0.0.0.0:80\n80/tcp -> [::]:80\n8404/tcp -> 0.0.0.0:8404\n8404/tcp -> [::]:8404",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-62",
+      "level": 4,
+      "title": "Round Robin 테스트",
+      "anchor": "round-robin-테스트",
+      "content": [
+        {
+          "id": "chapter06-block-90",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch06/conf$ curl localhost:80\nRequest served by echo-web1\n\nGET / HTTP/1.1\n\nHost: localhost\nAccept: */*\nUser-Agent: curl/7.81.0\n\nkevin@hostos1:~/fastcampus/ch06/conf$ curl localhost:80\nRequest served by echo-web2\n\nGET / HTTP/1.1\n\nHost: localhost\nAccept: */*\nUser-Agent: curl/7.81.0\n\nkevin@hostos1:~/fastcampus/ch06/conf$ curl localhost:80\nRequest served by echo-web3\n\nGET / HTTP/1.1\n\nHost: localhost\nAccept: */*\nUser-Agent: curl/7.81.0",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter06-block-91",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "HAProxy Statistics: 192.168.56.101:8404 접근을 통해 Haproxy 통계 정보 확인 가능"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-63",
+      "level": 3,
+      "title": "HAproxy container 구성 (L7 URI 방식)-1",
+      "anchor": "haproxy-container-구성-l7-uri-방식-1",
+      "content": []
+    },
+    {
+      "id": "chapter06-section-64",
+      "level": 4,
+      "title": "haproxy.cfg 설정 (URI 방식 1)",
+      "anchor": "haproxycfg-설정-uri-방식-1",
+      "content": [
+        {
+          "id": "chapter06-block-92",
+          "type": "code",
+          "data": {
+            "language": "text",
+            "code": "global\n    stats socket /var/run/api.sock user haproxy group haproxy mode 660 level admin expose-fd listeners\n    log stdout format raw local0 info\n\ndefaults\n    mode http\n    timeout client 10s\n    timeout connect 5s\n    timeout server 10s\n    timeout http-request 10s\n    log global\n\nfrontend stats\n    bind *:8404\n    stats enable\n    stats uri /\n    stats refresh 10s\n\nfrontend myfrontend\n    bind :80\n    default_backend webservers\n\n    acl echo-web1 path_beg /echo-web1\n    acl echo-web2 path_beg /echo-web2\n    acl echo-web3 path_beg /echo-web3\n\n    use_backend echo-web1_backend if echo-web1\n    use_backend echo-web2_backend if echo-web2\n    use_backend echo-web3_backend if echo-web3\n\nbackend webservers\n    balance roundrobin\n    server s1 echo-web1:8080 check\n    server s2 echo-web2:8080 check\n    server s3 echo-web3:8080 check\n\nbackend echo-web1_backend\n    server s1 echo-web1:8080 check\n\nbackend echo-web2_backend\n    server s2 echo-web2:8080 check\n\nbackend echo-web3_backend\n    server s3 echo-web3:8080 check",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter06-block-93",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch06/conf$ docker stop haproxy-container\nkevin@hostos1:~/fastcampus/ch06/conf$ docker rm haproxy-container\n\nkevin@hostos1:~/fastcampus/ch06/conf$ docker run -d --name=haproxy-container --net=proxy-net -p 80:80 -p 8404:8404 -v $(pwd):/usr/local/etc/haproxy:ro haproxytech/haproxy-alpine:2.5\n\nkevin@hostos1:~/fastcampus/ch06/conf$ docker ps\nCONTAINER ID   IMAGE                              COMMAND                  CREATED          STATUS          PORTS                                                                    NAMES\n3ce170249413   haproxytech/haproxy-alpine:2.4     \"/docker-entrypoint.…\"   21 seconds ago   Up 19 seconds   0.0.0.0:80->80/tcp, :::80->80/tcp, 0.0.0.0:8404->8404/tcp, :::8404->8404/tcp   haproxy-container\n\nkevin@hostos1:~/fastcampus/ch06/conf$ docker port haproxy-container\n80/tcp -> 0.0.0.0:80\n80/tcp -> [::]:80\n8404/tcp -> 0.0.0.0:8404\n8404/tcp -> [::]:8404",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-65",
+      "level": 4,
+      "title": "일반 요청 테스트 (Round Robin)",
+      "anchor": "일반-요청-테스트-round-robin",
+      "content": [
+        {
+          "id": "chapter06-block-94",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch06/conf$ curl localhost:80\nRequest served by echo-web1\n\nGET / HTTP/1.1\n\nHost: localhost\nAccept: */*\nUser-Agent: curl/7.81.0\n\nkevin@hostos1:~/fastcampus/ch06/conf$ curl localhost:80\nRequest served by echo-web2\n\nGET / HTTP/1.1\n\nHost: localhost\nAccept: */*\nUser-Agent: curl/7.81.0\n\nkevin@hostos1:~/fastcampus/ch06/conf$ curl localhost:80\nRequest served by echo-web3\n\nGET / HTTP/1.1\n\nHost: localhost\nAccept: */*\nUser-Agent: curl/7.81.0",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-66",
+      "level": 4,
+      "title": "URI 기반 요청 테스트",
+      "anchor": "uri-기반-요청-테스트",
+      "content": [
+        {
+          "id": "chapter06-block-95",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch06/conf$ curl localhost:80/echo-web1\nRequest served by echo-web1\n\nGET / HTTP/1.1\n\nHost: localhost\nAccept: */*\nUser-Agent: curl/7.81.0\n\nkevin@hostos1:~/fastcampus/ch06/conf$ curl localhost:80/echo-web2\nRequest served by echo-web2\n\nGET / HTTP/1.1\n\nHost: localhost\nAccept: */*\nUser-Agent: curl/7.81.0\n\nkevin@hostos1:~/fastcampus/ch06/conf$ curl localhost:80/echo-web3\nRequest served by echo-web3\n\nGET / HTTP/1.1\n\nHost: localhost\nAccept: */*\nUser-Agent: curl/7.81.0",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-67",
+      "level": 3,
+      "title": "HAproxy container 구성 (L7 URI 방식)-2",
+      "anchor": "haproxy-container-구성-l7-uri-방식-2",
+      "content": [
+        {
+          "id": "chapter06-block-96",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "haproxy.cfg 설정 중 http mode의 uri 방식을 통해…"
+              },
+              {
+                "text": "Domain or IP/item"
+              },
+              {
+                "text": "Domain or IP/basket 으로 연결"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter06-block-97",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter06-diagram-18"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-68",
+      "level": 4,
+      "title": "haproxy.cfg 설정 (URI 방식 2)",
+      "anchor": "haproxycfg-설정-uri-방식-2",
+      "content": [
+        {
+          "id": "chapter06-block-98",
+          "type": "code",
+          "data": {
+            "language": "text",
+            "code": "global\n    stats socket /var/run/api.sock user haproxy group haproxy mode 660 level admin expose-fd listeners\n    log stdout format raw local0 info\n\ndefaults\n    mode http\n    timeout client 10s\n    timeout connect 5s\n    timeout server 10s\n    timeout http-request 10s\n    log global\n\nfrontend stats\n    bind *:8404\n    stats enable\n    stats uri /\n    stats refresh 10s\n\nfrontend myfrontend\n    bind :80\n    default_backend webservers\n\n    acl echo-web1-item path_beg /item\n    acl echo-web2-item path_beg /item\n    acl echo-web3-basket path_beg /basket\n    acl echo-web4-basket path_beg /basket\n\n    use_backend echo-web1_backend if echo-web1-item\n    use_backend echo-web1_backend if echo-web2-item\n    use_backend echo-web2_backend if echo-web3-basket\n    use_backend echo-web2_backend if echo-web4-basket\n\nbackend webservers\n    balance roundrobin\n    server s1 echo-web1-item:8080 check\n    server s2 echo-web2-item:8080 check\n    server s3 echo-web3-basket:8080 check\n    server s4 echo-web4-basket:8080 check\n\nbackend echo-web1_backend\n    server s1 echo-web1-item:8080 check\n    server s2 echo-web2-item:8080 check\n\nbackend echo-web2_backend\n    server s3 echo-web3-basket:8080 check\n    server s4 echo-web4-basket:8080 check",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-69",
+      "level": 4,
+      "title": "컨테이너 재구성",
+      "anchor": "컨테이너-재구성",
+      "content": [
+        {
+          "id": "chapter06-block-99",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch06/conf$ docker stop haproxy-container\nkevin@hostos1:~/fastcampus/ch06/conf$ docker stop echo-web1 echo-web2\nkevin@hostos1:~/fastcampus/ch06/conf$ docker stop echo-web3 echo-web4\nkevin@hostos1:~/fastcampus/ch06/conf$ cexrm\n\nkevin@hostos1:~/fastcampus/ch06/conf$ docker run -d --name=echo-web1-item --net=proxy-net -h echo-web1-item dbgurum/haproxy:echo\nkevin@hostos1:~/fastcampus/ch06/conf$ docker run -d --name=echo-web2-item --net=proxy-net -h echo-web2-item dbgurum/haproxy:echo\nkevin@hostos1:~/fastcampus/ch06/conf$ docker run -d --name=echo-web3-basket --net=proxy-net -h echo-web3-basket dbgurum/haproxy:echo\nkevin@hostos1:~/fastcampus/ch06/conf$ docker run -d --name=echo-web4-basket --net=proxy-net -h echo-web4-basket dbgurum/haproxy:echo\n\nkevin@hostos1:~/fastcampus/ch06/conf$ docker run -d --name=haproxy-container --net=proxy-net -p 80:80 -p 8404:8404 -v $(pwd):/usr/local/etc/haproxy:ro haproxytech/haproxy-alpine:2.5",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-70",
+      "level": 4,
+      "title": "/item URI 테스트",
+      "anchor": "item-uri-테스트",
+      "content": [
+        {
+          "id": "chapter06-block-100",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch06/conf$ curl localhost:80/item\nRequest served by echo-web1-item\n\nGET /item HTTP/1.1\n\nHost: localhost\nAccept: */*\nUser-Agent: curl/7.81.0\n\nkevin@hostos1:~/fastcampus/ch06/conf$ curl localhost:80/item\nRequest served by echo-web2-item\n\nGET /item HTTP/1.1\n\nHost: localhost\nAccept: */*\nUser-Agent: curl/7.81.0",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-71",
+      "level": 4,
+      "title": "/basket URI 테스트",
+      "anchor": "basket-uri-테스트",
+      "content": [
+        {
+          "id": "chapter06-block-101",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch06/conf$ curl localhost:80/basket\nRequest served by echo-web3-basket\n\nGET /basket HTTP/1.1\n\nHost: localhost\nAccept: */*\nUser-Agent: curl/7.81.0\n\nkevin@hostos1:~/fastcampus/ch06/conf$ curl localhost:80/basket\nRequest served by echo-web4-basket\n\nGET /basket HTTP/1.1\n\nHost: localhost\nAccept: */*\nUser-Agent: curl/7.81.0",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-72",
+      "level": 2,
+      "title": "요약",
+      "anchor": "요약",
+      "content": []
+    },
+    {
+      "id": "chapter06-section-73",
+      "level": 3,
+      "title": "핵심 개념",
+      "anchor": "핵심-개념",
+      "content": [
+        {
+          "id": "chapter06-block-103",
+          "type": "list",
+          "data": {
+            "ordered": true,
+            "items": [
+              {
+                "text": "Docker Network 기본Docker network = Linux network (커널의 네트워크 스택 활용)CNM(Container Networking Model) 아키텍처 기반주요 구성요소: Sandbox, Endpoint, Network"
+              },
+              {
+                "text": "네트워크 드라이버 종류bridge: 기본 네트워크, docker0 (172.17.0.0/16)host: 호스트 OS 네트워크 직접 사용none: 네트워크 격리overlay: 멀티 호스트 네트워크 (Docker Swarm)macvlan: 물리 네트워크 직접 연결"
+              },
+              {
+                "text": "사용자 정의 네트워크docker network create로 생성컨테이너 이름으로 통신 가능 (DNS 자동 지원)IP 대역, 게이트웨이 지정 가능"
+              },
+              {
+                "text": "Docker DNS사용자 정의 네트워크에서 자동 활성화 (127.0.0.11)--net-alias를 통한 서비스 그룹화Round Robin 방식 로드 밸런싱"
+              },
+              {
+                "text": "컨테이너 ProxyForward Proxy: 클라이언트 보호Reverse Proxy: 서버 보호, 로드 밸런싱Nginx: 웹 서버 + Reverse ProxyHAProxy: L4/L7 로드 밸런서"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter06-section-74",
+      "level": 3,
+      "title": "주요 명령어",
+      "anchor": "주요-명령어",
+      "content": [
+        {
+          "id": "chapter06-block-104",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 네트워크 조회\ndocker network ls\ndocker network inspect <network>\n\n# 네트워크 생성\ndocker network create --driver bridge --subnet 172.30.1.0/24 mynet\n\n# 네트워크 연결/해제\ndocker network connect <network> <container>\ndocker network disconnect <network> <container>\n\n# 브리지 정보 확인\nbrctl show\n\n# NAT 규칙 확인\nsudo iptables -t nat -L -n",
+            "copyable": true
+          }
+        }
+      ]
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "chapter06-diagram-1",
+      "type": "network",
+      "title": "Docker 엔진과 Docker CLI를 통해 관리 → bridge",
+      "asciiOriginal": "Docker 엔진과 Docker CLI를 통해 관리 → bridge\nLinux 커널과 OS 도구를 통해 관리 → docker0\n                                    ↓\n                              HostOS area",
+      "mermaidCode": "flowchart TB\n    subgraph Host[\"🖥️ Docker Host\"]\n        direction TB\n\n        subgraph Containers[\"컨테이너\"]\n            C1[\"📦 Container 1<br/>eth0: 172.17.0.2\"]\n            C2[\"📦 Container 2<br/>eth0: 172.17.0.3\"]\n        end\n\n        Bridge[\"🌉 docker0 bridge<br/>172.17.0.1\"]\n        HostNet[\"🌐 Host Network<br/>eth0\"]\n    end\n\n    C1 -->|\"veth\"| Bridge\n    C2 -->|\"veth\"| Bridge\n    Bridge --> HostNet\n    HostNet --> Internet[\"☁️ Internet\"]\n\n    style Host fill:#f8fafc,stroke:#64748b\n    style Containers fill:#dbeafe,stroke:#2563eb\n    style Bridge fill:#dcfce7,stroke:#16a34a\n    style HostNet fill:#fef3c7,stroke:#d97706",
+      "data": {
+        "nodes": [],
+        "connections": []
+      }
+    },
+    {
+      "id": "chapter06-diagram-2",
+      "type": "tree",
+      "asciiOriginal": "                    ┌─────────────────────────────┐\n                    │         Sandbox             │ ← Sandbox(격리된 네트워크 스택)\n                    │  (Ethernet(eth0), port,     │    Ethernet(eth0), port,\n                    │   route table, DNS 구성     │    route table, DNS 구성\n                    │   등이 포함 됨)              │    등이 포함 됨.\n                    │                             │\n                    │      ┌──────────┐           │\n                    │      │ Endpoint │           │ ← Endpoint(가상 이더넷 인터페이스)\n                    │      └────┬─────┘           │\n                    └───────────┼─────────────────┘\n                                │\n                    ┌───────────┴─────────────────┐\n                    │         Network             │ ← Network(가상 스위치, Bridge)\n                    └─────────────────────────────┘",
+      "mermaidCode": "flowchart TB\n    subgraph Host[\"🖥️ Docker Host\"]\n        direction TB\n\n        subgraph Containers[\"컨테이너\"]\n            C1[\"📦 Container 1<br/>eth0: 172.17.0.2\"]\n            C2[\"📦 Container 2<br/>eth0: 172.17.0.3\"]\n        end\n\n        Bridge[\"🌉 docker0 bridge<br/>172.17.0.1\"]\n        HostNet[\"🌐 Host Network<br/>eth0\"]\n    end\n\n    C1 -->|\"veth\"| Bridge\n    C2 -->|\"veth\"| Bridge\n    Bridge --> HostNet\n    HostNet --> Internet[\"☁️ Internet\"]\n\n    style Host fill:#f8fafc,stroke:#64748b\n    style Containers fill:#dbeafe,stroke:#2563eb\n    style Bridge fill:#dcfce7,stroke:#16a34a\n    style HostNet fill:#fef3c7,stroke:#d97706",
+      "data": {
+        "root": {
+          "id": "root",
+          "label": "Root",
+          "type": "root",
+          "children": [
+            {
+              "id": "node-1",
+              "label": "┌─────────────────────────────┐",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "Sandbox             │ ← Sandbox(격리된 네트워크 스택)",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "(Ethernet(eth0), port,     │    Ethernet(eth0), port,",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-3",
+                      "label": "route table, DNS 구성     │    route table, DNS 구성",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-4",
+                      "label": "등이 포함 됨)              │    등이 포함 됨.",
+                      "type": "branch",
+                      "children": [
+                        {
+                          "id": "node-4",
+                          "label": "┌──────────┐           │",
+                          "type": "branch",
+                          "children": []
+                        },
+                        {
+                          "id": "node-5",
+                          "label": "Endpoint │           │ ← Endpoint(가상 이더넷 인터페이스)",
+                          "type": "branch",
+                          "children": []
+                        },
+                        {
+                          "id": "node-5",
+                          "label": "┬─────┘           │",
+                          "type": "branch",
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "node-5",
+                  "label": "┼─────────────────┘",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "node-3",
+              "label": "┌───────────┴─────────────────┐",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "Network             │ ← Network(가상 스위치, Bridge)",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "┘",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter06-diagram-3",
+      "type": "tree",
+      "title": "Network specifics",
+      "asciiOriginal": "                        ┌─────────────────────┐\n                        │     Sandboxes       │\n                        ├─────────────────────┤\n                        │     Endpoints       │    Pluggable\n    ┌─────────┐         ├─────────────────────┤    Interface     ┌─────────────────┐\n    │ Docker  │ ←─API─→ │     Networks        │ ←─────────────→  │  Bridge driver  │\n    │ Engine  │         ├─────────────────────┤                  │  (Single Host)  │\n    └─────────┘         │  Service Discovery  │                  ├─────────────────┤\n                        ├─────────────────────┤                  │ Overlay driver  │\n                        │   Load Balancing    │                  │  (Multi Host)   │\n                        ├─────────────────────┤                  ├─────────────────┤\n                        │     Libnetwork      │                  │ MACvlan driver  │\n                        └─────────────────────┘                  │(existing VLANs) │\n                           Docker core network                   └─────────────────┘\n                                                                  Network specifics",
+      "mermaidCode": "flowchart TB\n    subgraph Sandbox[\"🔒 Sandbox (격리된 네트워크 스택)\"]\n        direction TB\n        SandboxInfo[\"Ethernet(eth0), port,<br/>route table, DNS 구성\"]\n        Endpoint[\"📡 Endpoint<br/>(가상 이더넷 인터페이스)\"]\n    end\n\n    Network[\"🌐 Network<br/>(가상 스위치, Bridge)\"]\n\n    Endpoint --> Network\n\n    style Sandbox fill:#e0f2fe,stroke:#0284c7\n    style Endpoint fill:#dbeafe,stroke:#2563eb\n    style Network fill:#dcfce7,stroke:#16a34a",
+      "data": {
+        "root": {
+          "id": "root",
+          "label": "Root",
+          "type": "root",
+          "children": [
+            {
+              "id": "node-1",
+              "label": "┌─────────────────────┐",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "Sandboxes       │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "┤",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-3",
+                      "label": "Endpoints       │    Pluggable",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "node-4",
+              "label": "┌─────────┐         ├─────────────────────┤    Interface     ┌─────────────────┐",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "Docker  │ ←─API─",
+                  "type": "branch",
+                  "targetInfo": "│     Networks        │ ←─────────────→  │  Bridge driver  │",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "Engine  │         ├─────────────────────┤                  │  (Single Host)  │",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-3",
+                      "label": "┘         │  Service Discovery  │                  ├─────────────────┤",
+                      "type": "branch",
+                      "children": [
+                        {
+                          "id": "node-4",
+                          "label": "┤                  │ Overlay driver  │",
+                          "type": "branch",
+                          "children": [
+                            {
+                              "id": "node-5",
+                              "label": "Load Balancing    │                  │  (Multi Host)   │",
+                              "type": "branch",
+                              "children": []
+                            }
+                          ]
+                        },
+                        {
+                          "id": "node-6",
+                          "label": "┤                  ├─────────────────┤",
+                          "type": "branch",
+                          "children": [
+                            {
+                              "id": "node-5",
+                              "label": "Libnetwork      │                  │ MACvlan driver  │",
+                              "type": "branch",
+                              "children": []
+                            }
+                          ]
+                        },
+                        {
+                          "id": "node-6",
+                          "label": "┘                  │(existing VLANs) │",
+                          "type": "branch",
+                          "children": []
+                        },
+                        {
+                          "id": "node-5",
+                          "label": "Docker core network                   └─────────────────┘",
+                          "type": "branch",
+                          "children": [
+                            {
+                              "id": "node-5",
+                              "label": "Network specifics",
+                              "type": "branch",
+                              "children": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter06-diagram-4",
+      "type": "tree",
+      "asciiOriginal": "                    ┌─────────────────┐\n                    │    Container    │\n                    │                 │     ┌─────────────────┐\n                    │  eth0: 172.17.0.2 ←──→│ ifconfig        │\n                    │                 │     │ route           │\n                    └────────┬────────┘     │ ip addr         │\n                             │ Pair로 구성   └─────────────────┘\n                             │\n                    ┌────────┴────────┐\n                    │  veth82a542f    │\n    ┌─────────┐     │                 │     ┌─────────────────┐\n    │ Docker  │ ←──→│     bridge      │ ←──→│   brctl show    │\n    │ Engine  │     │                 │     └─────────────────┘\n    └─────────┘     └────────┬────────┘\n                             │\n    ┌─────────┐     ┌────────┴────────┐     ┌─────────────────┐\n    │  LINUX  │ ←──→│ docker0         │ ←──→│    ifconfig     │\n    └─────────┘     │ (172.17.0.1)    │     └─────────────────┘\n                    └────────┬────────┘\n                             │\n                    ┌────────┴────────┐     ┌─────────────────┐\n                    │    Firewall     │ ←──→│    iptables     │\n                    └────────┬────────┘     └─────────────────┘\n                             │\n                    ┌────────┴────────┐     ┌─────────────────┐\n                    │   Host NIC      │ ←──→│    ifconfig     │\n                    └─────────────────┘     └─────────────────┘",
+      "mermaidCode": "flowchart TB\n    subgraph Host[\"🖥️ Docker Host\"]\n        direction TB\n\n        subgraph Containers[\"컨테이너\"]\n            C1[\"📦 Container 1<br/>eth0: 172.17.0.2\"]\n            C2[\"📦 Container 2<br/>eth0: 172.17.0.3\"]\n        end\n\n        Bridge[\"🌉 docker0 bridge<br/>172.17.0.1\"]\n        HostNet[\"🌐 Host Network<br/>eth0\"]\n    end\n\n    C1 -->|\"veth\"| Bridge\n    C2 -->|\"veth\"| Bridge\n    Bridge --> HostNet\n    HostNet --> Internet[\"☁️ Internet\"]\n\n    style Host fill:#f8fafc,stroke:#64748b\n    style Containers fill:#dbeafe,stroke:#2563eb\n    style Bridge fill:#dcfce7,stroke:#16a34a\n    style HostNet fill:#fef3c7,stroke:#d97706",
+      "data": {
+        "root": {
+          "id": "root",
+          "label": "Root",
+          "type": "root",
+          "children": [
+            {
+              "id": "node-1",
+              "label": "┌─────────────────┐",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "Container    │",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-3",
+                      "label": "┌─────────────────┐",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "id": "node-4",
+                  "label": "eth0: 172.17.0.2 ←──",
+                  "type": "branch",
+                  "targetInfo": "│ ifconfig        │",
+                  "children": [
+                    {
+                      "id": "node-3",
+                      "label": "route           │",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "id": "node-4",
+                  "label": "┬────────┘     │ ip addr         │",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-3",
+                      "label": "Pair로 구성   └─────────────────┘",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "node-4",
+              "label": "┌────────┴────────┐",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "veth82a542f    │",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "node-3",
+              "label": "┌─────────┐     │                 │     ┌─────────────────┐",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "Docker  │ ←──",
+                  "type": "branch",
+                  "targetInfo": "│     bridge      │ ←──→│   brctl show    │",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "Engine  │     │                 │     └─────────────────┘",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-3",
+                      "label": "┘     └────────┬────────┘",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "node-4",
+              "label": "┌─────────┐     ┌────────┴────────┐     ┌─────────────────┐",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "LINUX  │ ←──",
+                  "type": "branch",
+                  "targetInfo": "│ docker0         │ ←──→│    ifconfig     │",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "┘     │ (172.17.0.1)    │     └─────────────────┘",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-3",
+                      "label": "┬────────┘",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-4",
+                      "label": "┌────────┴────────┐     ┌─────────────────┐",
+                      "type": "branch",
+                      "children": [
+                        {
+                          "id": "node-4",
+                          "label": "Firewall     │ ←──",
+                          "type": "branch",
+                          "targetInfo": "│    iptables     │",
+                          "children": []
+                        },
+                        {
+                          "id": "node-5",
+                          "label": "┬────────┘     └─────────────────┘",
+                          "type": "branch",
+                          "children": []
+                        }
+                      ]
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "┌────────┴────────┐     ┌─────────────────┐",
+                      "type": "branch",
+                      "children": [
+                        {
+                          "id": "node-4",
+                          "label": "Host NIC      │ ←──",
+                          "type": "branch",
+                          "targetInfo": "│    ifconfig     │",
+                          "children": []
+                        },
+                        {
+                          "id": "node-5",
+                          "label": "┘     └─────────────────┘",
+                          "type": "branch",
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter06-diagram-5",
+      "type": "tree",
+      "asciiOriginal": "                                    ┌─────────────┐\n                                    │  Container  │\n                    ┌─────────────┐ └─────────────┘\n                    │   Docker    │     │\n                    │   Engine    │     │     ┌─────────────┐\n                    └──────┬──────┘     │     │  Container  │\n                           │            │     └─────────────┘\n              overlay network           │           │\n                           │            │   bridge network\n    ┌──────────┐   ┌───────┴───────┐    │           │        ┌─────────────┐\n    │ Internet │───│    Switch     │────┼───────────┼────────│  Container  │\n    └──────────┘   └───────┬───────┘    │           │        └─────────────┘\n                           │            │    Docker Engine\n              overlay network           │           │\n                           │            │           │\n                    ┌──────┴──────┐     │     ┌─────────────┐\n                    │   Docker    │     │     │  Container  │\n                    │   HostOS    │     │     └─────────────┘\n                    └─────────────┘     │\n                                    ┌───┴─────────┐\n                                    │  Container  │\n                                    └─────────────┘",
+      "data": {
+        "root": {
+          "id": "root",
+          "label": "Root",
+          "type": "root",
+          "children": [
+            {
+              "id": "node-1",
+              "label": "┌─────────────┐",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "Container  │",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "node-3",
+              "label": "┌─────────────┐ └─────────────┘",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "Docker    │     │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "Engine    │     │     ┌─────────────┐",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "┬──────┘     │     │  Container  │",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-3",
+                      "label": "┘",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "node-4",
+              "label": "overlay network           │           │",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "bridge network",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "node-3",
+              "label": "┌──────────┐   ┌───────┴───────┐    │           │        ┌─────────────┐",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "Internet │───│    Switch     │────┼───────────┼────────│  Container  │",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-3",
+                      "label": "┘   └───────┬───────┘    │           │        └─────────────┘",
+                      "type": "branch",
+                      "children": [
+                        {
+                          "id": "node-4",
+                          "label": "Docker Engine",
+                          "type": "branch",
+                          "children": []
+                        },
+                        {
+                          "id": "node-5",
+                          "label": "overlay network           │           │",
+                          "type": "branch",
+                          "children": [
+                            {
+                              "id": "node-5",
+                              "label": "┌──────┴──────┐     │     ┌─────────────┐",
+                              "type": "branch",
+                              "children": [
+                                {
+                                  "id": "node-6",
+                                  "label": "Docker    │     │     │  Container  │",
+                                  "type": "branch",
+                                  "children": []
+                                },
+                                {
+                                  "id": "node-7",
+                                  "label": "HostOS    │     │     └─────────────┘",
+                                  "type": "branch",
+                                  "children": []
+                                },
+                                {
+                                  "id": "node-7",
+                                  "label": "┘     │",
+                                  "type": "branch",
+                                  "children": [
+                                    {
+                                      "id": "node-7",
+                                      "label": "┌───┴─────────┐",
+                                      "type": "branch",
+                                      "children": [
+                                        {
+                                          "id": "node-8",
+                                          "label": "Container  │",
+                                          "type": "branch",
+                                          "children": []
+                                        },
+                                        {
+                                          "id": "node-9",
+                                          "label": "┘",
+                                          "type": "branch",
+                                          "children": []
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter06-diagram-6",
+      "type": "network",
+      "title": "# 사용자 정의 네트워크 구성을 통해 특정 IP 대역 지정도 가능하다.",
+      "asciiOriginal": "# 사용자 정의 네트워크 구성을 통해 특정 IP 대역 지정도 가능하다.\n~$ docker network create \\\n> --driver bridge \\\n> --subnet 172.30.1.0/24 \\       → CIDR 표기만 설정 가능, 255.255.255.0 과 같음.\n> --ip-range 172.30.1.0/24 \\     → subnet 이하, IP 범위 조정 가능.(172.30.1.100/26)\n> --gateway 172.30.1.1 \\\n> vswitch-net                    → 256개의 IP 중 254개 사용 가능.\n\n~$ docker network ls\nNETWORK ID          NAME                DRIVER              SCOPE\n17500fea62ff        vswitch-net         bridge              local\n\n~$ docker run --net=vswitch-net -itd --name=net1 ubuntu:14.04\n~$ docker run --net=vswitch-net -itd --name=net2 --ip 172.30.1.100 ubuntu:14.04\n\n# 생성된 Bridge network 정보를 inspect를 통해 확인\n~$ docker network inspect vswitch-net",
+      "data": {
+        "nodes": [],
+        "connections": []
+      }
+    },
+    {
+      "id": "chapter06-diagram-7",
+      "type": "tree",
+      "asciiOriginal": "┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐\n│     my-web      │  │     my-was      │  │      my-db      │\n├─────────────────┤  ├─────────────────┤  ├─────────────────┤\n│ Network         │  │                 │  │                 │\n│ namespace       │  │                 │  │                 │\n│                 │  │                 │  │                 │\n│ eth0→172.17.0.2 │  │ eth0→172.17.0.3 │  │ eth0→172.18.0.2 │\n└────────┬────────┘  └────────┬────────┘  └────────┬────────┘\n         │                    │                    │\n    veth834dbbe          vetha61bc38          vethb396607\n         │                    │                    │\n         └────────────┬───────┘                    │\n                      │                            │\n              ┌───────┴───────┐            ┌───────┴───────┐\n              │ docker0(bridge)│           │ fc-net(bridge)│\n              │   172.17.0.1   │           │   172.18.0.1  │\n              └───────┬────────┘           └───────┬───────┘\n                      │                            │\n                      └──────────┬─────────────────┘\n                                 │\n                         ┌───────┴───────┐\n                         │   iptables    │\n                         │ DNAT/SNAT을   │\n                         │ 이용한 routing│\n                         └───────┬───────┘\n                                 │\n                            ┌────┴────┐\n                            │  enp0s8 │\n                            └─────────┘",
+      "mermaidCode": "flowchart TB\n    subgraph Host[\"🖥️ Docker Host\"]\n        direction TB\n\n        subgraph Containers[\"컨테이너\"]\n            C1[\"📦 Container 1<br/>eth0: 172.17.0.2\"]\n            C2[\"📦 Container 2<br/>eth0: 172.17.0.3\"]\n        end\n\n        Bridge[\"🌉 docker0 bridge<br/>172.17.0.1\"]\n        HostNet[\"🌐 Host Network<br/>eth0\"]\n    end\n\n    C1 -->|\"veth\"| Bridge\n    C2 -->|\"veth\"| Bridge\n    Bridge --> HostNet\n    HostNet --> Internet[\"☁️ Internet\"]\n\n    style Host fill:#f8fafc,stroke:#64748b\n    style Containers fill:#dbeafe,stroke:#2563eb\n    style Bridge fill:#dcfce7,stroke:#16a34a\n    style HostNet fill:#fef3c7,stroke:#d97706",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "my-web      │  │     my-was      │  │      my-db      │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┤  ├─────────────────┤  ├─────────────────┤",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "Network         │  │                 │  │                 │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "namespace       │  │                 │  │                 │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "eth0",
+              "type": "branch",
+              "targetInfo": "172.17.0.2 │  │ eth0→172.17.0.3 │  │ eth0→172.18.0.2 │",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "┬────────┘  └────────┬────────┘  └────────┬────────┘",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-4",
+                      "label": "veth834dbbe          vetha61bc38          vethb396607",
+                      "type": "branch",
+                      "children": [
+                        {
+                          "id": "node-5",
+                          "label": "┬───────┘                    │",
+                          "type": "branch",
+                          "children": [
+                            {
+                              "id": "node-6",
+                              "label": "┌───────┴───────┐            ┌───────┴───────┐",
+                              "type": "branch",
+                              "children": [
+                                {
+                                  "id": "node-7",
+                                  "label": "docker0(bridge)│           │ fc-net(bridge)│",
+                                  "type": "branch",
+                                  "children": [
+                                    {
+                                      "id": "node-8",
+                                      "label": "172.17.0.1   │           │   172.18.0.1  │",
+                                      "type": "branch",
+                                      "children": []
+                                    },
+                                    {
+                                      "id": "node-9",
+                                      "label": "┬────────┘           └───────┬───────┘",
+                                      "type": "branch",
+                                      "children": [
+                                        {
+                                          "id": "node-9",
+                                          "label": "┬─────────────────┘",
+                                          "type": "branch",
+                                          "children": []
+                                        },
+                                        {
+                                          "id": "node-10",
+                                          "label": "┌───────┴───────┐",
+                                          "type": "branch",
+                                          "children": [
+                                            {
+                                              "id": "node-10",
+                                              "label": "iptables    │",
+                                              "type": "branch",
+                                              "children": []
+                                            },
+                                            {
+                                              "id": "node-11",
+                                              "label": "DNAT/SNAT을   │",
+                                              "type": "branch",
+                                              "children": []
+                                            },
+                                            {
+                                              "id": "node-11",
+                                              "label": "이용한 routing│",
+                                              "type": "branch",
+                                              "children": [
+                                                {
+                                                  "id": "node-11",
+                                                  "label": "┬───────┘",
+                                                  "type": "branch",
+                                                  "children": []
+                                                },
+                                                {
+                                                  "id": "node-12",
+                                                  "label": "┌────┴────┐",
+                                                  "type": "branch",
+                                                  "children": [
+                                                    {
+                                                      "id": "node-12",
+                                                      "label": "enp0s8 │",
+                                                      "type": "branch",
+                                                      "children": []
+                                                    },
+                                                    {
+                                                      "id": "node-13",
+                                                      "label": "┘",
+                                                      "type": "branch",
+                                                      "children": []
+                                                    }
+                                                  ]
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter06-diagram-8",
+      "type": "tree",
+      "asciiOriginal": "┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐\n│      my-db       │     │      my-was      │     │      my-web      │\n├──────────────────┤     ├──────────────────┤     ├──────────────────┤\n│     Sandbox      │     │     Sandbox      │     │     Sandbox      │\n│                  │     │                  │     │                  │\n│ Network namespace│     │ Network namespace│     │ Network namespace│\n│                  │     │                  │     │                  │\n│    Endpoint      │     │    Endpoint      │     │ Endpoint Endpoint│\n└────────┬─────────┘     └────────┬─────────┘     └───┬────────┬─────┘\n         │                        │                   │        │\n         │                        │                   │ connect│\n         └────────────────┬───────┴───────────────────┘        │\n                          │                                    │\n              ┌───────────┴───────────┐            ┌───────────┴───────────┐\n              │    Backend Network    │            │   Frontend Network    │\n              │       (back-net)      │            │      (front-net)      │\n              └───────────────────────┘            └───────────────────────┘",
+      "mermaidCode": "flowchart TB\n    subgraph ThreeTier[\"🏗️ 3-Tier 아키텍처\"]\n        direction TB\n\n        subgraph Frontend[\"Frontend Tier\"]\n            FE[\"🌐 Nginx<br/>:80\"]\n        end\n\n        subgraph Backend[\"Backend Tier\"]\n            BE[\"⚙️ Node.js API<br/>:8080\"]\n        end\n\n        subgraph Data[\"Data Tier\"]\n            DB[\"🗄️ MySQL<br/>:3306\"]\n        end\n    end\n\n    Client[\"👤 Client\"] --> FE\n    FE -->|\"/api/*\"| BE\n    BE --> DB\n\n    style ThreeTier fill:#f8fafc,stroke:#64748b\n    style Frontend fill:#dcfce7,stroke:#16a34a\n    style Backend fill:#dbeafe,stroke:#2563eb\n    style Data fill:#fef3c7,stroke:#d97706",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "my-db       │     │      my-was      │     │      my-web      │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┤     ├──────────────────┤     ├──────────────────┤",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "Sandbox      │     │     Sandbox      │     │     Sandbox      │",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "node-4",
+              "label": "Network namespace│     │ Network namespace│     │ Network namespace│",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "Endpoint      │     │    Endpoint      │     │ Endpoint Endpoint│",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┬─────────┘     └────────┬─────────┘     └───┬────────┬─────┘",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-4",
+                      "label": "connect│",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "┬───────┴───────────────────┘        │",
+                      "type": "branch",
+                      "children": [
+                        {
+                          "id": "node-5",
+                          "label": "┌───────────┴───────────┐            ┌───────────┴───────────┐",
+                          "type": "branch",
+                          "children": [
+                            {
+                              "id": "node-6",
+                              "label": "Backend Network    │            │   Frontend Network    │",
+                              "type": "branch",
+                              "children": [
+                                {
+                                  "id": "node-7",
+                                  "label": "(back-net)      │            │      (front-net)      │",
+                                  "type": "branch",
+                                  "children": []
+                                }
+                              ]
+                            },
+                            {
+                              "id": "node-8",
+                              "label": "┘            └───────────────────────┘",
+                              "type": "branch",
+                              "children": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter06-diagram-9",
+      "type": "tree",
+      "asciiOriginal": "                    ┌────────────────────────────────────────────────┐\n                    │                   Container                      │\n    ┌─────────┐     │                                                  │\n    │ Docker  │     │  root@f327d40f9a60:/# ping net1-container ───────┤\n    │ Engine  │ ←───┤                         │                        │\n    │(DNS     │     │                         ↓                        │\n    │ server) │     │              DNS resolver (into container)       │\n    └─────────┘     │                                                  │\n                    └──────────────────────────────────────────────────┘",
+      "data": {
+        "root": {
+          "id": "root",
+          "label": "Root",
+          "type": "root",
+          "children": [
+            {
+              "id": "node-1",
+              "label": "┌────────────────────────────────────────────────┐",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "Container                      │",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "node-3",
+              "label": "┌─────────┐     │                                                  │",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "Docker  │     │  root@f327d40f9a60:/# ping net1-container ───────┤",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "Engine  │ ←───┤                         │                        │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "(DNS     │     │                         ↓                        │",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-3",
+                      "label": "server) │     │              DNS resolver (into container)       │",
+                      "type": "branch",
+                      "children": [
+                        {
+                          "id": "node-4",
+                          "label": "┘     │                                                  │",
+                          "type": "branch",
+                          "children": [
+                            {
+                              "id": "node-5",
+                              "label": "┘",
+                              "type": "branch",
+                              "children": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter06-diagram-10",
+      "type": "tree",
+      "asciiOriginal": "                    ┌─────────────────────────────────────────────┐\n                    │        Docker 사용자 정의 bridge network    │\n                    │                                             │\n                    │                                             │\n                    │    --net-alias                              │\n                    │         │              Docker DNS           │\n                    │         │           Service discovery       │\n                    │    172.200.0.2       (127.0.0.11)           │\n                    │    172.200.0.3                              │\n                    │    172.200.0.4        alias에 포함된        │\n                    │                      container들의          │\n                    │    172.200.0.5        IP주소 등록           │\n                    └─────────────────────────────────────────────┘",
+      "mermaidCode": "flowchart TB\n    subgraph Host[\"🖥️ Docker Host\"]\n        direction TB\n\n        subgraph Containers[\"컨테이너\"]\n            C1[\"📦 Container 1<br/>eth0: 172.17.0.2\"]\n            C2[\"📦 Container 2<br/>eth0: 172.17.0.3\"]\n        end\n\n        Bridge[\"🌉 docker0 bridge<br/>172.17.0.1\"]\n        HostNet[\"🌐 Host Network<br/>eth0\"]\n    end\n\n    C1 -->|\"veth\"| Bridge\n    C2 -->|\"veth\"| Bridge\n    Bridge --> HostNet\n    HostNet --> Internet[\"☁️ Internet\"]\n\n    style Host fill:#f8fafc,stroke:#64748b\n    style Containers fill:#dbeafe,stroke:#2563eb\n    style Bridge fill:#dcfce7,stroke:#16a34a\n    style HostNet fill:#fef3c7,stroke:#d97706",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "┌─────────────────────────────────────────────┐",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "Docker 사용자 정의 bridge network    │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "--net-alias                              │",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "Docker DNS           │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Service discovery       │",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "node-4",
+              "label": "172.200.0.2       (127.0.0.11)           │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "172.200.0.3                              │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "172.200.0.4        alias에 포함된        │",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "container들의          │",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "node-4",
+              "label": "172.200.0.5        IP주소 등록           │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┘",
+              "type": "branch",
+              "children": []
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter06-diagram-11",
+      "type": "tree",
+      "asciiOriginal": "┌────────┐     ┌──────────┐     ┌──────────┐     ┌──────────┐\n│ client │ ←→  │ Internet │ ←→  │Webserver │ ←→  │DB server │\n└────────┘     └──────────┘     └──────────┘     └──────────┘",
+      "mermaidCode": "flowchart LR\n    subgraph Proxy[\"🔀 Proxy 구조\"]\n        direction LR\n\n        Client[\"👤 Client\"]\n        Proxy1[\"🌐 Proxy<br/>(Nginx)\"]\n        Web1[\"📦 Web1\"]\n        Web2[\"📦 Web2\"]\n        DB[\"🗄️ DB\"]\n    end\n\n    Client --> Proxy1\n    Proxy1 --> Web1\n    Proxy1 --> Web2\n    Web1 --> DB\n    Web2 --> DB\n\n    style Proxy fill:#f8fafc,stroke:#64748b\n    style Client fill:#dbeafe,stroke:#2563eb\n    style Proxy1 fill:#dcfce7,stroke:#16a34a\n    style Web1 fill:#fef3c7,stroke:#d97706\n    style Web2 fill:#fef3c7,stroke:#d97706\n    style DB fill:#fee2e2,stroke:#dc2626",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "┌────────┐     ┌──────────┐     ┌──────────┐     ┌──────────┐",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "client │ ←",
+              "type": "branch",
+              "targetInfo": "│ Internet │ ←→  │Webserver │ ←→  │DB server │",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "┘     └──────────┘     └──────────┘     └──────────┘",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter06-diagram-12",
+      "type": "tree",
+      "title": "[Forward Proxy]",
+      "asciiOriginal": "                      [Forward Proxy]\n                                           ┌──────────┐\n┌────────┐                                 │Web server│\n│ client │ ←→  ┌─────────┐     ┌──────────┐└──────────┘\n└────────┘     │  Proxy  │ ←→  │ Internet │┌──────────┐\n┌────────┐     └─────────┘     └──────────┘│Web server│\n│ client │ ←→                              └──────────┘\n└────────┘                                 ┌──────────┐\n┌────────┐                                 │Web server│\n│ client │ ←→                              └──────────┘\n└────────┘",
+      "mermaidCode": "flowchart LR\n    subgraph Proxy[\"🔀 Proxy 구조\"]\n        direction LR\n\n        Client[\"👤 Client\"]\n        Proxy1[\"🌐 Proxy<br/>(Nginx)\"]\n        Web1[\"📦 Web1\"]\n        Web2[\"📦 Web2\"]\n        DB[\"🗄️ DB\"]\n    end\n\n    Client --> Proxy1\n    Proxy1 --> Web1\n    Proxy1 --> Web2\n    Web1 --> DB\n    Web2 --> DB\n\n    style Proxy fill:#f8fafc,stroke:#64748b\n    style Client fill:#dbeafe,stroke:#2563eb\n    style Proxy1 fill:#dcfce7,stroke:#16a34a\n    style Web1 fill:#fef3c7,stroke:#d97706\n    style Web2 fill:#fef3c7,stroke:#d97706\n    style DB fill:#fee2e2,stroke:#dc2626",
+      "data": {
+        "root": {
+          "id": "root",
+          "label": "Root",
+          "type": "root",
+          "children": [
+            {
+              "id": "node-1",
+              "label": "[Forward Proxy]",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "┌──────────┐",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "node-3",
+              "label": "┌────────┐                                 │Web server│",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "client │ ←",
+                  "type": "branch",
+                  "targetInfo": "┌─────────┐     ┌──────────┐└──────────┘",
+                  "children": [
+                    {
+                      "id": "node-3",
+                      "label": "┘     │  Proxy  │ ←",
+                      "type": "branch",
+                      "targetInfo": "│ Internet │┌──────────┐",
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "node-4",
+              "label": "┌────────┐     └─────────┘     └──────────┘│Web server│",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "client │ ←",
+                  "type": "branch",
+                  "targetInfo": "└──────────┘",
+                  "children": [
+                    {
+                      "id": "node-3",
+                      "label": "┘                                 ┌──────────┐",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "node-4",
+              "label": "┌────────┐                                 │Web server│",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "client │ ←",
+                  "type": "branch",
+                  "targetInfo": "└──────────┘",
+                  "children": [
+                    {
+                      "id": "node-3",
+                      "label": "┘",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter06-diagram-13",
+      "type": "tree",
+      "title": "[Reverse Proxy]",
+      "asciiOriginal": "                      [Reverse Proxy]\n                                           ┌──────────┐\n┌────────┐                                 │Web server│\n│ client │ ←→                              └──────────┘\n└────────┘     ┌──────────┐     ┌─────────┐┌──────────┐\n┌────────┐ ←→  │ Internet │ ←→  │  Proxy  ││Web server│\n│ client │     └──────────┘     └─────────┘└──────────┘\n└────────┘                                 ┌──────────┐\n┌────────┐                                 │Web server│\n│ client │ ←→                              └──────────┘\n└────────┘",
+      "mermaidCode": "flowchart LR\n    subgraph Proxy[\"🔀 Proxy 구조\"]\n        direction LR\n\n        Client[\"👤 Client\"]\n        Proxy1[\"🌐 Proxy<br/>(Nginx)\"]\n        Web1[\"📦 Web1\"]\n        Web2[\"📦 Web2\"]\n        DB[\"🗄️ DB\"]\n    end\n\n    Client --> Proxy1\n    Proxy1 --> Web1\n    Proxy1 --> Web2\n    Web1 --> DB\n    Web2 --> DB\n\n    style Proxy fill:#f8fafc,stroke:#64748b\n    style Client fill:#dbeafe,stroke:#2563eb\n    style Proxy1 fill:#dcfce7,stroke:#16a34a\n    style Web1 fill:#fef3c7,stroke:#d97706\n    style Web2 fill:#fef3c7,stroke:#d97706\n    style DB fill:#fee2e2,stroke:#dc2626",
+      "data": {
+        "root": {
+          "id": "root",
+          "label": "Root",
+          "type": "root",
+          "children": [
+            {
+              "id": "node-1",
+              "label": "[Reverse Proxy]",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "┌──────────┐",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "node-3",
+              "label": "┌────────┐                                 │Web server│",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "client │ ←",
+                  "type": "branch",
+                  "targetInfo": "└──────────┘",
+                  "children": [
+                    {
+                      "id": "node-3",
+                      "label": "┘     ┌──────────┐     ┌─────────┐┌──────────┐",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "node-4",
+              "label": "┌────────┐ ←",
+              "type": "branch",
+              "targetInfo": "│ Internet │ ←→  │  Proxy  ││Web server│",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "client │     └──────────┘     └─────────┘└──────────┘",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-3",
+                      "label": "┘                                 ┌──────────┐",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "node-4",
+              "label": "┌────────┐                                 │Web server│",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "client │ ←",
+                  "type": "branch",
+                  "targetInfo": "└──────────┘",
+                  "children": [
+                    {
+                      "id": "node-3",
+                      "label": "┘",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter06-diagram-14",
+      "type": "tree",
+      "asciiOriginal": "┌────────┐     ┌─────────┐     ┌─────────────────┐     ┌──────────┐\n│ client │ ←→  │L4 Proxy │ ←→  │ web1            │ ←→  │DB server │\n└────────┘     └─────────┘     │ web2            │     └──────────┘\n                               │ web3            │\n                               │   Webserver     │\n                               └─────────────────┘",
+      "mermaidCode": "flowchart LR\n    subgraph Proxy[\"🔀 Proxy 구조\"]\n        direction LR\n\n        Client[\"👤 Client\"]\n        Proxy1[\"🌐 Proxy<br/>(Nginx)\"]\n        Web1[\"📦 Web1\"]\n        Web2[\"📦 Web2\"]\n        DB[\"🗄️ DB\"]\n    end\n\n    Client --> Proxy1\n    Proxy1 --> Web1\n    Proxy1 --> Web2\n    Web1 --> DB\n    Web2 --> DB\n\n    style Proxy fill:#f8fafc,stroke:#64748b\n    style Client fill:#dbeafe,stroke:#2563eb\n    style Proxy1 fill:#dcfce7,stroke:#16a34a\n    style Web1 fill:#fef3c7,stroke:#d97706\n    style Web2 fill:#fef3c7,stroke:#d97706\n    style DB fill:#fee2e2,stroke:#dc2626",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "┌────────┐     ┌─────────┐     ┌─────────────────┐     ┌──────────┐",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "client │ ←",
+              "type": "branch",
+              "targetInfo": "│L4 Proxy │ ←→  │ web1            │ ←→  │DB server │",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "┘     └─────────┘     │ web2            │     └──────────┘",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-4",
+                      "label": "web3            │",
+                      "type": "branch",
+                      "children": [
+                        {
+                          "id": "node-5",
+                          "label": "Webserver     │",
+                          "type": "branch",
+                          "children": []
+                        },
+                        {
+                          "id": "node-6",
+                          "label": "┘",
+                          "type": "branch",
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter06-diagram-15",
+      "type": "tree",
+      "asciiOriginal": "                               ┌─────────────────┐\n                               │ web1            │\n                               │ web2            │\n┌────────┐     ┌─────────┐     │     /Item       │     ┌──────────┐\n│ client │ ←→  │L7 Proxy │ ←→  ├─────────────────┤ ←→  │DB server │\n└────────┘     └─────────┘     │ web1            │     └──────────┘\n                               │ web2            │\n                               │    /basket      │\n                               └─────────────────┘",
+      "mermaidCode": "flowchart LR\n    subgraph Proxy[\"🔀 Proxy 구조\"]\n        direction LR\n\n        Client[\"👤 Client\"]\n        Proxy1[\"🌐 Proxy<br/>(Nginx)\"]\n        Web1[\"📦 Web1\"]\n        Web2[\"📦 Web2\"]\n        DB[\"🗄️ DB\"]\n    end\n\n    Client --> Proxy1\n    Proxy1 --> Web1\n    Proxy1 --> Web2\n    Web1 --> DB\n    Web2 --> DB\n\n    style Proxy fill:#f8fafc,stroke:#64748b\n    style Client fill:#dbeafe,stroke:#2563eb\n    style Proxy1 fill:#dcfce7,stroke:#16a34a\n    style Web1 fill:#fef3c7,stroke:#d97706\n    style Web2 fill:#fef3c7,stroke:#d97706\n    style DB fill:#fee2e2,stroke:#dc2626",
+      "data": {
+        "root": {
+          "id": "root",
+          "label": "Root",
+          "type": "root",
+          "children": [
+            {
+              "id": "node-1",
+              "label": "┌─────────────────┐",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "web1            │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "web2            │",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "node-3",
+              "label": "┌────────┐     ┌─────────┐     │     /Item       │     ┌──────────┐",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "client │ ←",
+                  "type": "branch",
+                  "targetInfo": "│L7 Proxy │ ←→  ├─────────────────┤ ←→  │DB server │",
+                  "children": [
+                    {
+                      "id": "node-3",
+                      "label": "┘     └─────────┘     │ web1            │     └──────────┘",
+                      "type": "branch",
+                      "children": [
+                        {
+                          "id": "node-4",
+                          "label": "web2            │",
+                          "type": "branch",
+                          "children": [
+                            {
+                              "id": "node-5",
+                              "label": "/basket      │",
+                              "type": "branch",
+                              "children": []
+                            },
+                            {
+                              "id": "node-6",
+                              "label": "┘",
+                              "type": "branch",
+                              "children": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter06-diagram-16",
+      "type": "tree",
+      "asciiOriginal": "                    ┌─────────────────────────────────────────────┐\n                    │              Docker HostOS                  │\n                    │                                             │\n                    │                           ┌─────────────┐   │\n                    │                           │  Container  │   │\n┌────────┐          │     ┌─────────┐           ├─────────────┤   │\n│ client │ ←─────→  │     │  Nginx  │ ←───────→ │  Container  │   │\n└────────┘          │     │  proxy  │           ├─────────────┤   │\n                    │     └─────────┘           │  Container  │   │\n                    │                           └─────────────┘   │\n                    │  Docker HostOS에 nginx                      │\n                    │  설치 후 Nginx reverse proxy                │\n                    │  (nginx.conf) 구성으로 변경.                │\n                    └─────────────────────────────────────────────┘",
+      "mermaidCode": "flowchart LR\n    subgraph Proxy[\"🔀 Proxy 구조\"]\n        direction LR\n\n        Client[\"👤 Client\"]\n        Proxy1[\"🌐 Proxy<br/>(Nginx)\"]\n        Web1[\"📦 Web1\"]\n        Web2[\"📦 Web2\"]\n        DB[\"🗄️ DB\"]\n    end\n\n    Client --> Proxy1\n    Proxy1 --> Web1\n    Proxy1 --> Web2\n    Web1 --> DB\n    Web2 --> DB\n\n    style Proxy fill:#f8fafc,stroke:#64748b\n    style Client fill:#dbeafe,stroke:#2563eb\n    style Proxy1 fill:#dcfce7,stroke:#16a34a\n    style Web1 fill:#fef3c7,stroke:#d97706\n    style Web2 fill:#fef3c7,stroke:#d97706\n    style DB fill:#fee2e2,stroke:#dc2626",
+      "data": {
+        "root": {
+          "id": "root",
+          "label": "Root",
+          "type": "root",
+          "children": [
+            {
+              "id": "node-1",
+              "label": "┌─────────────────────────────────────────────┐",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "Docker HostOS                  │",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-3",
+                      "label": "┌─────────────┐   │",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-4",
+                      "label": "Container  │   │",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "node-4",
+              "label": "┌────────┐          │     ┌─────────┐           ├─────────────┤   │",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "client │ ←─────",
+                  "type": "branch",
+                  "targetInfo": "│     │  Nginx  │ ←───────→ │  Container  │   │",
+                  "children": [
+                    {
+                      "id": "node-3",
+                      "label": "┘          │     │  proxy  │           ├─────────────┤   │",
+                      "type": "branch",
+                      "children": [
+                        {
+                          "id": "node-4",
+                          "label": "┘           │  Container  │   │",
+                          "type": "branch",
+                          "children": [
+                            {
+                              "id": "node-5",
+                              "label": "┘   │",
+                              "type": "branch",
+                              "children": []
+                            }
+                          ]
+                        },
+                        {
+                          "id": "node-6",
+                          "label": "Docker HostOS에 nginx                      │",
+                          "type": "branch",
+                          "children": []
+                        },
+                        {
+                          "id": "node-5",
+                          "label": "설치 후 Nginx reverse proxy                │",
+                          "type": "branch",
+                          "children": []
+                        },
+                        {
+                          "id": "node-5",
+                          "label": "(nginx.conf) 구성으로 변경.                │",
+                          "type": "branch",
+                          "children": []
+                        },
+                        {
+                          "id": "node-5",
+                          "label": "┘",
+                          "type": "branch",
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter06-diagram-17",
+      "type": "tree",
+      "asciiOriginal": "                    ┌─────────────────────────────────────────────┐\n                    │              Docker HostOS                  │\n                    │                                             │\n                    │                           ┌─────────────┐   │\n                    │        weight             │  Container  │   │\n                    │           │     60%       ├─────────────┤   │\n┌────────┐          │     ┌─────┴───┐ 20%       │  Container  │   │\n│ client │ ←─────→  │     │  Nginx  │ 20%       ├─────────────┤   │\n└────────┘          │     │container│ ←───────→ │  Container  │   │\n                    │     │  proxy  │           └─────────────┘   │\n                    │     └─────────┘                             │\n                    │  nginx 컨테이너 실행 후                     │\n                    │  Nginx reverse proxy                        │\n                    │  (nginx.conf) 구성으로 변경.                │\n                    └─────────────────────────────────────────────┘",
+      "mermaidCode": "flowchart LR\n    subgraph Proxy[\"🔀 Proxy 구조\"]\n        direction LR\n\n        Client[\"👤 Client\"]\n        Proxy1[\"🌐 Proxy<br/>(Nginx)\"]\n        Web1[\"📦 Web1\"]\n        Web2[\"📦 Web2\"]\n        DB[\"🗄️ DB\"]\n    end\n\n    Client --> Proxy1\n    Proxy1 --> Web1\n    Proxy1 --> Web2\n    Web1 --> DB\n    Web2 --> DB\n\n    style Proxy fill:#f8fafc,stroke:#64748b\n    style Client fill:#dbeafe,stroke:#2563eb\n    style Proxy1 fill:#dcfce7,stroke:#16a34a\n    style Web1 fill:#fef3c7,stroke:#d97706\n    style Web2 fill:#fef3c7,stroke:#d97706\n    style DB fill:#fee2e2,stroke:#dc2626",
+      "data": {
+        "root": {
+          "id": "root",
+          "label": "Root",
+          "type": "root",
+          "children": [
+            {
+              "id": "node-1",
+              "label": "┌─────────────────────────────────────────────┐",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "Docker HostOS                  │",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-3",
+                      "label": "┌─────────────┐   │",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "id": "node-4",
+                  "label": "weight             │  Container  │   │",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-3",
+                      "label": "60%       ├─────────────┤   │",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "node-4",
+              "label": "┌────────┐          │     ┌─────┴───┐ 20%       │  Container  │   │",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "client │ ←─────",
+                  "type": "branch",
+                  "targetInfo": "│     │  Nginx  │ 20%       ├─────────────┤   │",
+                  "children": [
+                    {
+                      "id": "node-3",
+                      "label": "┘          │     │container│ ←───────",
+                      "type": "branch",
+                      "targetInfo": "│  Container  │   │",
+                      "children": [
+                        {
+                          "id": "node-4",
+                          "label": "proxy  │           └─────────────┘   │",
+                          "type": "branch",
+                          "children": []
+                        },
+                        {
+                          "id": "node-5",
+                          "label": "┘                             │",
+                          "type": "branch",
+                          "children": []
+                        },
+                        {
+                          "id": "node-5",
+                          "label": "nginx 컨테이너 실행 후                     │",
+                          "type": "branch",
+                          "children": []
+                        },
+                        {
+                          "id": "node-5",
+                          "label": "Nginx reverse proxy                        │",
+                          "type": "branch",
+                          "children": []
+                        },
+                        {
+                          "id": "node-5",
+                          "label": "(nginx.conf) 구성으로 변경.                │",
+                          "type": "branch",
+                          "children": []
+                        },
+                        {
+                          "id": "node-5",
+                          "label": "┘",
+                          "type": "branch",
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter06-diagram-18",
+      "type": "tree",
+      "asciiOriginal": "                               ┌─────────────────┐\n                               │ web1            │\n                               │ web2            │\n┌────────┐     ┌─────────┐     │     /Item       │     ┌──────────┐\n│ client │ ←→  │L7 Proxy │ ←→  ├─────────────────┤ ←→  │DB server │\n└────────┘     └─────────┘     │ web3            │     └──────────┘\n                               │ web4            │\n                               │    /basket      │\n                               └─────────────────┘",
+      "mermaidCode": "flowchart LR\n    subgraph Proxy[\"🔀 Proxy 구조\"]\n        direction LR\n\n        Client[\"👤 Client\"]\n        Proxy1[\"🌐 Proxy<br/>(Nginx)\"]\n        Web1[\"📦 Web1\"]\n        Web2[\"📦 Web2\"]\n        DB[\"🗄️ DB\"]\n    end\n\n    Client --> Proxy1\n    Proxy1 --> Web1\n    Proxy1 --> Web2\n    Web1 --> DB\n    Web2 --> DB\n\n    style Proxy fill:#f8fafc,stroke:#64748b\n    style Client fill:#dbeafe,stroke:#2563eb\n    style Proxy1 fill:#dcfce7,stroke:#16a34a\n    style Web1 fill:#fef3c7,stroke:#d97706\n    style Web2 fill:#fef3c7,stroke:#d97706\n    style DB fill:#fee2e2,stroke:#dc2626",
+      "data": {
+        "root": {
+          "id": "root",
+          "label": "Root",
+          "type": "root",
+          "children": [
+            {
+              "id": "node-1",
+              "label": "┌─────────────────┐",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "web1            │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-3",
+                  "label": "web2            │",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "node-3",
+              "label": "┌────────┐     ┌─────────┐     │     /Item       │     ┌──────────┐",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-2",
+                  "label": "client │ ←",
+                  "type": "branch",
+                  "targetInfo": "│L7 Proxy │ ←→  ├─────────────────┤ ←→  │DB server │",
+                  "children": [
+                    {
+                      "id": "node-3",
+                      "label": "┘     └─────────┘     │ web3            │     └──────────┘",
+                      "type": "branch",
+                      "children": [
+                        {
+                          "id": "node-4",
+                          "label": "web4            │",
+                          "type": "branch",
+                          "children": [
+                            {
+                              "id": "node-5",
+                              "label": "/basket      │",
+                              "type": "branch",
+                              "children": []
+                            },
+                            {
+                              "id": "node-6",
+                              "label": "┘",
+                              "type": "branch",
+                              "children": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    }
+  ],
+  "tables": [
+    {
+      "id": "chapter06-table-1",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "옵션",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "설명",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "--add-host=[Host명:IP Address]",
+          "col1": "Container의 /etc/hosts에 Host명과 IP Address를 설정"
+        },
+        {
+          "col0": "--dns=[IP Address]",
+          "col1": "DNS 서버의 IP Address를 설정 (/etc/resolv.conf) (168.126.63.1~3 / 8.8.8.8)"
+        },
+        {
+          "col0": "--mac-address=[MAC Address]",
+          "col1": "Container의 MAC Address 설정"
+        },
+        {
+          "col0": "--expose=[포트 번호]",
+          "col1": "Container 내부에서 Host로 노출할 포트 번호 지정"
+        },
+        {
+          "col0": "--net=[bridge | none | host]",
+          "col1": "Container의 네트워크 설정 (bridge = docker0)"
+        },
+        {
+          "col0": "-h, --hostname=\"Host명\"",
+          "col1": "Container의 Host명 설정(default, container ID가 호스트명)"
+        },
+        {
+          "col0": "-P, --publish-all=[true | false]",
+          "col1": "Container 내부의 노출된 포트를 호스트 임의의(32768~) 포트를 호스트와 연결(명시적)"
+        },
+        {
+          "col0": "-p [Host 포트 번호]:[Container 포트 번호] --publish published=5000, target=80",
+          "col1": "Host와 Container의 포트를 매핑(암시적)"
+        },
+        {
+          "col0": "--link=[container:container_id]",
+          "col1": "동일 Host의 다른 Container에서 액세스 시 이름 설정 → IP 가 아닌 container의 이름을 이용해 통신 가능"
+        }
+      ]
+    },
+    {
+      "id": "chapter06-table-2",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "값",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "설명",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "bridge",
+          "col1": "bridge 접속(default: docker0 – 172.17.0.0/16) 사용 : 172.17.0.2~"
+        },
+        {
+          "col0": "none",
+          "col1": "네트워크에 접속하지 않음. 무지정(격리용)"
+        },
+        {
+          "col0": "container:[container_name|id]",
+          "col1": "다른 Container의 네트워크를 사용 (container:ub_test)"
+        },
+        {
+          "col0": "host",
+          "col1": "Container가 Host OS의 네트워크를 사용"
+        },
+        {
+          "col0": "macvlan",
+          "col1": "물리적 네트워크에 컨테이너 mac 주소를 통한 직접적 연결 구현 시 사용"
+        },
+        {
+          "col0": "NETWORK(사용자정의 network name)",
+          "col1": "사용자 정의 네트워크 사용"
+        }
+      ]
+    }
+  ]
+}

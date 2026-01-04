@@ -1,0 +1,3049 @@
+{
+  "meta": {
+    "id": "chapter13",
+    "number": 13,
+    "title": "클라우드 기반의 Amazon ECS 서비스 활용",
+    "description": "",
+    "phase": "master",
+    "objectives": [
+      "Amazon ECS와 ECR 서비스 개념 이해",
+      "ECS 클러스터 아키텍처 (Task, Service, Cluster)",
+      "ECR을 활용한 프라이빗 이미지 레지스트리 구성",
+      "Fargate vs EC2 런타임 모드 선택 기준",
+      "AWS 기반 컨테이너 배포 파이프라인 구축"
+    ]
+  },
+  "sections": [
+    {
+      "id": "chapter13-section-1",
+      "level": 3,
+      "title": "1. Amazon ECS 및 ECR 이해",
+      "anchor": "1-amazon-ecs-및-ecr-이해",
+      "content": [
+        {
+          "id": "chapter13-block-1",
+          "type": "text",
+          "data": {
+            "markdown": "Amazon ECS (Elastic Container Service)"
+          }
+        },
+        {
+          "id": "chapter13-block-2",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "컨테이너화된 애플리케이션을 배포, 관리, 스케일링할 수 있도록 도와주는 완전 관리형 컨테이너 오케스트레이션 서비스입니다."
+              },
+              {
+                "text": "Amazon ECS 기반 애플리케이션들은 간단한 API 호출을 이용하여 컨테이너 애플리케이션 운영, 관리를 손쉽게 할 수 있고, 단일 컨테이너부터 수천 개의 컨테이너까지 복잡한 과정 없이 확장 가능합니다."
+              },
+              {
+                "text": "이를 통해 개발자 및 운영자는 마이크로 서비스 기반의 다중 컨테이너 애플리케이션 설계, 구축 및 실행에 집중할 수 있습니다."
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter13-block-3",
+          "type": "text",
+          "data": {
+            "markdown": "Amazon ECS"
+          }
+        },
+        {
+          "id": "chapter13-block-4",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Serverless 방식으로 클라우드 인프라에서 애플리케이션을 호스팅하는 Fargate 방식AWS Cloud 인프라의 가상 환경인 firecracker 기반의 serverless container compute engine"
+              },
+              {
+                "text": "직접적인 클러스터 관리(모든 리소스 관리)를 강화하기 위해 Amazon EC2 인스턴스를 서버로 구성한 Docker 기반 서비스 인프라를 호스팅하는 방식"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter13-block-5",
+          "type": "text",
+          "data": {
+            "markdown": "[그림: Amazon ECS 아키텍처]"
+          }
+        },
+        {
+          "id": "chapter13-block-6",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Amazon EC2와 AWS Fargate를 통해 애플리케이션을 호스팅"
+              },
+              {
+                "text": "Dockerfile로 생성된 이미지를 저장하는 registry, ECR"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-2",
+      "level": 3,
+      "title": "Amazon ECS 구성 요소",
+      "anchor": "amazon-ecs-구성-요소",
+      "content": [
+        {
+          "id": "chapter13-block-7",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "ECS Cluster작업(task) or 서비스(service)의 논리적 그룹으로 EC2기반 or Fargate 선택 구성작업을 배포하기 위한 인스턴스의 집합"
+              },
+              {
+                "text": "ServiceECS cluster에서 지정된 수의 작업(task)을 동시에 실행, 관리하는 구성요소service는 작업을 포함, task와 관련된 클러스터, 작업정의, 시작유형, LB, ASG, 배포 유형 등을 관리Kubernetes의 deployment, replicaSet과 동일한 기능 수행"
+              },
+              {
+                "text": "Tasktask definition(작업 정의서)에 정의된 설정으로 컨테이너 인스턴스(EC2 or Fargate)에 배포됨하나 이상의 컨테이너를 실행하는 최소 단위 (작업 정의 내용을 기반으로 배포된 컨테이너들)"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-3",
+      "level": 2,
+      "title": "Amazon ECS 구성 요소",
+      "anchor": "amazon-ecs-구성-요소",
+      "content": []
+    },
+    {
+      "id": "chapter13-section-4",
+      "level": 3,
+      "title": "Task Definition",
+      "anchor": "task-definition",
+      "content": [
+        {
+          "id": "chapter13-block-8",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "애플리케이션 컨테이너의 명세서(JSON), 작업(task)을 실행하기 위한 명세 기술, docker run과 유사."
+              },
+              {
+                "text": "시작유형, 사용할 컨테이너 이미지, 노출 포트, 리소스 사용량(CPU, memory), 볼륨구성 등."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-5",
+      "level": 3,
+      "title": "ECR",
+      "anchor": "ecr",
+      "content": [
+        {
+          "id": "chapter13-block-9",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "AWS Cloud의 컨테이너 이미지 저장소 (hub.docker.com과 같은 역할)."
+              },
+              {
+                "text": "ECR에서 제공하는 이미지 URI를 이용해 빌드된 이미지를 pull, push."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-6",
+      "level": 3,
+      "title": "ECS Console",
+      "anchor": "ecs-console",
+      "content": [
+        {
+          "id": "chapter13-block-10",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "ECS 클러스터 관리도구로 모니터링 및 제어 수행 (Kubernetes의 master node(control plane)과 동일)."
+              },
+              {
+                "text": "컨테이너 인스턴스(EC2)는 Kubernetes의 worker node와 동일."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-7",
+      "level": 2,
+      "title": "Amazon ECR 구성 요소",
+      "anchor": "amazon-ecr-구성-요소",
+      "content": []
+    },
+    {
+      "id": "chapter13-section-8",
+      "level": 3,
+      "title": "Registry",
+      "anchor": "registry",
+      "content": [
+        {
+          "id": "chapter13-block-11",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Amazon ECR private registry는 각 AWS 계정 단위로 제공되며 registry에 하나 이상의 Repository를 생성하고 이 Repository에 생성한 이미지를 저장할 수 있다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-9",
+      "level": 3,
+      "title": "Repository",
+      "anchor": "repository",
+      "content": [
+        {
+          "id": "chapter13-block-12",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Amazon ECR Repository에는 Docker 이미지, Open Container Initiative(OCI) 이미지 및 OCI 호환 Artifact가 포함됨."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-10",
+      "level": 3,
+      "title": "Repository Policy",
+      "anchor": "repository-policy",
+      "content": [
+        {
+          "id": "chapter13-block-13",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Repository or Repository는 Docker image에 대한 Access control 관리를 수행할 수 있다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-11",
+      "level": 3,
+      "title": "Image",
+      "anchor": "image",
+      "content": [
+        {
+          "id": "chapter13-block-14",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Repository에 컨테이너 이미지를 push / pull 할 수 있고, 개발 시스템에서 로컬로 이러한 이미지를 사용하거나, Amazon ECS 태스크 정의 및 Amazon EKS Pod spec에서 사용 가능하다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-12",
+      "level": 3,
+      "title": "사용자 권한 토큰",
+      "anchor": "사용자-권한-토큰",
+      "content": [
+        {
+          "id": "chapter13-block-15",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Client는 Amazon ECR Registry에 AWS 사용자로서 인증을 해야 Image를 push/pull 가능 하다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-13",
+      "level": 3,
+      "title": "제공 기능",
+      "anchor": "제공-기능",
+      "content": [
+        {
+          "id": "chapter13-block-16",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "수명 주기 정책"
+              },
+              {
+                "text": "이미지 취약점 점검 스캔 기능"
+              },
+              {
+                "text": "교차 리전 및 교차 계정 복제"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-14",
+      "level": 2,
+      "title": "AWS Cloud 컨테이너 관련 서비스",
+      "anchor": "aws-cloud-컨테이너-관련-서비스",
+      "content": [
+        {
+          "id": "chapter13-block-17",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "코드 작성: 코드를 Docker 이미지로 작성 및 패키징."
+              },
+              {
+                "text": "이미지 압축 및 암호화, 이미지에 대한 액세스 권한 제어."
+              },
+              {
+                "text": "이미지 수명 주기의 버전 관리, 태깅 및 관리."
+              },
+              {
+                "text": "컨테이너 실행: 어디에서나 이미지를 풀하고 컨테이너 실행."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-15",
+      "level": 3,
+      "title": "EC2가 적합한 경우",
+      "anchor": "ec2가-적합한-경우",
+      "content": [
+        {
+          "id": "chapter13-block-18",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "각 컨테이너들이 동일한 공유 디스크를 사용해야 하는 경우"
+              },
+              {
+                "text": "세밀한 인스턴스 세팅이 필요한 경우"
+              },
+              {
+                "text": "항상 실행되는 웹서버"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-16",
+      "level": 3,
+      "title": "Fargate가 적합한 경우",
+      "anchor": "fargate가-적합한-경우",
+      "content": [
+        {
+          "id": "chapter13-block-19",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "단기간에 엄청난 CPU 연산이 필요한 경우"
+              },
+              {
+                "text": "5분 이상의 Lambda 실행이 필요한 경우"
+              },
+              {
+                "text": "주기적으로 잠깐만 실행되는 웹크롤러"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-17",
+      "level": 2,
+      "title": "Amazon EKS",
+      "anchor": "amazon-eks",
+      "content": [
+        {
+          "id": "chapter13-block-20",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Amazon EKS를 사용하면 AWS에서 Kubernetes를 손쉽게 실행할 수 있음"
+              },
+              {
+                "text": "EKS 클러스터 프로비저닝"
+              },
+              {
+                "text": "AWS Fargate: 서버리스 컨테이너 배포"
+              },
+              {
+                "text": "Amazon EC2: EKS 클러스터에 대한 작업자 노드 배포"
+              },
+              {
+                "text": "EKS에 연결하여 Kubernetes 앱 실행"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-18",
+      "level": 2,
+      "title": "클라우드 기반의 Amazon ECS 서비스 활용",
+      "anchor": "클라우드-기반의-amazon-ecs-서비스-활용",
+      "content": []
+    },
+    {
+      "id": "chapter13-section-19",
+      "level": 3,
+      "title": "ECS architecture",
+      "anchor": "ecs-architecture",
+      "content": [
+        {
+          "id": "chapter13-block-21",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "클라우드 설계도의 컨테이너 서비스는 nginx와 django를 이용한 Clip3에 사용하는 실습 구성도이다."
+              },
+              {
+                "text": "이번 2.Clip에서는 ECS를 구축하고 샘플로 nodejs 컨테이너 서비스를 실습해 본다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-20",
+      "level": 2,
+      "title": "Amazon ECS 구성",
+      "anchor": "amazon-ecs-구성",
+      "content": []
+    },
+    {
+      "id": "chapter13-section-21",
+      "level": 3,
+      "title": "Amazon ECS를 구성해 본다",
+      "anchor": "amazon-ecs를-구성해-본다",
+      "content": [
+        {
+          "id": "chapter13-block-22",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "AWS 관리 콘솔에 본인 계정으로 로그인 한다."
+              },
+              {
+                "text": "ECS 서비스 배포를 위한 AWS 네트워크 구성상단 [서비스]에서 VPC 서비스를 검색VPC 서비스 선택VPC 생성 클릭"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-22",
+      "level": 3,
+      "title": "VPC 생성",
+      "anchor": "vpc-생성",
+      "content": [
+        {
+          "id": "chapter13-block-23",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "[VPC 등] 선택"
+              },
+              {
+                "text": "이름 태그: ecs"
+              },
+              {
+                "text": "기본 CIDR: 10.0.0.0/16"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-23",
+      "level": 3,
+      "title": "서브넷 구성",
+      "anchor": "서브넷-구성",
+      "content": [
+        {
+          "id": "chapter13-block-24",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Public subnet * 2"
+              },
+              {
+                "text": "Private subnet * 2"
+              },
+              {
+                "text": "CIDR은 화면처럼 작성한다.10.0.1.0/2410.0.2.0/2410.0.3.0/2410.0.4.0/24"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-24",
+      "level": 3,
+      "title": "NAT 게이트웨이 및 VPC 엔드포인트",
+      "anchor": "nat-게이트웨이-및-vpc-엔드포인트",
+      "content": [
+        {
+          "id": "chapter13-block-25",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "NAT 게이트웨이는 1개의 AZ에서 생성."
+              },
+              {
+                "text": "VPC 엔드포인트 없음"
+              },
+              {
+                "text": "[VPC 생성]"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-25",
+      "level": 3,
+      "title": "설정 결과",
+      "anchor": "설정-결과",
+      "content": [
+        {
+          "id": "chapter13-block-26",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "설정 결과 previewVPC: ecs-vpc서브넷(4개): ap-northeast-2a, ecs-subnet-public1-ap-northeast-2a, ecs-subnet-private1-ap-northeast-2a, ap-northeast-2b, ecs-subnet-public2-ap-northeast-2b, ecs-subnet-private2-ap-northeast-2b라우팅 테이블(3개): ecs-rtb-public, ecs-rtb-private1-ap-northeast-2a, ecs-rtb-private2-ap-northeast-2b네트워크 연결(2개): ecs-igw, ecs-nat-public1-ap-northeast-2a"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-26",
+      "level": 2,
+      "title": "Amazon ECS 구성",
+      "anchor": "amazon-ecs-구성",
+      "content": []
+    },
+    {
+      "id": "chapter13-section-27",
+      "level": 3,
+      "title": "VPC 워크플로 생성",
+      "anchor": "vpc-워크플로-생성",
+      "content": [
+        {
+          "id": "chapter13-block-27",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "VPC 워크플로 생성생성 완료되면 [VPC 보기] 선택"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-28",
+      "level": 3,
+      "title": "생성 결과 확인",
+      "anchor": "생성-결과-확인",
+      "content": [
+        {
+          "id": "chapter13-block-28",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "생성 결과 확인VPC ID: vpc-0cb977659537e963c상태: AvailableCIDR: 10.0.0.0/16"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-29",
+      "level": 3,
+      "title": "보안 그룹 생성",
+      "anchor": "보안-그룹-생성",
+      "content": [
+        {
+          "id": "chapter13-block-29",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "각 보안 그룹에 속한 인스턴스는 인바운드 규칙에서 허용된 트래픽만 접근할 수 있다."
+              },
+              {
+                "text": "애플리케이션 로드 밸런서(ALB)가 외부의 HTTP 요청을 수신하기 위한 보안 그룹과 ECS에서 생성한 웹 서비스 인스턴스가 ALB로부터 오는 트래픽만을 수신하기 위한 보안 그룹을 생성한다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-30",
+      "level": 4,
+      "title": "보안 그룹 생성",
+      "anchor": "보안-그룹-생성",
+      "content": [
+        {
+          "id": "chapter13-block-30",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "보안 그룹 이름은 ecs-sg-alb"
+              },
+              {
+                "text": "설명은 allow http"
+              },
+              {
+                "text": "VPC는 ecs-vpc"
+              },
+              {
+                "text": "인바운드 규칙 추가"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-31",
+      "level": 4,
+      "title": "인바운드 규칙 설정",
+      "anchor": "인바운드-규칙-설정",
+      "content": [
+        {
+          "id": "chapter13-block-31",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "HTTP 0.0.0.0/0만 허용하는 규칙 추가"
+              },
+              {
+                "text": "보안 그룹 생성 완료"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-32",
+      "level": 2,
+      "title": "Amazon ECS 구성",
+      "anchor": "amazon-ecs-구성",
+      "content": []
+    },
+    {
+      "id": "chapter13-section-33",
+      "level": 3,
+      "title": "보안 그룹 생성",
+      "anchor": "보안-그룹-생성",
+      "content": [
+        {
+          "id": "chapter13-block-32",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "ecs-sg-instance 보안 그룹 생성"
+              },
+              {
+                "text": "ecs-vpc 선택"
+              },
+              {
+                "text": "인바운드 규칙 추가유형: HTTP소스: ecs-sg-alb"
+              },
+              {
+                "text": "프라이빗 영역으로 트래픽을 보내기 위해 퍼블릭 영역의 보안 그룹인 ecs-sg-alb를 선택하여 보안 그룹 체이닝을 구성한다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-34",
+      "level": 3,
+      "title": "로드 밸런서 생성",
+      "anchor": "로드-밸런서-생성",
+      "content": [
+        {
+          "id": "chapter13-block-33",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "외부로부터 오는 요청을 분배하고 배포된 웹 서비스에 전달하기 위해 ALB를 생성한다."
+              },
+              {
+                "text": "EC2 영역으로 서비스 이동"
+              },
+              {
+                "text": "[Create Load Balancer] 버튼 클릭"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-35",
+      "level": 3,
+      "title": "ALB 선택 및 생성",
+      "anchor": "alb-선택-및-생성",
+      "content": [
+        {
+          "id": "chapter13-block-34",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "ALB [Create] 선택"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-36",
+      "level": 3,
+      "title": "애플리케이션 로드 밸런서 설정",
+      "anchor": "애플리케이션-로드-밸런서-설정",
+      "content": [
+        {
+          "id": "chapter13-block-35",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "기본 구성에 이름 (ecs-alb) 입력, 나머지는 기본 값 사용"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-37",
+      "level": 3,
+      "title": "네트워크 매핑",
+      "anchor": "네트워크-매핑",
+      "content": [
+        {
+          "id": "chapter13-block-36",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "부하 분산기는 외부 인터넷 망으로 연결되기 때문에 사전에 구성한 VPC(ecs-vpc) 선택"
+              },
+              {
+                "text": "2개의 가용영역 ap-northeast-2a와 ap-northeast-2c가 제공된다."
+              },
+              {
+                "text": "이때 외부 연결이 가능한 퍼블릭 서브넷을 선택해야 한다. 만일 프라이빗 서브넷으로 선택하면 경고 메시지가 출력된다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-38",
+      "level": 2,
+      "title": "Amazon ECS 구성",
+      "anchor": "amazon-ecs-구성",
+      "content": []
+    },
+    {
+      "id": "chapter13-section-39",
+      "level": 3,
+      "title": "보안 그룹 설정",
+      "anchor": "보안-그룹-설정",
+      "content": [
+        {
+          "id": "chapter13-block-37",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "보안 그룹은 앞서 생성한 외부 연결이 가능한 ecs-sg-alb를 선택한다."
+              },
+              {
+                "text": "기본으로 선택되어 있는 보안 그룹은 선택 해제한다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-40",
+      "level": 3,
+      "title": "리스너와 라우팅 설정",
+      "anchor": "리스너와-라우팅-설정",
+      "content": [
+        {
+          "id": "chapter13-block-38",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "리스너는 구성한 프로토콜과 포트를 사용하여 연결 요청을 확인하는 과정이다."
+              },
+              {
+                "text": "리스너가 수신한 트래픽은 대상 그룹으로 라우팅된다."
+              },
+              {
+                "text": "태그에는 이름(Name) 키와 ecs-alb 값으로 채운다."
+              },
+              {
+                "text": "대상 그룹 생성 선택"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-41",
+      "level": 3,
+      "title": "대상 그룹 설정",
+      "anchor": "대상-그룹-설정",
+      "content": [
+        {
+          "id": "chapter13-block-39",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "대상 유형 선택에서 특정 VPC 내에서 동작하는 인스턴스로 로드밸런싱 지원을 위한 **[인스턴스]**를 선택하고,"
+              },
+              {
+                "text": "대상 그룹 이름으로 ecs-target-group을 입력하고 VPC가 ecs-vpc로 선택되어 있는 것을 확인하거나 직접 선택한다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-42",
+      "level": 3,
+      "title": "상태 확인 및 태그 설정",
+      "anchor": "상태-확인-및-태그-설정",
+      "content": [
+        {
+          "id": "chapter13-block-40",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "하단의 상태 확인은 등록된 대상의 상태를 점검하기 위한 일종의 헬스 체크 기능이다."
+              },
+              {
+                "text": "기본값으로 두고, 태그에 키에 Name과 값은 ecs-target-group을 입력하고 [다음] 버튼을 클릭한다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-43",
+      "level": 3,
+      "title": "등록 대상 설정",
+      "anchor": "등록-대상-설정",
+      "content": [
+        {
+          "id": "chapter13-block-41",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "등록 대상(Register Targets)과 대상(Targets)은 아무것도 설정하지 않고 [다음]으로 넘어간다."
+              },
+              {
+                "text": "대상 그룹 생성"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-44",
+      "level": 3,
+      "title": "대상 그룹 생성 확인",
+      "anchor": "대상-그룹-생성-확인",
+      "content": [
+        {
+          "id": "chapter13-block-42",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "대상 그룹 생성을 확인하고, 다시 로드 밸런서 생성 창으로 돌아간다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-45",
+      "level": 3,
+      "title": "리스너 및 라우팅 설정",
+      "anchor": "리스너-및-라우팅-설정",
+      "content": [
+        {
+          "id": "chapter13-block-43",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "리스너 및 라우팅 화면에서 리프레시 버튼을 클릭하면 생성한 ecs-target-group이 나타난다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-46",
+      "level": 3,
+      "title": "로드 밸런서 생성",
+      "anchor": "로드-밸런서-생성",
+      "content": [
+        {
+          "id": "chapter13-block-44",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "로드 밸런서 생성의 요약을 확인한 뒤 [로드 밸런서 생성]을 클릭한다."
+              },
+              {
+                "text": "로드 밸런서 성공 메시지가 상단에 출력되면 [로드 밸런서 보기] 버튼을 클릭한다."
+              },
+              {
+                "text": "애플리케이션 로드 밸런서 ecs-alb 생성을 확인한다. 생성 직후에는 \"프로비저닝 중\" 메시지가 나오고 대략 1분 뒤에 \"Active\" 상태로 변경된다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-47",
+      "level": 3,
+      "title": "Cloud9 환경 설정",
+      "anchor": "cloud9-환경-설정",
+      "content": [
+        {
+          "id": "chapter13-block-45",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "배포될 웹 서비스의 docker image를 빌드하고 업로드(push)하기 위해 AWS에서 제공하는 개발환경인 Cloud9 환경을 생성해 보자."
+              },
+              {
+                "text": "Cloud9 환경에서 사용하는 EC2 인스턴스가 ECR에 접근해 컨테이너 이미지를 올리기 위해 \"AmazonEC2ContainerRegistryFullAccess\" 권한 정책을 가진 IAM을 생성한다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-48",
+      "level": 3,
+      "title": "신뢰할 수 있는 엔터티 선택",
+      "anchor": "신뢰할-수-있는-엔터티-선택",
+      "content": [
+        {
+          "id": "chapter13-block-46",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "신뢰할 수 있는 유형의 개체 선택에서 AWS 서비스 선택, 사용 사례 선택에서 EC2 선택 후 오른쪽 하단의 다음: 권한 버튼을 클릭한다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-49",
+      "level": 2,
+      "title": "Amazon ECS 구성",
+      "anchor": "amazon-ecs-구성",
+      "content": []
+    },
+    {
+      "id": "chapter13-section-50",
+      "level": 3,
+      "title": "권한 정책 연결",
+      "anchor": "권한-정책-연결",
+      "content": [
+        {
+          "id": "chapter13-block-47",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "권한 정책 연결에서 정책 필터에 AmazonEC2ContainerRegistryFullAccess 입력, 해당 정책 선택 후 오른쪽 하단의 다음 클릭한다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-51",
+      "level": 3,
+      "title": "역할 생성",
+      "anchor": "역할-생성",
+      "content": [
+        {
+          "id": "chapter13-block-48",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "역할 이름: ecs-workshop-ECRFullAccessRole"
+              },
+              {
+                "text": "검토 후 태그 입력"
+              },
+              {
+                "text": "역할 생성"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-52",
+      "level": 3,
+      "title": "AWS Cloud9 환경 설정",
+      "anchor": "aws-cloud9-환경-설정",
+      "content": [
+        {
+          "id": "chapter13-block-49",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Cloud9 서비스로 이동"
+              },
+              {
+                "text": "환경 생성"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-53",
+      "level": 3,
+      "title": "환경 생성 세부 정보",
+      "anchor": "환경-생성-세부-정보",
+      "content": [
+        {
+          "id": "chapter13-block-50",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "이름: ecs-workshop 입력"
+              },
+              {
+                "text": "새로운 EC2 인스턴스 선택"
+              },
+              {
+                "text": "t3.small (t2.micro는 제한 있음)"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-54",
+      "level": 3,
+      "title": "네트워크 설정",
+      "anchor": "네트워크-설정",
+      "content": [
+        {
+          "id": "chapter13-block-51",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "VPC: ecs-vpc"
+              },
+              {
+                "text": "Subnet: ecs-public-subnet-1"
+              },
+              {
+                "text": "연결은 사용자 선택"
+              },
+              {
+                "text": "생성"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-55",
+      "level": 2,
+      "title": "Amazon ECS 구성",
+      "anchor": "amazon-ecs-구성",
+      "content": []
+    },
+    {
+      "id": "chapter13-section-56",
+      "level": 3,
+      "title": "Amazon ECS를 구성해 본다",
+      "anchor": "amazon-ecs를-구성해-본다",
+      "content": [
+        {
+          "id": "chapter13-block-52",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "AWS EC2로 이동 후 왼쪽 메뉴 항목에서 인스턴스 선택"
+              },
+              {
+                "text": "aws-cloud9-ecs-workshop 인스턴스 선택 후 오른쪽 상단의 작업 -> 보안 -> IAM 역할 수정 버튼을 클릭한다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-57",
+      "level": 3,
+      "title": "IAM 역할 설정",
+      "anchor": "iam-역할-설정",
+      "content": [
+        {
+          "id": "chapter13-block-53",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "IAM 역할: ecs-workshop-ECRFullAccessRole"
+              },
+              {
+                "text": "선택 후 오른쪽 하단의 IAM 역할 업데이트 클릭한다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-58",
+      "level": 3,
+      "title": "Cloud9 설정",
+      "anchor": "cloud9-설정",
+      "content": [
+        {
+          "id": "chapter13-block-54",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Cloud9 열기"
+              },
+              {
+                "text": "Cloud9 environment 창으로 돌아온 후 오른쪽 상단의 톱니바퀴 모양 Preferences -> AWS SETTINGS -> Credentials로 이동"
+              },
+              {
+                "text": "AWS managed temporary credentials off 처리한다."
+              },
+              {
+                "text": "이 설정은 임시 자격 증명을 제거하는 작업이다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-59",
+      "level": 3,
+      "title": "임시 자격 증명 삭제 및 환경 설정",
+      "anchor": "임시-자격-증명-삭제-및-환경-설정",
+      "content": [
+        {
+          "id": "chapter13-block-55",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Preferences 탭을 닫은 후 기존의 임시 자격 증명(temporary credentials)을 삭제한다."
+              },
+              {
+                "text": "현재 Cloud9 environment가 ecs-workshop-ECRFullAccessRole을 사용하는지 확인한다."
+              },
+              {
+                "text": "기본 리전 지정 및 소스 다운로드를 진행한다."
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter13-block-56",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "ec2-user:~/environment $ rm -vf ${HOME}/.aws/credentials\r\nec2-user:~/environment $ aws sts get-caller-identity --query Arn | grep ecs-workshop\r\nec2-user:~/environment $ aws configure set default.region ap-northeast-2\r\nec2-user:~/environment $ aws configure get default.region\r\nec2-user:~/environment $ git clone https://github.com/hylee-kevin/fastcampus.git",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-60",
+      "level": 2,
+      "title": "Amazon ECS 구성",
+      "anchor": "amazon-ecs-구성",
+      "content": []
+    },
+    {
+      "id": "chapter13-section-61",
+      "level": 3,
+      "title": "컨테이너 이미지 저장소 생성",
+      "anchor": "컨테이너-이미지-저장소-생성",
+      "content": [
+        {
+          "id": "chapter13-block-57",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "컨테이너 이미지를 저장하기 위한 저장소를 CLI 기반으로 생성한다."
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter13-block-58",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "ec2-user:~/environment $ aws ecr create-repository --repository-name nodejs",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter13-block-59",
+          "type": "code",
+          "data": {
+            "language": "json",
+            "code": "{\r\n  \"repository\": {\r\n    \"repositoryUri\": \"594682333406.dkr.ecr.ap-northeast-2.amazonaws.com/nodejs\",\r\n    \"imageScanningConfiguration\": {\r\n      \"scanOnPush\": false\r\n    },\r\n    \"encryptionConfiguration\": {\r\n      \"encryptionType\": \"AES256\"\r\n    },\r\n    \"registryId\": \"594682333406\",\r\n    \"imageTagMutability\": \"MUTABLE\",\r\n    \"repositoryArn\": \"arn:aws:ecr:ap-northeast-2:594682333406:repository/nodejs\",\r\n    \"repositoryName\": \"nodejs\",\r\n    \"createdAt\": 1689255045.0\r\n  }\r\n}",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter13-block-60",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "repositoryUri 중 \"594682333406.dkr.ecr.ap-northeast-2.amazonaws.com\" 부분은 추후에 Dockerfile을 빌드한 후 컨테이너 이미지를 ECR에 push할 때 사용되므로 복사해 둔다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-62",
+      "level": 3,
+      "title": "생성한 Repository 확인",
+      "anchor": "생성한-repository-확인",
+      "content": [
+        {
+          "id": "chapter13-block-61",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Repositories 선택 후 생성한 Repository를 확인한다."
+              },
+              {
+                "text": "nodejs를 클릭해 보면 현재는 비어있다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-63",
+      "level": 3,
+      "title": "Docker 설치 확인",
+      "anchor": "docker-설치-확인",
+      "content": [
+        {
+          "id": "chapter13-block-62",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Docker 설치를 확인한다."
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter13-block-63",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "ec2-user:~ $ sudo yum update -y\r\nec2-user:~ $ sudo yum install docker",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter13-block-64",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Docker 버전을 확인한다."
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter13-block-65",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "ec2-user:~ $ docker version",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-64",
+      "level": 3,
+      "title": "Node.js 이미지 빌드",
+      "anchor": "nodejs-이미지-빌드",
+      "content": [
+        {
+          "id": "chapter13-block-66",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Node.js 이미지를 빌드한다."
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter13-block-67",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "ec2-user:~/fastcampus/ch09/nodejs (main) $ docker build -t nodejs:1.0 .\r\nec2-user:~/fastcampus/ch09/nodejs (main) $ docker images",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-65",
+      "level": 3,
+      "title": "AWS ECR에 대한 Docker client 인증",
+      "anchor": "aws-ecr에-대한-docker-client-인증",
+      "content": [
+        {
+          "id": "chapter13-block-68",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "ECR에 로그인한다."
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter13-block-69",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# ECR에 Login\r\nec2-user:~ $ aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 594682333406.dkr.ecr.ap-northeast-2.amazonaws.com",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter13-block-70",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "계정 ID를 확인한다."
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter13-block-71",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# account ID 확인\r\nec2-user:~ $ aws sts get-caller-identity --query Account --output text",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-66",
+      "level": 3,
+      "title": "ECR에 이미지 업로드",
+      "anchor": "ecr에-이미지-업로드",
+      "content": [
+        {
+          "id": "chapter13-block-72",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "ECR에 이미지를 업로드한다."
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter13-block-73",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "~$ docker image tag nodejs:1.0 594682333406.dkr.ecr.ap-northeast-2.amazonaws.com/nodejs:1.0\r\n~$ docker push 594682333406.dkr.ecr.ap-northeast-2.amazonaws.com/nodejs:1.0",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter13-block-74",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "ECS Task Definition 생성에서 URI 사용, 복사해 둔다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-67",
+      "level": 2,
+      "title": "Amazon ECS를 구성해 본다",
+      "anchor": "amazon-ecs를-구성해-본다",
+      "content": []
+    },
+    {
+      "id": "chapter13-section-68",
+      "level": 3,
+      "title": "ECS 서비스 검색 및 선택",
+      "anchor": "ecs-서비스-검색-및-선택",
+      "content": [
+        {
+          "id": "chapter13-block-75",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "상단 **[서비스]**에서 ECS 서비스를 검색"
+              },
+              {
+                "text": "ECS 서비스 선택"
+              },
+              {
+                "text": "이전 버전으로 수행"
+              },
+              {
+                "text": "클러스터 클릭"
+              },
+              {
+                "text": "클러스터 생성"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-69",
+      "level": 3,
+      "title": "클러스터 생성",
+      "anchor": "클러스터-생성",
+      "content": [
+        {
+          "id": "chapter13-block-76",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "이전 버전의 클래식 화면에서 클러스터 생성"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-70",
+      "level": 3,
+      "title": "클러스터 플랫폼 선택",
+      "anchor": "클러스터-플랫폼-선택",
+      "content": [
+        {
+          "id": "chapter13-block-77",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "클러스터 플랫폼 선택"
+              },
+              {
+                "text": "EC2 Linux 선택"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-71",
+      "level": 3,
+      "title": "클러스터 구성",
+      "anchor": "클러스터-구성",
+      "content": [
+        {
+          "id": "chapter13-block-78",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "이름: ecs-cluster"
+              },
+              {
+                "text": "온디맨드 인스턴스"
+              },
+              {
+                "text": "t3.medium 권장"
+              },
+              {
+                "text": "인스턴스 개수: 2"
+              },
+              {
+                "text": "나머진 기본값"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-72",
+      "level": 3,
+      "title": "네트워킹 설정",
+      "anchor": "네트워킹-설정",
+      "content": [
+        {
+          "id": "chapter13-block-79",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "VPC: ecs-vpc"
+              },
+              {
+                "text": "서브넷: ecs-private-subnet-1, ecs-private-subnet-2"
+              },
+              {
+                "text": "보안 그룹: ecs-sg-instance"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-73",
+      "level": 2,
+      "title": "Amazon ECS 구성",
+      "anchor": "amazon-ecs-구성",
+      "content": []
+    },
+    {
+      "id": "chapter13-section-74",
+      "level": 3,
+      "title": "Amazon ECS를 구성해 본다",
+      "anchor": "amazon-ecs를-구성해-본다",
+      "content": [
+        {
+          "id": "chapter13-block-80",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "사전에 설정한 IAM 역할 사용"
+              },
+              {
+                "text": "태그 지정 Name: ecs-cluster"
+              },
+              {
+                "text": "[생성]"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-75",
+      "level": 3,
+      "title": "클러스터 생성",
+      "anchor": "클러스터-생성",
+      "content": [
+        {
+          "id": "chapter13-block-81",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "클러스터 생성 완료"
+              },
+              {
+                "text": "클러스터 보기 선택"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-76",
+      "level": 3,
+      "title": "클러스터 상태 확인",
+      "anchor": "클러스터-상태-확인",
+      "content": [
+        {
+          "id": "chapter13-block-82",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "현재 작업은 없음"
+              },
+              {
+                "text": "상태 Active 확인"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-77",
+      "level": 3,
+      "title": "작업 정의 생성",
+      "anchor": "작업-정의-생성",
+      "content": [
+        {
+          "id": "chapter13-block-83",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "새 작업 정의 생성 버튼을 클릭한다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-78",
+      "level": 3,
+      "title": "시작 유형 호환성 선택",
+      "anchor": "시작-유형-호환성-선택",
+      "content": [
+        {
+          "id": "chapter13-block-84",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "시작 유형 호환성 선택에서 EC2를 선택한다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-79",
+      "level": 2,
+      "title": "Amazon ECS 구성",
+      "anchor": "amazon-ecs-구성",
+      "content": []
+    },
+    {
+      "id": "chapter13-section-80",
+      "level": 3,
+      "title": "작업 및 컨테이너 정의 구성",
+      "anchor": "작업-및-컨테이너-정의-구성",
+      "content": [
+        {
+          "id": "chapter13-block-85",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "작업 정의 이름: ecs-task"
+              },
+              {
+                "text": "호환성 요구 사항: EC2"
+              },
+              {
+                "text": "태스크 역할: 선택"
+              },
+              {
+                "text": "네트워크 모드: 기본값"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-81",
+      "level": 3,
+      "title": "컨테이너 추가",
+      "anchor": "컨테이너-추가",
+      "content": [
+        {
+          "id": "chapter13-block-86",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "컨테이너 이름: nodejs-app"
+              },
+              {
+                "text": "이미지: ECR에 저장한 이미지의 URI 입력"
+              },
+              {
+                "text": "메모리 제한: 500 MiB"
+              },
+              {
+                "text": "포트 매핑: 3000:3000"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-82",
+      "level": 3,
+      "title": "컨테이너 정의 확인",
+      "anchor": "컨테이너-정의-확인",
+      "content": [
+        {
+          "id": "chapter13-block-87",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "컨테이너 정의를 확인하고 하단의 [생성] 버튼 클릭"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-83",
+      "level": 3,
+      "title": "작업 정의의 활성 상태 확인",
+      "anchor": "작업-정의의-활성-상태-확인",
+      "content": [
+        {
+          "id": "chapter13-block-88",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "작업 정의가 ACTIVE 상태인지 확인 (ecs-task)"
+              },
+              {
+                "text": "[클러스터] 화면으로 이동"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-84",
+      "level": 2,
+      "title": "Amazon ECS 구성",
+      "anchor": "amazon-ecs-구성",
+      "content": []
+    },
+    {
+      "id": "chapter13-section-85",
+      "level": 3,
+      "title": "서비스 생성",
+      "anchor": "서비스-생성",
+      "content": [
+        {
+          "id": "chapter13-block-89",
+          "type": "list",
+          "data": {
+            "ordered": true,
+            "items": [
+              {
+                "text": "클러스터 화면에서 ecs-cluster 클릭"
+              },
+              {
+                "text": "생성된 ecs-cluster 정보와 함께 하단의 서비스 탭의 [생성] 버튼 클릭"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-86",
+      "level": 3,
+      "title": "서비스 구성",
+      "anchor": "서비스-구성",
+      "content": [
+        {
+          "id": "chapter13-block-90",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "시작 유형: EC2"
+              },
+              {
+                "text": "작업 정의: ecs-task"
+              },
+              {
+                "text": "패밀리: ecs-task"
+              },
+              {
+                "text": "개정: 제공"
+              },
+              {
+                "text": "클러스터: ecs-cluster"
+              },
+              {
+                "text": "서비스 이름: ecs-service"
+              },
+              {
+                "text": "서비스 유형: REPLICA"
+              },
+              {
+                "text": "작업 개수: 2"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter13-block-91",
+          "type": "text",
+          "data": {
+            "markdown": "나머지는 기본값으로 두고 오른쪽 하단의 [다음 단계] 버튼 클릭"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-87",
+      "level": 3,
+      "title": "상태 검사 및 로드 밸런서 설정",
+      "anchor": "상태-검사-및-로드-밸런서-설정",
+      "content": [
+        {
+          "id": "chapter13-block-92",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "상태 검사 유예 기간: 300 입력"
+              },
+              {
+                "text": "로드 밸런서 유형: Application Load Balancer"
+              },
+              {
+                "text": "기존 ecs-alb 선택 후 [로드밸런서에 추가]"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-88",
+      "level": 3,
+      "title": "로드 밸런싱할 컨테이너 설정",
+      "anchor": "로드-밸런싱할-컨테이너-설정",
+      "content": [
+        {
+          "id": "chapter13-block-93",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "컨테이너 이름: nodejs-app:3000"
+              },
+              {
+                "text": "프로덕션 리스너 포트: 80:HTTP"
+              },
+              {
+                "text": "프로토콜: HTTP"
+              },
+              {
+                "text": "대상 그룹 이름: ecs-target-group"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter13-block-94",
+          "type": "text",
+          "data": {
+            "markdown": "하단 [다음 단계] 클릭"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-89",
+      "level": 2,
+      "title": "Amazon ECS 구성",
+      "anchor": "amazon-ecs-구성",
+      "content": []
+    },
+    {
+      "id": "chapter13-section-90",
+      "level": 3,
+      "title": "Auto Scaling 설정",
+      "anchor": "auto-scaling-설정",
+      "content": [
+        {
+          "id": "chapter13-block-95",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "기본 값으로 다음 단계 클릭"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-91",
+      "level": 3,
+      "title": "네트워크 구성 확인",
+      "anchor": "네트워크-구성-확인",
+      "content": [
+        {
+          "id": "chapter13-block-96",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "구성 정보 확인 후"
+              },
+              {
+                "text": "[서비스 생성] 클릭"
+              },
+              {
+                "text": "[서비스 보기] 클릭"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-92",
+      "level": 3,
+      "title": "서비스 생성 확인",
+      "anchor": "서비스-생성-확인",
+      "content": [
+        {
+          "id": "chapter13-block-97",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "서비스 생성 확인"
+              },
+              {
+                "text": "약 20초 뒤에 [마지막 상태] 값이 RUNNING 확인"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-93",
+      "level": 3,
+      "title": "EC2 서비스로 이동",
+      "anchor": "ec2-서비스로-이동",
+      "content": [
+        {
+          "id": "chapter13-block-98",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "이전에 생성한 로드 밸런싱 선택 ecs-alb"
+              },
+              {
+                "text": "DNS 주소를 통해 ECS의 컨테이너에 접근 시도"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-94",
+      "level": 3,
+      "title": "문제 해결",
+      "anchor": "문제-해결",
+      "content": [
+        {
+          "id": "chapter13-block-99",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "DNS 주소로 웹 접속 시도 시 504 에러가 발생한다면..."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-95",
+      "level": 2,
+      "title": "Amazon ECS 구성",
+      "anchor": "amazon-ecs-구성",
+      "content": [
+        {
+          "id": "chapter13-block-100",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "ALB를 통해 **HTTP(80)**으로 접속이 이루어진다."
+              },
+              {
+                "text": "그 뒤 EC2 기반에서 실행되고 있는 컨테이너에 접근하려면 작업 정의에서 설정했던 3000번 포트가 노출되어야 한다."
+              },
+              {
+                "text": "ecs-sg-instance 보안 그룹에 사용자 지정 TCP 3000번 포트를 인바운드 규칙에 추가해 준다."
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter13-block-101",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "인바운드 규칙 편집 화면에서는 HTTP와 사용자 지정 TCP 포트를 설정하여 트래픽을 제어한다."
+          }
+        },
+        {
+          "id": "chapter13-block-102",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "다시 ALB의 DNS 주소를 통해 ECS의 컨테이너에 접근을 시도한다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-96",
+      "level": 2,
+      "title": "Amazon ECS를 활용한 컨테이너 배포",
+      "anchor": "amazon-ecs를-활용한-컨테이너-배포",
+      "content": []
+    },
+    {
+      "id": "chapter13-section-97",
+      "level": 3,
+      "title": "ECS Architecture",
+      "anchor": "ecs-architecture",
+      "content": [
+        {
+          "id": "chapter13-block-103",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "클라우드 설계도의 컨테이너 서비스는 nginx와 django를 이용하여 2-tier 구조의 웹 서비스를 구성해 본다."
+              },
+              {
+                "text": "Clip2.에서 생성한 ECS 클러스터를 그대로 이용하고, 작업 정의(fastcampus-task)와 서비스(fastcampus-svc)를 생성해 본다."
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter13-block-104",
+          "type": "text",
+          "data": {
+            "markdown": "[그림: ECS 아키텍처 다이어그램]"
+          }
+        },
+        {
+          "id": "chapter13-block-105",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "ECR: Nginx와 Django 이미지를 저장"
+              },
+              {
+                "text": "ECS: Nginx와 Django 컨테이너를 실행"
+              },
+              {
+                "text": "ALB: 외부 트래픽을 Nginx 컨테이너로 라우팅"
+              },
+              {
+                "text": "VPC: 퍼블릭 및 프라이빗 서브넷으로 구성"
+              },
+              {
+                "text": "NAT Gateway: 프라이빗 서브넷의 인터넷 접근을 지원"
+              },
+              {
+                "text": "Cloud9 환경: 관리자가 접근하여 설정"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-98",
+      "level": 2,
+      "title": "Amazon ECS 기반의 컨테이너 서비스 배포",
+      "anchor": "amazon-ecs-기반의-컨테이너-서비스-배포",
+      "content": []
+    },
+    {
+      "id": "chapter13-section-99",
+      "level": 3,
+      "title": "ECR에 저장소 생성 및 로그인",
+      "anchor": "ecr에-저장소-생성-및-로그인",
+      "content": [
+        {
+          "id": "chapter13-block-106",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "ECR에 저장소 생성ec2-user:~ $ aws ecr create-repository --repository-name fc-django\r\nec2-user:~ $ aws ecr create-repository --repository-name fc-nginx"
+              },
+              {
+                "text": "ECR 로그인ec2-user:~ $ aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 594682333406.dkr.ecr.ap-northeast-2.amazonaws.com"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-100",
+      "level": 3,
+      "title": "이미지 빌드 및 ECR에 푸시",
+      "anchor": "이미지-빌드-및-ecr에-푸시",
+      "content": [
+        {
+          "id": "chapter13-block-107",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Cloud9에서 이미지 빌드ec2-user:~ $ cd fastcampus/ch13\r\nec2-user:~/fastcampus/ch13/django (main) $ docker build -t fc-django:1.0 .\r\nec2-user:~/fastcampus/ch13/nginx (main) $ docker build -t fc-nginx:1.0 ."
+              },
+              {
+                "text": "ECR에 이미지 푸시~$ docker image tag fc-django:1.0 594682333406.dkr.ecr.ap-northeast-2.amazonaws.com/fc-django:1.0\r\n~$ docker image tag fc-nginx:1.0 594682333406.dkr.ecr.ap-northeast-2.amazonaws.com/fc-nginx:1.0\r\n~$ docker push 594682333406.dkr.ecr.ap-northeast-2.amazonaws.com/fc-django:1.0\r\n~$ docker push 594682333406.dkr.ecr.ap-northeast-2.amazonaws.com/fc-nginx:1.0"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-101",
+      "level": 3,
+      "title": "ECR 저장소에 푸시된 이미지 확인",
+      "anchor": "ecr-저장소에-푸시된-이미지-확인",
+      "content": [
+        {
+          "id": "chapter13-block-108",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "fc-django 이미지 태그: 1.0"
+              },
+              {
+                "text": "fc-nginx 이미지 태그: 1.0"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-102",
+      "level": 3,
+      "title": "ECS 환경 설정 및 작업 정의 생성",
+      "anchor": "ecs-환경-설정-및-작업-정의-생성",
+      "content": [
+        {
+          "id": "chapter13-block-109",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "ECS 환경 변경 및 실습 진행생성한 docker image를 이용하여 컨테이너 서비스를 만들어 본다."
+              },
+              {
+                "text": "새 작업 정의 생성2tier-task 생성"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-103",
+      "level": 3,
+      "title": "Amazon ECS 활용, 컨테이너 배포",
+      "anchor": "amazon-ecs-활용-컨테이너-배포",
+      "content": [
+        {
+          "id": "chapter13-block-110",
+          "type": "text",
+          "data": {
+            "markdown": "Amazon ECS 기반의 컨테이너 서비스를 배포해 본다."
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-104",
+      "level": 4,
+      "title": "시작 유형 호환성 선택",
+      "anchor": "시작-유형-호환성-선택",
+      "content": [
+        {
+          "id": "chapter13-block-111",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "시작 유형을 EC2를 선택하고, 다음 단계로 진행한다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-105",
+      "level": 4,
+      "title": "작업 및 컨테이너 정의 구성",
+      "anchor": "작업-및-컨테이너-정의-구성",
+      "content": [
+        {
+          "id": "chapter13-block-112",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "작업 정의명을 입력: 2tier-task"
+              },
+              {
+                "text": "볼륨 추가이름: socket_volume볼륨 유형: Bind Mount"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-106",
+      "level": 4,
+      "title": "구성할 서비스 컨테이너 정의",
+      "anchor": "구성할-서비스-컨테이너-정의",
+      "content": [
+        {
+          "id": "chapter13-block-113",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "컨테이너 추가이름: fc-djangdo이름: fc-nginx"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-107",
+      "level": 4,
+      "title": "컨테이너 추가 1",
+      "anchor": "컨테이너-추가-1",
+      "content": [
+        {
+          "id": "chapter13-block-114",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "이름: fc-django"
+              },
+              {
+                "text": "이미지: URI 복붙"
+              },
+              {
+                "text": "메모리제한: 500"
+              },
+              {
+                "text": "Backend이므로 port 연결 불필요함"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-108",
+      "level": 2,
+      "title": "Amazon ECS 활용, 컨테이너 배포",
+      "anchor": "amazon-ecs-활용-컨테이너-배포",
+      "content": []
+    },
+    {
+      "id": "chapter13-section-109",
+      "level": 3,
+      "title": "스토리지 및 로깅 설정",
+      "anchor": "스토리지-및-로깅-설정",
+      "content": [
+        {
+          "id": "chapter13-block-115",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "앞서 생성한 볼륨으로 구성"
+              },
+              {
+                "text": "socket_volume: /app"
+              },
+              {
+                "text": "로그 구성 선택: Auto-configure CloudWatch Logs"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-110",
+      "level": 3,
+      "title": "컨테이너 추가 2",
+      "anchor": "컨테이너-추가-2",
+      "content": [
+        {
+          "id": "chapter13-block-116",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "이름: fc-nginx"
+              },
+              {
+                "text": "이미지: URI 복붙"
+              },
+              {
+                "text": "메모리제한: 500"
+              },
+              {
+                "text": "Frontend 연결 port 지정: 80:80"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter13-block-117",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "Soft limit: 컨테이너가 예약해 사용할 메모리 용량Hard limit: 해당 메모리 이상으로 사용 시 컨테이너 종료"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-111",
+      "level": 3,
+      "title": "시작 종속 관계 설정",
+      "anchor": "시작-종속-관계-설정",
+      "content": [
+        {
+          "id": "chapter13-block-118",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "frontend-backend 종속성 연결"
+              },
+              {
+                "text": "상태: START로 지정하여 동시 연결"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-112",
+      "level": 3,
+      "title": "스토리지 및 로깅 설정 (Django 볼륨 연결)",
+      "anchor": "스토리지-및-로깅-설정-django-볼륨-연결",
+      "content": [
+        {
+          "id": "chapter13-block-119",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Django 볼륨과 연결하기 위해 볼륨 출처를 fc-django 컨테이너명으로 지정"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-113",
+      "level": 2,
+      "title": "Amazon ECS 기반의 컨테이너 서비스 배포",
+      "anchor": "amazon-ecs-기반의-컨테이너-서비스-배포",
+      "content": []
+    },
+    {
+      "id": "chapter13-section-114",
+      "level": 3,
+      "title": "컨테이너 생성",
+      "anchor": "컨테이너-생성",
+      "content": [
+        {
+          "id": "chapter13-block-120",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "컨테이너 정의: 작업의 메모리와 CPU를 설정하여 컨테이너를 정의합니다."
+              },
+              {
+                "text": "컨테이너 추가: fc-django와 fc-nginx 컨테이너를 추가합니다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-115",
+      "level": 3,
+      "title": "작업 정의 생성",
+      "anchor": "작업-정의-생성",
+      "content": [
+        {
+          "id": "chapter13-block-121",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "작업 정의 생성 완료: 작업 정의가 성공적으로 생성되었습니다."
+              },
+              {
+                "text": "작업 정의 이름: 2tier-task"
+              },
+              {
+                "text": "네트워크 모드: default"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-116",
+      "level": 3,
+      "title": "서비스 생성",
+      "anchor": "서비스-생성",
+      "content": [
+        {
+          "id": "chapter13-block-122",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "서비스 구성: EC2를 선택하여 작업 정의를 기반으로 서비스를 생성합니다."
+              },
+              {
+                "text": "서비스 이름: 2tier-svc"
+              },
+              {
+                "text": "작업 개수: 2"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-117",
+      "level": 3,
+      "title": "배포 설정",
+      "anchor": "배포-설정",
+      "content": [
+        {
+          "id": "chapter13-block-123",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "배포 유형: 롤링 업데이트를 사용하여 배포를 설정합니다."
+              },
+              {
+                "text": "작업 배치: AZ 균형 분산을 통해 작업을 배치합니다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-118",
+      "level": 3,
+      "title": "로드 밸런서 설정",
+      "anchor": "로드-밸런서-설정",
+      "content": [
+        {
+          "id": "chapter13-block-124",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "로드 밸런서 유형: Application Load Balancer를 선택합니다."
+              },
+              {
+                "text": "서비스의 IAM 역할: AWSServiceRoleForECS"
+              },
+              {
+                "text": "로드 밸런서 이름: ecs-alb"
+              },
+              {
+                "text": "로드 밸런싱할 컨테이너: fc-nginx:80:80"
+              },
+              {
+                "text": "로드 밸런서 추가: 설정을 완료합니다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-119",
+      "level": 2,
+      "title": "Amazon ECS 활용, 컨테이너 배포",
+      "anchor": "amazon-ecs-활용-컨테이너-배포",
+      "content": []
+    },
+    {
+      "id": "chapter13-section-120",
+      "level": 3,
+      "title": "리스너 및 대상 그룹 설정",
+      "anchor": "리스너-및-대상-그룹-설정",
+      "content": [
+        {
+          "id": "chapter13-block-125",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "리스너 포트 선택: 80:HTTP"
+              },
+              {
+                "text": "대상 그룹 이름 선택: ecs-target-group"
+              },
+              {
+                "text": "대상 유형: instance"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter13-block-126",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "참고: App Mesh를 사용하여 경로 기반 라우팅을 설정할 수 있습니다."
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-121",
+      "level": 3,
+      "title": "Auto Scaling 설정",
+      "anchor": "auto-scaling-설정",
+      "content": [
+        {
+          "id": "chapter13-block-127",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "서비스 Auto Scaling: 원하는 서비스 개수를 조정하지 않음"
+              },
+              {
+                "text": "옵션: Auto Scaling을 구성하여 애플리케이션의 요구 사항을 충족할 수 있습니다."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-122",
+      "level": 3,
+      "title": "네트워크 구성 검토",
+      "anchor": "네트워크-구성-검토",
+      "content": [
+        {
+          "id": "chapter13-block-128",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "상태 검사 유예 기간: 800"
+              },
+              {
+                "text": "컨테이너 이름: fc-nginx"
+              },
+              {
+                "text": "컨테이너 포트: 80"
+              },
+              {
+                "text": "ELB 이름: ecs-alb"
+              },
+              {
+                "text": "대상 그룹: ecs-target-group"
+              },
+              {
+                "text": "상태 확인 경로: /"
+              },
+              {
+                "text": "리스너 포트: 80"
+              },
+              {
+                "text": "서비스 역할: AWSServiceRoleForECS"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-123",
+      "level": 3,
+      "title": "서비스 생성 및 확인",
+      "anchor": "서비스-생성-및-확인",
+      "content": [
+        {
+          "id": "chapter13-block-129",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "서비스 생성 완료: 2iter-svc"
+              },
+              {
+                "text": "ECS 서비스 상태: 1/1 완료"
+              },
+              {
+                "text": "서비스 보기: 생성된 서비스 확인 가능"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-124",
+      "level": 3,
+      "title": "클러스터 서비스 확인",
+      "anchor": "클러스터-서비스-확인",
+      "content": [
+        {
+          "id": "chapter13-block-130",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "클러스터 이름: ecs-cluster"
+              },
+              {
+                "text": "서비스명 확인: 2iter-svc"
+              },
+              {
+                "text": "상태: ACTIVE"
+              },
+              {
+                "text": "원하는 수: 2"
+              },
+              {
+                "text": "실행 중: 2"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-125",
+      "level": 2,
+      "title": "Amazon ECS 활용, 컨테이너 배포",
+      "anchor": "amazon-ecs-활용-컨테이너-배포",
+      "content": []
+    },
+    {
+      "id": "chapter13-section-126",
+      "level": 3,
+      "title": "EC2 로드 밸런싱 설정",
+      "anchor": "ec2-로드-밸런싱-설정",
+      "content": [
+        {
+          "id": "chapter13-block-131",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "EC2 로드 밸런싱 선택: ecs-alb"
+              },
+              {
+                "text": "DNS 주소 복사"
+              },
+              {
+                "text": "브라우저에 붙여넣기"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter13-block-132",
+          "type": "text",
+          "data": {
+            "markdown": "[그림: EC2 로드 밸런서 설정 화면]"
+          }
+        },
+        {
+          "id": "chapter13-block-133",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "로드 밸런서 타입: Application"
+              },
+              {
+                "text": "상태: Active"
+              },
+              {
+                "text": "VPC: vpc-0cb9776955379e63c"
+              },
+              {
+                "text": "가용 영역: ap-northeast-2a, ap-northeast-2c"
+              },
+              {
+                "text": "IP 주소 타입: IPv4"
+              },
+              {
+                "text": "생성 날짜: July 13, 2023"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter13-section-127",
+      "level": 3,
+      "title": "결과 확인",
+      "anchor": "결과-확인",
+      "content": [
+        {
+          "id": "chapter13-block-134",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "결과 화면 확인"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter13-block-135",
+          "type": "text",
+          "data": {
+            "markdown": "[그림: 결과 화면]"
+          }
+        },
+        {
+          "id": "chapter13-block-136",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Fast Campus 로고와 배출 접수, 목록 확인 아이콘이 표시됨"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "diagrams": [],
+  "tables": []
+}

@@ -1,0 +1,3615 @@
+{
+  "meta": {
+    "id": "chapter11",
+    "number": 11,
+    "title": "Chapter 11. Docker Swarm",
+    "description": "",
+    "phase": "master",
+    "objectives": [
+      "Docker Swarm 클러스터 아키텍처 이해",
+      "Manager와 Worker 노드 역할 및 구성",
+      "서비스 배포 모드 (Replicated vs Global) 차이",
+      "롤링 업데이트를 통한 무중단 배포 구현",
+      "Overlay 네트워크와 서비스 디스커버리"
+    ]
+  },
+  "sections": [
+    {
+      "id": "chapter11-section-1",
+      "level": 2,
+      "title": "목차",
+      "anchor": "목차",
+      "content": [
+        {
+          "id": "chapter11-block-1",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Clip 1. Docker Swarm 이란?"
+              },
+              {
+                "text": "Clip 2. Swarm Cluster 핵심 개념"
+              },
+              {
+                "text": "Clip 3. [실습] Swarm Cluster 구성"
+              },
+              {
+                "text": "Clip 4. Swarm 네트워크"
+              },
+              {
+                "text": "Clip 5. [실습] Swarm 모니터링 도구"
+              },
+              {
+                "text": "Clip 6. [실습] Swarm Service 생성 및 관리"
+              },
+              {
+                "text": "Clip 7. Service 배포 모드 (Replicated vs Global)"
+              },
+              {
+                "text": "Clip 8. [실습] Rolling Update와 Rollback"
+              },
+              {
+                "text": "Clip 9. [실습] 장애 복구와 Node Drain"
+              },
+              {
+                "text": "Clip 10. Docker Stack 개념"
+              },
+              {
+                "text": "Clip 11. [실습] HAProxy + Nginx Stack 배포"
+              },
+              {
+                "text": "Clip 12. [실습] Node Label 기반 배치"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-2",
+      "level": 2,
+      "title": "1. Docker Swarm 이란?",
+      "anchor": "1-docker-swarm-이란",
+      "content": [
+        {
+          "id": "chapter11-block-3",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "컨테이너 오케스트레이션을 위한 Docker의 기본 기능 이해하기"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-3",
+      "level": 3,
+      "title": "1.1 Docker Swarm 개요",
+      "anchor": "11-docker-swarm-개요",
+      "content": [
+        {
+          "id": "chapter11-block-4",
+          "type": "text",
+          "data": {
+            "markdown": "Docker Swarm은 여러 Docker Host를 하나의 클러스터로 묶어 컨테이너를 자동 배포, 확장, 복구하는 Docker의 기본 오케스트레이션 기능이다."
+          }
+        },
+        {
+          "id": "chapter11-block-5",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter11-diagram-1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-4",
+      "level": 3,
+      "title": "1.2 Docker Swarm의 특징",
+      "anchor": "12-docker-swarm의-특징",
+      "content": [
+        {
+          "id": "chapter11-block-6",
+          "type": "table",
+          "data": {
+            "tableId": "chapter11-table-6"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-5",
+      "level": 3,
+      "title": "1.3 Docker Swarm vs Kubernetes",
+      "anchor": "13-docker-swarm-vs-kubernetes",
+      "content": [
+        {
+          "id": "chapter11-block-7",
+          "type": "table",
+          "data": {
+            "tableId": "chapter11-table-7"
+          }
+        },
+        {
+          "id": "chapter11-block-8",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "참고: Docker Swarm은 Kubernetes 학습 전 오케스트레이션 개념을 익히기에 좋은 도구이다."
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-6",
+      "level": 2,
+      "title": "2. Swarm Cluster 핵심 개념",
+      "anchor": "2-swarm-cluster-핵심-개념",
+      "content": [
+        {
+          "id": "chapter11-block-10",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "Swarm의 주요 용어와 구조 이해하기"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-7",
+      "level": 3,
+      "title": "2.1 주요 용어 정리",
+      "anchor": "21-주요-용어-정리",
+      "content": [
+        {
+          "id": "chapter11-block-11",
+          "type": "table",
+          "data": {
+            "tableId": "chapter11-table-11"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-8",
+      "level": 3,
+      "title": "2.2 Node 역할",
+      "anchor": "22-node-역할",
+      "content": [
+        {
+          "id": "chapter11-block-12",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter11-diagram-2"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-9",
+      "level": 3,
+      "title": "2.3 Service / Task / Stack 구조",
+      "anchor": "23-service-task-stack-구조",
+      "content": [
+        {
+          "id": "chapter11-block-13",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter11-diagram-3"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-10",
+      "level": 3,
+      "title": "2.4 Service의 특징",
+      "anchor": "24-service의-특징",
+      "content": [
+        {
+          "id": "chapter11-block-14",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Service는 하나의 **VIP (Virtual IP)**를 가진다"
+              },
+              {
+                "text": "Task는 replica 수에 따라 여러 개 생성"
+              },
+              {
+                "text": "내부 DNS로 Service 이름으로 접근 가능"
+              },
+              {
+                "text": "자동 로드밸런싱 제공"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-11",
+      "level": 2,
+      "title": "3. [실습] Swarm Cluster 구성",
+      "anchor": "3-실습-swarm-cluster-구성",
+      "content": [
+        {
+          "id": "chapter11-block-16",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "3대의 Docker Host로 Swarm 클러스터 구성하기"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-12",
+      "level": 3,
+      "title": "3.1 실습 환경",
+      "anchor": "31-실습-환경",
+      "content": [
+        {
+          "id": "chapter11-block-17",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter11-diagram-4"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-13",
+      "level": 3,
+      "title": "3.2 필요 포트",
+      "anchor": "32-필요-포트",
+      "content": [
+        {
+          "id": "chapter11-block-18",
+          "type": "table",
+          "data": {
+            "tableId": "chapter11-table-18"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-14",
+      "level": 3,
+      "title": "3.3 방화벽 설정",
+      "anchor": "33-방화벽-설정",
+      "content": [
+        {
+          "id": "chapter11-block-19",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 모든 노드에서 실행\nkevin@hostos1:~$ sudo ufw allow 2377/tcp\nkevin@hostos1:~$ sudo ufw allow 7946/tcp\nkevin@hostos1:~$ sudo ufw allow 7946/udp\nkevin@hostos1:~$ sudo ufw allow 4789/udp\nkevin@hostos1:~$ sudo ufw reload",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-15",
+      "level": 3,
+      "title": "3.4 Swarm 초기화 (Manager Node)",
+      "anchor": "34-swarm-초기화-manager-node",
+      "content": [
+        {
+          "id": "chapter11-block-20",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ docker swarm init --advertise-addr 192.168.56.201\nSwarm initialized: current node (abc123def456) is now a manager.\n\nTo add a worker to this swarm, run the following command:\n\n    docker swarm join --token SWMTKN-1-xxxxx-yyyyy 192.168.56.201:2377\n\nTo add a manager to this swarm, run 'docker swarm join-token manager' and follow the instructions.",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-16",
+      "level": 3,
+      "title": "3.5 Worker Node Join",
+      "anchor": "35-worker-node-join",
+      "content": [
+        {
+          "id": "chapter11-block-21",
+          "type": "text",
+          "data": {
+            "markdown": "Worker Node (hostos2, hostos3)에서 실행:"
+          }
+        },
+        {
+          "id": "chapter11-block-22",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos2:~$ docker swarm join --token SWMTKN-1-xxxxx-yyyyy 192.168.56.201:2377\nThis node joined a swarm as a worker.\n\nkevin@hostos3:~$ docker swarm join --token SWMTKN-1-xxxxx-yyyyy 192.168.56.201:2377\nThis node joined a swarm as a worker.",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-17",
+      "level": 3,
+      "title": "3.6 Join Token 확인",
+      "anchor": "36-join-token-확인",
+      "content": [
+        {
+          "id": "chapter11-block-23",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# Worker 토큰 확인\nkevin@hostos1:~$ docker swarm join-token worker\nTo add a worker to this swarm, run the following command:\n\n    docker swarm join --token SWMTKN-1-xxxxx-yyyyy 192.168.56.201:2377\n\n# Manager 토큰 확인\nkevin@hostos1:~$ docker swarm join-token manager\nTo add a manager to this swarm, run the following command:\n\n    docker swarm join --token SWMTKN-1-xxxxx-zzzzz 192.168.56.201:2377",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-18",
+      "level": 3,
+      "title": "3.7 클러스터 상태 확인",
+      "anchor": "37-클러스터-상태-확인",
+      "content": [
+        {
+          "id": "chapter11-block-24",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ docker node ls\nID                            HOSTNAME   STATUS    AVAILABILITY   MANAGER STATUS   ENGINE VERSION\nabc123def456 *                hostos1    Ready     Active         Leader           24.0.2\ndef456ghi789                  hostos2    Ready     Active                          24.0.2\nghi789jkl012                  hostos3    Ready     Active                          24.0.2\n\nkevin@hostos1:~$ docker info | grep -A 20 Swarm\nSwarm: active\n  NodeID: abc123def456\n  Is Manager: true\n  ClusterID: cluster123456\n  Managers: 1\n  Nodes: 3\n  Default Address Pool: 10.0.0.0/8\n  SubnetSize: 24\n  Data Path Port: 4789\n  Orchestration:\n   Task History Retention Limit: 5\n  Raft:\n   Snapshot Interval: 10000\n   Number of Old Snapshots to Retain: 0\n   Heartbeat Tick: 1\n   Election Tick: 10\n  Dispatcher:\n   Heartbeat Period: 5 seconds",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-19",
+      "level": 3,
+      "title": "3.8 Swarm 해제",
+      "anchor": "38-swarm-해제",
+      "content": [
+        {
+          "id": "chapter11-block-25",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# Worker 노드에서 (해당 노드만 떠남)\nkevin@hostos2:~$ docker swarm leave\n\n# Manager 노드에서 (클러스터 해제)\nkevin@hostos1:~$ docker swarm leave --force",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-20",
+      "level": 2,
+      "title": "4. Swarm 네트워크",
+      "anchor": "4-swarm-네트워크",
+      "content": [
+        {
+          "id": "chapter11-block-27",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "Swarm 클러스터의 네트워크 구조 이해하기"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-21",
+      "level": 3,
+      "title": "4.1 Swarm 기본 네트워크",
+      "anchor": "41-swarm-기본-네트워크",
+      "content": [
+        {
+          "id": "chapter11-block-28",
+          "type": "text",
+          "data": {
+            "markdown": "Swarm 초기화 시 자동으로 생성되는 네트워크:"
+          }
+        },
+        {
+          "id": "chapter11-block-29",
+          "type": "table",
+          "data": {
+            "tableId": "chapter11-table-29"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-22",
+      "level": 3,
+      "title": "4.2 네트워크 확인",
+      "anchor": "42-네트워크-확인",
+      "content": [
+        {
+          "id": "chapter11-block-30",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ docker network ls\nNETWORK ID     NAME              DRIVER    SCOPE\nabc123def456   bridge            bridge    local\ndef456ghi789   docker_gwbridge   bridge    local\nghi789jkl012   host              host      local\njkl012mno345   ingress           overlay   swarm\nmno345pqr678   none              null      local",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-23",
+      "level": 3,
+      "title": "4.3 ingress 네트워크 상세",
+      "anchor": "43-ingress-네트워크-상세",
+      "content": [
+        {
+          "id": "chapter11-block-31",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ docker network inspect ingress\n[\n    {\n        \"Name\": \"ingress\",\n        \"Id\": \"jkl012mno345...\",\n        \"Created\": \"2023-06-20T10:00:00.000000000Z\",\n        \"Scope\": \"swarm\",\n        \"Driver\": \"overlay\",\n        \"EnableIPv6\": false,\n        \"IPAM\": {\n            \"Driver\": \"default\",\n            \"Options\": null,\n            \"Config\": [\n                {\n                    \"Subnet\": \"10.0.0.0/24\",\n                    \"Gateway\": \"10.0.0.1\"\n                }\n            ]\n        },\n        \"Internal\": false,\n        \"Attachable\": false,\n        \"Ingress\": true,\n        ...\n    }\n]",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-24",
+      "level": 3,
+      "title": "4.4 Swarm 네트워크 구조",
+      "anchor": "44-swarm-네트워크-구조",
+      "content": [
+        {
+          "id": "chapter11-block-32",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter11-diagram-5"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-25",
+      "level": 3,
+      "title": "4.5 사용자 정의 Overlay 네트워크",
+      "anchor": "45-사용자-정의-overlay-네트워크",
+      "content": [
+        {
+          "id": "chapter11-block-33",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# Overlay 네트워크 생성\nkevin@hostos1:~$ docker network create --driver overlay --attachable my-overlay\npqr678stu901...\n\n# 네트워크 확인\nkevin@hostos1:~$ docker network ls | grep overlay\njkl012mno345   ingress      overlay   swarm\npqr678stu901   my-overlay   overlay   swarm",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-26",
+      "level": 2,
+      "title": "5. [실습] Swarm 모니터링 도구",
+      "anchor": "5-실습-swarm-모니터링-도구",
+      "content": [
+        {
+          "id": "chapter11-block-35",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "Visualizer와 Swarmpit으로 클러스터 시각화하기"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-27",
+      "level": 3,
+      "title": "5.1 Visualizer 배포",
+      "anchor": "51-visualizer-배포",
+      "content": [
+        {
+          "id": "chapter11-block-36",
+          "type": "text",
+          "data": {
+            "markdown": "Visualizer는 Swarm 클러스터 상태를 시각적으로 보여주는 간단한 도구이다."
+          }
+        },
+        {
+          "id": "chapter11-block-37",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ docker service create \\\n  --name=viz_swarm \\\n  --publish=8082:8080 \\\n  --constraint=node.role==manager \\\n  --mount=type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock \\\n  dockersamples/visualizer\n\noverall progress: 1 out of 1 tasks\n1/1: running   [==================================================>]\nverify: Service converged",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-28",
+      "level": 3,
+      "title": "5.2 Visualizer 확인",
+      "anchor": "52-visualizer-확인",
+      "content": [
+        {
+          "id": "chapter11-block-38",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ docker service ls\nID             NAME        MODE         REPLICAS   IMAGE                             PORTS\nabc123def456   viz_swarm   replicated   1/1        dockersamples/visualizer:latest   *:8082->8080/tcp\n\nkevin@hostos1:~$ docker service ps viz_swarm\nID             NAME          IMAGE                             NODE      DESIRED STATE   CURRENT STATE\ndef456ghi789   viz_swarm.1   dockersamples/visualizer:latest   hostos1   Running         Running 30 seconds ago",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter11-block-39",
+          "type": "text",
+          "data": {
+            "markdown": "웹 브라우저에서 http://192.168.56.201:8082 접속"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-29",
+      "level": 3,
+      "title": "5.3 Visualizer 화면 예시",
+      "anchor": "53-visualizer-화면-예시",
+      "content": [
+        {
+          "id": "chapter11-block-40",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter11-diagram-6"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-30",
+      "level": 3,
+      "title": "5.4 Swarmpit 배포 (선택)",
+      "anchor": "54-swarmpit-배포-선택",
+      "content": [
+        {
+          "id": "chapter11-block-41",
+          "type": "text",
+          "data": {
+            "markdown": "Swarmpit은 더 풍부한 기능을 제공하는 Swarm 관리 UI이다."
+          }
+        },
+        {
+          "id": "chapter11-block-42",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ docker run -it --rm \\\n  --name swarmpit-installer \\\n  --volume /var/run/docker.sock:/var/run/docker.sock \\\n  swarmpit/install:edge",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter11-block-43",
+          "type": "text",
+          "data": {
+            "markdown": "설치 완료 후 http://192.168.56.201:888 접속"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-31",
+      "level": 3,
+      "title": "5.5 Swarmpit 기능",
+      "anchor": "55-swarmpit-기능",
+      "content": [
+        {
+          "id": "chapter11-block-44",
+          "type": "table",
+          "data": {
+            "tableId": "chapter11-table-44"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-32",
+      "level": 2,
+      "title": "6. [실습] Swarm Service 생성 및 관리",
+      "anchor": "6-실습-swarm-service-생성-및-관리",
+      "content": [
+        {
+          "id": "chapter11-block-46",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "Swarm Service의 생성, 조회, 스케일링 실습"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-33",
+      "level": 3,
+      "title": "6.1 기본 Service 생성",
+      "anchor": "61-기본-service-생성",
+      "content": [
+        {
+          "id": "chapter11-block-47",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ docker service create --name hello-service ubuntu:14.04 \\\n  /bin/sh -c \"while true; do echo 'Welcome to Docker Swarm!'; sleep 3; done\"\n\noverall progress: 1 out of 1 tasks\n1/1: running   [==================================================>]\nverify: Service converged",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-34",
+      "level": 3,
+      "title": "6.2 Service 상태 확인",
+      "anchor": "62-service-상태-확인",
+      "content": [
+        {
+          "id": "chapter11-block-48",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ docker service ls\nID             NAME            MODE         REPLICAS   IMAGE          PORTS\nghi789jkl012   hello-service   replicated   1/1        ubuntu:14.04\n\nkevin@hostos1:~$ docker service ps hello-service\nID             NAME              IMAGE          NODE      DESIRED STATE   CURRENT STATE\njkl012mno345   hello-service.1   ubuntu:14.04   hostos2   Running         Running 30 seconds ago\n\nkevin@hostos1:~$ docker service logs hello-service\nhello-service.1.jkl012mno345@hostos2    | Welcome to Docker Swarm!\nhello-service.1.jkl012mno345@hostos2    | Welcome to Docker Swarm!\nhello-service.1.jkl012mno345@hostos2    | Welcome to Docker Swarm!",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-35",
+      "level": 3,
+      "title": "6.3 Nginx Service 생성 (Port 노출)",
+      "anchor": "63-nginx-service-생성-port-노출",
+      "content": [
+        {
+          "id": "chapter11-block-49",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ docker service create \\\n  --name myweb \\\n  --replicas 3 \\\n  -p 8001:80 \\\n  nginx:1.25.0-alpine\n\noverall progress: 3 out of 3 tasks\n1/3: running   [==================================================>]\n2/3: running   [==================================================>]\n3/3: running   [==================================================>]\nverify: Service converged",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-36",
+      "level": 3,
+      "title": "6.4 Service 상세 확인",
+      "anchor": "64-service-상세-확인",
+      "content": [
+        {
+          "id": "chapter11-block-50",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ docker service ls\nID             NAME     MODE         REPLICAS   IMAGE                 PORTS\nmno345pqr678   myweb    replicated   3/3        nginx:1.25.0-alpine   *:8001->80/tcp\n\nkevin@hostos1:~$ docker service ps myweb\nID             NAME      IMAGE                 NODE      DESIRED STATE   CURRENT STATE\npqr678stu901   myweb.1   nginx:1.25.0-alpine   hostos1   Running         Running 20 seconds ago\nstu901vwx234   myweb.2   nginx:1.25.0-alpine   hostos2   Running         Running 20 seconds ago\nvwx234yza567   myweb.3   nginx:1.25.0-alpine   hostos3   Running         Running 20 seconds ago",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-37",
+      "level": 3,
+      "title": "6.5 Service 접속 테스트",
+      "anchor": "65-service-접속-테스트",
+      "content": [
+        {
+          "id": "chapter11-block-51",
+          "type": "text",
+          "data": {
+            "markdown": "Swarm의 Routing Mesh 기능으로 어느 노드에서든 접속 가능:"
+          }
+        },
+        {
+          "id": "chapter11-block-52",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# Manager 노드에서\nkevin@hostos1:~$ curl localhost:8001\n<!DOCTYPE html>\n<html>\n<head>\n<title>Welcome to nginx!</title>\n...\n\n# Worker 노드에서도 접속 가능\nkevin@hostos2:~$ curl localhost:8001\n<!DOCTYPE html>\n...\n\nkevin@hostos3:~$ curl localhost:8001\n<!DOCTYPE html>\n...",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-38",
+      "level": 3,
+      "title": "6.6 Service 스케일링",
+      "anchor": "66-service-스케일링",
+      "content": [
+        {
+          "id": "chapter11-block-53",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter11-diagram-7"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-39",
+      "level": 3,
+      "title": "6.7 Service 삭제",
+      "anchor": "67-service-삭제",
+      "content": [
+        {
+          "id": "chapter11-block-54",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ docker service rm myweb hello-service\nmyweb\nhello-service\n\nkevin@hostos1:~$ docker service ls\nID        NAME      MODE      REPLICAS   IMAGE     PORTS",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-40",
+      "level": 2,
+      "title": "7. Service 배포 모드 (Replicated vs Global)",
+      "anchor": "7-service-배포-모드-replicated-vs-global",
+      "content": [
+        {
+          "id": "chapter11-block-56",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "Service 배포 모드의 차이점 이해하기"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-41",
+      "level": 3,
+      "title": "7.1 배포 모드 비교",
+      "anchor": "71-배포-모드-비교",
+      "content": [
+        {
+          "id": "chapter11-block-57",
+          "type": "table",
+          "data": {
+            "tableId": "chapter11-table-57"
+          }
+        },
+        {
+          "id": "chapter11-block-58",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter11-diagram-8"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-42",
+      "level": 3,
+      "title": "7.2 Replicated Mode 예시",
+      "anchor": "72-replicated-mode-예시",
+      "content": [
+        {
+          "id": "chapter11-block-59",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ docker service create \\\n  --name replicated-web \\\n  --replicas 4 \\\n  -p 8002:80 \\\n  nginx:1.25.0-alpine\n\nkevin@hostos1:~$ docker service ps replicated-web\nID             NAME               IMAGE                 NODE      DESIRED STATE   CURRENT STATE\nabc123def456   replicated-web.1   nginx:1.25.0-alpine   hostos1   Running         Running 10 seconds ago\ndef456ghi789   replicated-web.2   nginx:1.25.0-alpine   hostos2   Running         Running 10 seconds ago\nghi789jkl012   replicated-web.3   nginx:1.25.0-alpine   hostos3   Running         Running 10 seconds ago\njkl012mno345   replicated-web.4   nginx:1.25.0-alpine   hostos1   Running         Running 10 seconds ago",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-43",
+      "level": 3,
+      "title": "7.3 Global Mode 예시",
+      "anchor": "73-global-mode-예시",
+      "content": [
+        {
+          "id": "chapter11-block-60",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ docker service create \\\n  --name global-agent \\\n  --mode global \\\n  nginx:1.25.0-alpine\n\nkevin@hostos1:~$ docker service ls\nID             NAME           MODE      REPLICAS   IMAGE                 PORTS\nmno345pqr678   global-agent   global    3/3        nginx:1.25.0-alpine\n\nkevin@hostos1:~$ docker service ps global-agent\nID             NAME                                    IMAGE                 NODE      DESIRED STATE   CURRENT STATE\npqr678stu901   global-agent.abc123def456              nginx:1.25.0-alpine   hostos1   Running         Running 10 seconds ago\nstu901vwx234   global-agent.def456ghi789              nginx:1.25.0-alpine   hostos2   Running         Running 10 seconds ago\nvwx234yza567   global-agent.ghi789jkl012              nginx:1.25.0-alpine   hostos3   Running         Running 10 seconds ago",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-44",
+      "level": 3,
+      "title": "7.4 Global Mode 활용 사례",
+      "anchor": "74-global-mode-활용-사례",
+      "content": [
+        {
+          "id": "chapter11-block-61",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 로그 수집 에이전트 (모든 노드에 배포)\ndocker service create \\\n  --name log-collector \\\n  --mode global \\\n  --mount type=bind,src=/var/log,dst=/var/log \\\n  fluent/fluentd\n\n# 노드 모니터링 에이전트\ndocker service create \\\n  --name node-exporter \\\n  --mode global \\\n  --publish mode=host,target=9100,published=9100 \\\n  prom/node-exporter",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-45",
+      "level": 2,
+      "title": "8. [실습] Rolling Update와 Rollback",
+      "anchor": "8-실습-rolling-update와-rollback",
+      "content": [
+        {
+          "id": "chapter11-block-63",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "서비스 무중단 업데이트 및 롤백 실습"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-46",
+      "level": 3,
+      "title": "8.1 Rolling Update 개념",
+      "anchor": "81-rolling-update-개념",
+      "content": [
+        {
+          "id": "chapter11-block-64",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter11-diagram-9"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-47",
+      "level": 3,
+      "title": "8.2 테스트 Service 생성",
+      "anchor": "82-테스트-service-생성",
+      "content": [
+        {
+          "id": "chapter11-block-65",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ docker service create \\\n  --name rollup-web \\\n  --replicas 4 \\\n  -p 8003:80 \\\n  nginx:1.24-alpine\n\nkevin@hostos1:~$ docker service ps rollup-web\nID             NAME           IMAGE               NODE      DESIRED STATE   CURRENT STATE\nabc123def456   rollup-web.1   nginx:1.24-alpine   hostos1   Running         Running 10 seconds ago\ndef456ghi789   rollup-web.2   nginx:1.24-alpine   hostos2   Running         Running 10 seconds ago\nghi789jkl012   rollup-web.3   nginx:1.24-alpine   hostos3   Running         Running 10 seconds ago\njkl012mno345   rollup-web.4   nginx:1.24-alpine   hostos1   Running         Running 10 seconds ago",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-48",
+      "level": 3,
+      "title": "8.3 Rolling Update 실행",
+      "anchor": "83-rolling-update-실행",
+      "content": [
+        {
+          "id": "chapter11-block-66",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ docker service update --image nginx:1.25-alpine rollup-web\nrollup-web\noverall progress: 4 out of 4 tasks\n1/4: running   [==================================================>]\n2/4: running   [==================================================>]\n3/4: running   [==================================================>]\n4/4: running   [==================================================>]\nverify: Service converged",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-49",
+      "level": 3,
+      "title": "8.4 업데이트 결과 확인",
+      "anchor": "84-업데이트-결과-확인",
+      "content": [
+        {
+          "id": "chapter11-block-67",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ docker service ps rollup-web\nID             NAME               IMAGE               NODE      DESIRED STATE   CURRENT STATE\nmno345pqr678   rollup-web.1       nginx:1.25-alpine   hostos1   Running         Running 30 seconds ago\nabc123def456    \\_ rollup-web.1   nginx:1.24-alpine   hostos1   Shutdown        Shutdown 35 seconds ago\npqr678stu901   rollup-web.2       nginx:1.25-alpine   hostos2   Running         Running 25 seconds ago\ndef456ghi789    \\_ rollup-web.2   nginx:1.24-alpine   hostos2   Shutdown        Shutdown 30 seconds ago\nstu901vwx234   rollup-web.3       nginx:1.25-alpine   hostos3   Running         Running 20 seconds ago\nghi789jkl012    \\_ rollup-web.3   nginx:1.24-alpine   hostos3   Shutdown        Shutdown 25 seconds ago\nvwx234yza567   rollup-web.4       nginx:1.25-alpine   hostos1   Running         Running 15 seconds ago\njkl012mno345    \\_ rollup-web.4   nginx:1.24-alpine   hostos1   Shutdown        Shutdown 20 seconds ago",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-50",
+      "level": 3,
+      "title": "8.5 Rolling Update 옵션",
+      "anchor": "85-rolling-update-옵션",
+      "content": [
+        {
+          "id": "chapter11-block-68",
+          "type": "table",
+          "data": {
+            "tableId": "chapter11-table-68"
+          }
+        },
+        {
+          "id": "chapter11-block-69",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# 세부 옵션을 지정한 업데이트\nkevin@hostos1:~$ docker service update \\\n  --image nginx:1.25-alpine \\\n  --update-parallelism 2 \\\n  --update-delay 10s \\\n  --update-failure-action rollback \\\n  rollup-web",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-51",
+      "level": 3,
+      "title": "8.6 Rollback 실행",
+      "anchor": "86-rollback-실행",
+      "content": [
+        {
+          "id": "chapter11-block-70",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ docker service rollback rollup-web\nrollup-web\nrollback: manually requested rollback\noverall progress: rolling back update: 4 out of 4 tasks\n1/4: running   [==================================================>]\n2/4: running   [==================================================>]\n3/4: running   [==================================================>]\n4/4: running   [==================================================>]\nverify: Service converged\n\nkevin@hostos1:~$ docker service ps rollup-web | grep Running\nyza567bcd890   rollup-web.1       nginx:1.24-alpine   hostos1   Running   Running 10 seconds ago\nbcd890efg123   rollup-web.2       nginx:1.24-alpine   hostos2   Running   Running 10 seconds ago\nefg123hij456   rollup-web.3       nginx:1.24-alpine   hostos3   Running   Running 10 seconds ago\nhij456klm789   rollup-web.4       nginx:1.24-alpine   hostos1   Running   Running 10 seconds ago",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-52",
+      "level": 2,
+      "title": "9. [실습] 장애 복구와 Node Drain",
+      "anchor": "9-실습-장애-복구와-node-drain",
+      "content": [
+        {
+          "id": "chapter11-block-72",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "Swarm의 자동 복구 기능과 노드 유지보수 모드 실습"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-53",
+      "level": 3,
+      "title": "9.1 장애 복구 동작 원리",
+      "anchor": "91-장애-복구-동작-원리",
+      "content": [
+        {
+          "id": "chapter11-block-73",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter11-diagram-10"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-54",
+      "level": 3,
+      "title": "9.2 컨테이너 장애 복구 테스트",
+      "anchor": "92-컨테이너-장애-복구-테스트",
+      "content": [
+        {
+          "id": "chapter11-block-74",
+          "type": "text",
+          "data": {
+            "markdown": "Service 생성:"
+          }
+        },
+        {
+          "id": "chapter11-block-75",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ docker service create \\\n  --name recovery-test \\\n  --replicas 4 \\\n  -p 8004:80 \\\n  nginx:1.25.0-alpine\n\nkevin@hostos1:~$ docker service ps recovery-test\nID             NAME              IMAGE                 NODE      DESIRED STATE   CURRENT STATE\nabc123def456   recovery-test.1   nginx:1.25.0-alpine   hostos1   Running         Running 10 seconds ago\ndef456ghi789   recovery-test.2   nginx:1.25.0-alpine   hostos2   Running         Running 10 seconds ago\nghi789jkl012   recovery-test.3   nginx:1.25.0-alpine   hostos3   Running         Running 10 seconds ago\njkl012mno345   recovery-test.4   nginx:1.25.0-alpine   hostos2   Running         Running 10 seconds ago",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter11-block-76",
+          "type": "text",
+          "data": {
+            "markdown": "Worker 노드에서 컨테이너 강제 종료:"
+          }
+        },
+        {
+          "id": "chapter11-block-77",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos2:~$ docker ps\nCONTAINER ID   IMAGE                 COMMAND                  CREATED          STATUS\nabc123def456   nginx:1.25.0-alpine   \"/docker-entrypoint.…\"   30 seconds ago   Up 29 seconds\n\nkevin@hostos2:~$ docker rm -f abc123def456\nabc123def456",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter11-block-78",
+          "type": "text",
+          "data": {
+            "markdown": "자동 복구 확인 (Manager에서):"
+          }
+        },
+        {
+          "id": "chapter11-block-79",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ docker service ps recovery-test\nID             NAME                  IMAGE                 NODE      DESIRED STATE   CURRENT STATE\nmno345pqr678   recovery-test.2       nginx:1.25.0-alpine   hostos2   Running         Running 5 seconds ago\ndef456ghi789    \\_ recovery-test.2   nginx:1.25.0-alpine   hostos2   Shutdown        Failed 10 seconds ago\n...",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-55",
+      "level": 3,
+      "title": "9.3 Node Drain (유지보수 모드)",
+      "anchor": "93-node-drain-유지보수-모드",
+      "content": [
+        {
+          "id": "chapter11-block-80",
+          "type": "text",
+          "data": {
+            "markdown": "노드 유지보수가 필요할 때 해당 노드의 Task를 다른 노드로 이동시킨다."
+          }
+        },
+        {
+          "id": "chapter11-block-81",
+          "type": "text",
+          "data": {
+            "markdown": "노드 Drain 설정:"
+          }
+        },
+        {
+          "id": "chapter11-block-82",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ docker node ls\nID                            HOSTNAME   STATUS    AVAILABILITY   MANAGER STATUS\nabc123def456 *                hostos1    Ready     Active         Leader\ndef456ghi789                  hostos2    Ready     Active\nghi789jkl012                  hostos3    Ready     Active\n\nkevin@hostos1:~$ docker node update --availability drain hostos2\nhostos2",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter11-block-83",
+          "type": "text",
+          "data": {
+            "markdown": "Drain 후 상태 확인:"
+          }
+        },
+        {
+          "id": "chapter11-block-84",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ docker node ls\nID                            HOSTNAME   STATUS    AVAILABILITY   MANAGER STATUS\nabc123def456 *                hostos1    Ready     Active         Leader\ndef456ghi789                  hostos2    Ready     Drain\nghi789jkl012                  hostos3    Ready     Active\n\nkevin@hostos1:~$ docker service ps recovery-test\nID             NAME                  IMAGE                 NODE      DESIRED STATE   CURRENT STATE\npqr678stu901   recovery-test.1       nginx:1.25.0-alpine   hostos1   Running         Running 5 minutes ago\nstu901vwx234   recovery-test.2       nginx:1.25.0-alpine   hostos3   Running         Running 10 seconds ago\nmno345pqr678    \\_ recovery-test.2   nginx:1.25.0-alpine   hostos2   Shutdown        Shutdown 15 seconds ago\nvwx234yza567   recovery-test.3       nginx:1.25.0-alpine   hostos3   Running         Running 5 minutes ago\nyza567bcd890   recovery-test.4       nginx:1.25.0-alpine   hostos1   Running         Running 10 seconds ago\njkl012mno345    \\_ recovery-test.4   nginx:1.25.0-alpine   hostos2   Shutdown        Shutdown 15 seconds ago",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-56",
+      "level": 3,
+      "title": "9.4 Node 복구 (Active)",
+      "anchor": "94-node-복구-active",
+      "content": [
+        {
+          "id": "chapter11-block-85",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ docker node update --availability active hostos2\nhostos2\n\nkevin@hostos1:~$ docker node ls\nID                            HOSTNAME   STATUS    AVAILABILITY   MANAGER STATUS\nabc123def456 *                hostos1    Ready     Active         Leader\ndef456ghi789                  hostos2    Ready     Active\nghi789jkl012                  hostos3    Ready     Active",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter11-block-86",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "참고: Drain에서 Active로 변경해도 기존 Task가 자동으로 돌아오지는 않는다. 새로운 Task 배치 시 해당 노드도 대상이 된다."
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-57",
+      "level": 3,
+      "title": "9.5 Node Availability 옵션",
+      "anchor": "95-node-availability-옵션",
+      "content": [
+        {
+          "id": "chapter11-block-87",
+          "type": "table",
+          "data": {
+            "tableId": "chapter11-table-87"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-58",
+      "level": 2,
+      "title": "10. Docker Stack 개념",
+      "anchor": "10-docker-stack-개념",
+      "content": [
+        {
+          "id": "chapter11-block-89",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "Compose 파일을 활용한 Swarm 서비스 배포"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-59",
+      "level": 3,
+      "title": "10.1 Docker Stack이란?",
+      "anchor": "101-docker-stack이란",
+      "content": [
+        {
+          "id": "chapter11-block-90",
+          "type": "text",
+          "data": {
+            "markdown": "Docker Stack은 Docker Compose 파일을 사용하여 Swarm 클러스터에 여러 서비스를 한 번에 배포하는 기능이다."
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-60",
+      "level": 3,
+      "title": "10.2 docker-compose vs docker stack",
+      "anchor": "102-docker-compose-vs-docker-stack",
+      "content": [
+        {
+          "id": "chapter11-block-91",
+          "type": "table",
+          "data": {
+            "tableId": "chapter11-table-91"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-61",
+      "level": 3,
+      "title": "10.3 Stack 관련 명령어",
+      "anchor": "103-stack-관련-명령어",
+      "content": [
+        {
+          "id": "chapter11-block-92",
+          "type": "table",
+          "data": {
+            "tableId": "chapter11-table-92"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-62",
+      "level": 3,
+      "title": "10.4 간단한 Stack 예제",
+      "anchor": "104-간단한-stack-예제",
+      "content": [
+        {
+          "id": "chapter11-block-93",
+          "type": "text",
+          "data": {
+            "markdown": "webapi-stack.yaml:"
+          }
+        },
+        {
+          "id": "chapter11-block-94",
+          "type": "code",
+          "data": {
+            "language": "yaml",
+            "code": "version: \"3.8\"\n\nservices:\n  webAPI:\n    image: nginx:1.25.1-alpine\n    ports:\n      - \"8888:80\"\n    deploy:\n      replicas: 3\n      update_config:\n        parallelism: 1\n        delay: 10s\n      restart_policy:\n        condition: on-failure",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter11-block-95",
+          "type": "text",
+          "data": {
+            "markdown": "Stack 배포:"
+          }
+        },
+        {
+          "id": "chapter11-block-96",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ docker stack deploy -c webapi-stack.yaml webapp\nCreating network webapp_default\nCreating service webapp_webAPI\n\nkevin@hostos1:~$ docker stack ls\nNAME      SERVICES   ORCHESTRATOR\nwebapp    1          Swarm\n\nkevin@hostos1:~$ docker stack services webapp\nID             NAME           MODE         REPLICAS   IMAGE                 PORTS\nabc123def456   webapp_webAPI  replicated   3/3        nginx:1.25.1-alpine   *:8888->80/tcp\n\nkevin@hostos1:~$ docker stack ps webapp\nID             NAME             IMAGE                 NODE      DESIRED STATE   CURRENT STATE\ndef456ghi789   webapp_webAPI.1  nginx:1.25.1-alpine   hostos1   Running         Running 10 seconds ago\nghi789jkl012   webapp_webAPI.2  nginx:1.25.1-alpine   hostos2   Running         Running 10 seconds ago\njkl012mno345   webapp_webAPI.3  nginx:1.25.1-alpine   hostos3   Running         Running 10 seconds ago",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-63",
+      "level": 2,
+      "title": "11. [실습] HAProxy + Nginx Stack 배포",
+      "anchor": "11-실습-haproxy-nginx-stack-배포",
+      "content": [
+        {
+          "id": "chapter11-block-98",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "로드밸런서와 웹 서버를 Stack으로 배포하기"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-64",
+      "level": 3,
+      "title": "11.1 아키텍처",
+      "anchor": "111-아키텍처",
+      "content": [
+        {
+          "id": "chapter11-block-99",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter11-diagram-11"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-65",
+      "level": 3,
+      "title": "11.2 프로젝트 준비",
+      "anchor": "112-프로젝트-준비",
+      "content": [
+        {
+          "id": "chapter11-block-100",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ mkdir -p ~/fastcampus/ch11/haproxy-stack && cd $_\nkevin@hostos1:~/fastcampus/ch11/haproxy-stack$ pwd\n/home/kevin/fastcampus/ch11/haproxy-stack",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-66",
+      "level": 3,
+      "title": "11.3 Overlay 네트워크 생성",
+      "anchor": "113-overlay-네트워크-생성",
+      "content": [
+        {
+          "id": "chapter11-block-101",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch11/haproxy-stack$ docker network create \\\n  --driver overlay \\\n  --attachable \\\n  haproxy-web\npqr678stu901vwx234yza567...\n\nkevin@hostos1:~/fastcampus/ch11/haproxy-stack$ docker network ls | grep haproxy\npqr678stu901   haproxy-web   overlay   swarm",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-67",
+      "level": 3,
+      "title": "11.4 HAProxy 설정 파일",
+      "anchor": "114-haproxy-설정-파일",
+      "content": [
+        {
+          "id": "chapter11-block-102",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch11/haproxy-stack$ vi haproxy.cfg",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter11-block-103",
+          "type": "code",
+          "data": {
+            "language": "text",
+            "code": "global\n    log stdout format raw local0 info\n\ndefaults\n    mode http\n    timeout client 10s\n    timeout connect 5s\n    timeout server 10s\n    timeout http-request 10s\n    log global\n\nfrontend http_front\n    bind *:80\n    default_backend http_back\n\nbackend http_back\n    balance roundrobin\n    server-template nginx- 10 nginx:80 check resolvers docker init-addr libc,none\n\nresolvers docker\n    nameserver dns 127.0.0.11:53\n    resolve_retries 3\n    timeout resolve 1s\n    timeout retry 1s\n    hold other 10s\n    hold refused 10s\n    hold nx 10s\n    hold timeout 10s\n    hold valid 10s\n    hold obsolete 10s",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-68",
+      "level": 3,
+      "title": "11.5 Stack 파일 작성",
+      "anchor": "115-stack-파일-작성",
+      "content": [
+        {
+          "id": "chapter11-block-104",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch11/haproxy-stack$ vi haproxy-web-stack.yaml",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter11-block-105",
+          "type": "code",
+          "data": {
+            "language": "yaml",
+            "code": "version: '3.8'\n\nservices:\n  nginx:\n    image: nginx:1.25.0-alpine\n    deploy:\n      replicas: 4\n      placement:\n        constraints:\n          - node.role != manager\n      update_config:\n        parallelism: 1\n        delay: 10s\n      restart_policy:\n        condition: on-failure\n    networks:\n      - haproxy-web\n\n  proxy:\n    image: haproxy:2.8-alpine\n    ports:\n      - \"80:80\"\n      - \"8404:8404\"\n    configs:\n      - source: haproxy_config\n        target: /usr/local/etc/haproxy/haproxy.cfg\n    deploy:\n      mode: global\n      placement:\n        constraints:\n          - node.role == manager\n      restart_policy:\n        condition: on-failure\n    networks:\n      - haproxy-web\n\nnetworks:\n  haproxy-web:\n    external: true\n\nconfigs:\n  haproxy_config:\n    file: ./haproxy.cfg",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-69",
+      "level": 3,
+      "title": "11.6 Stack 배포",
+      "anchor": "116-stack-배포",
+      "content": [
+        {
+          "id": "chapter11-block-106",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch11/haproxy-stack$ docker stack deploy -c haproxy-web-stack.yaml haproxy-web\nCreating config haproxy-web_haproxy_config\nCreating service haproxy-web_nginx\nCreating service haproxy-web_proxy",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-70",
+      "level": 3,
+      "title": "11.7 배포 상태 확인",
+      "anchor": "117-배포-상태-확인",
+      "content": [
+        {
+          "id": "chapter11-block-107",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch11/haproxy-stack$ docker stack ls\nNAME          SERVICES   ORCHESTRATOR\nhaproxy-web   2          Swarm\n\nkevin@hostos1:~/fastcampus/ch11/haproxy-stack$ docker stack services haproxy-web\nID             NAME                MODE         REPLICAS   IMAGE                PORTS\nabc123def456   haproxy-web_nginx   replicated   4/4        nginx:1.25.0-alpine\ndef456ghi789   haproxy-web_proxy   global       1/1        haproxy:2.8-alpine   *:80->80/tcp, *:8404->8404/tcp\n\nkevin@hostos1:~/fastcampus/ch11/haproxy-stack$ docker stack ps haproxy-web\nID             NAME                                        IMAGE                NODE      DESIRED STATE   CURRENT STATE\nghi789jkl012   haproxy-web_proxy.abc123def456             haproxy:2.8-alpine   hostos1   Running         Running 30 seconds ago\njkl012mno345   haproxy-web_nginx.1                        nginx:1.25.0-alpine  hostos2   Running         Running 30 seconds ago\nmno345pqr678   haproxy-web_nginx.2                        nginx:1.25.0-alpine  hostos3   Running         Running 30 seconds ago\npqr678stu901   haproxy-web_nginx.3                        nginx:1.25.0-alpine  hostos2   Running         Running 30 seconds ago\nstu901vwx234   haproxy-web_nginx.4                        nginx:1.25.0-alpine  hostos3   Running         Running 30 seconds ago",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-71",
+      "level": 3,
+      "title": "11.8 로드밸런싱 테스트",
+      "anchor": "118-로드밸런싱-테스트",
+      "content": [
+        {
+          "id": "chapter11-block-108",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch11/haproxy-stack$ for i in {1..6}; do curl -s localhost | grep -o \"Welcome to nginx\"; done\nWelcome to nginx\nWelcome to nginx\nWelcome to nginx\nWelcome to nginx\nWelcome to nginx\nWelcome to nginx",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-72",
+      "level": 3,
+      "title": "11.9 Stack 삭제",
+      "anchor": "119-stack-삭제",
+      "content": [
+        {
+          "id": "chapter11-block-109",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch11/haproxy-stack$ docker stack rm haproxy-web\nRemoving service haproxy-web_nginx\nRemoving service haproxy-web_proxy\nRemoving config haproxy-web_haproxy_config",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-73",
+      "level": 2,
+      "title": "12. [실습] Node Label 기반 배치",
+      "anchor": "12-실습-node-label-기반-배치",
+      "content": [
+        {
+          "id": "chapter11-block-111",
+          "type": "callout",
+          "data": {
+            "type": "note",
+            "content": "Node Label을 활용한 서비스 배치 제어"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-74",
+      "level": 3,
+      "title": "12.1 Node Label 개념",
+      "anchor": "121-node-label-개념",
+      "content": [
+        {
+          "id": "chapter11-block-112",
+          "type": "text",
+          "data": {
+            "markdown": "Node Label을 사용하면 특정 노드에만 서비스를 배치할 수 있다."
+          }
+        },
+        {
+          "id": "chapter11-block-113",
+          "type": "diagram",
+          "data": {
+            "diagramId": "chapter11-diagram-12"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-75",
+      "level": 3,
+      "title": "12.2 Node Label 추가",
+      "anchor": "122-node-label-추가",
+      "content": [
+        {
+          "id": "chapter11-block-114",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ docker node update --label-add zone=fastzone1 hostos2\nhostos2\n\nkevin@hostos1:~$ docker node update --label-add zone=fastzone2 hostos3\nhostos3\n\nkevin@hostos1:~$ docker node update --label-add tier=frontend hostos2\nhostos2\n\nkevin@hostos1:~$ docker node update --label-add tier=backend hostos3\nhostos3",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-76",
+      "level": 3,
+      "title": "12.3 Label 확인",
+      "anchor": "123-label-확인",
+      "content": [
+        {
+          "id": "chapter11-block-115",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ docker node inspect hostos2 --format '{{ .Spec.Labels }}'\nmap[tier:frontend zone:fastzone1]\n\nkevin@hostos1:~$ docker node inspect hostos3 --format '{{ .Spec.Labels }}'\nmap[tier:backend zone:fastzone2]",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-77",
+      "level": 3,
+      "title": "12.4 Label 기반 배치 Stack",
+      "anchor": "124-label-기반-배치-stack",
+      "content": [
+        {
+          "id": "chapter11-block-116",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ mkdir -p ~/fastcampus/ch11/label-stack && cd $_\nkevin@hostos1:~/fastcampus/ch11/label-stack$ vi label-stack.yaml",
+            "copyable": true
+          }
+        },
+        {
+          "id": "chapter11-block-117",
+          "type": "code",
+          "data": {
+            "language": "yaml",
+            "code": "version: '3.8'\n\nservices:\n  frontend:\n    image: nginx:1.25.0-alpine\n    deploy:\n      replicas: 2\n      placement:\n        constraints:\n          - node.labels.tier == frontend\n    ports:\n      - \"8080:80\"\n\n  backend:\n    image: nginx:1.25.0-alpine\n    deploy:\n      replicas: 2\n      placement:\n        constraints:\n          - node.labels.tier == backend\n    ports:\n      - \"8081:80\"\n\n  zone1-service:\n    image: nginx:1.25.0-alpine\n    deploy:\n      replicas: 2\n      placement:\n        constraints:\n          - node.labels.zone == fastzone1\n    ports:\n      - \"8082:80\"",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-78",
+      "level": 3,
+      "title": "12.5 Stack 배포 및 확인",
+      "anchor": "125-stack-배포-및-확인",
+      "content": [
+        {
+          "id": "chapter11-block-118",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch11/label-stack$ docker stack deploy -c label-stack.yaml label-test\nCreating network label-test_default\nCreating service label-test_frontend\nCreating service label-test_backend\nCreating service label-test_zone1-service\n\nkevin@hostos1:~/fastcampus/ch11/label-stack$ docker stack ps label-test\nID             NAME                       IMAGE                 NODE      DESIRED STATE   CURRENT STATE\nabc123def456   label-test_frontend.1      nginx:1.25.0-alpine   hostos2   Running         Running 10 seconds ago\ndef456ghi789   label-test_frontend.2      nginx:1.25.0-alpine   hostos2   Running         Running 10 seconds ago\nghi789jkl012   label-test_backend.1       nginx:1.25.0-alpine   hostos3   Running         Running 10 seconds ago\njkl012mno345   label-test_backend.2       nginx:1.25.0-alpine   hostos3   Running         Running 10 seconds ago\nmno345pqr678   label-test_zone1-service.1 nginx:1.25.0-alpine   hostos2   Running         Running 10 seconds ago\npqr678stu901   label-test_zone1-service.2 nginx:1.25.0-alpine   hostos2   Running         Running 10 seconds ago",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-79",
+      "level": 3,
+      "title": "12.6 Label 삭제",
+      "anchor": "126-label-삭제",
+      "content": [
+        {
+          "id": "chapter11-block-119",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~$ docker node update --label-rm zone hostos2\nhostos2\n\nkevin@hostos1:~$ docker node update --label-rm tier hostos2\nhostos2",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-80",
+      "level": 3,
+      "title": "12.7 Stack 정리",
+      "anchor": "127-stack-정리",
+      "content": [
+        {
+          "id": "chapter11-block-120",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "kevin@hostos1:~/fastcampus/ch11/label-stack$ docker stack rm label-test",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-81",
+      "level": 2,
+      "title": "요약",
+      "anchor": "요약",
+      "content": []
+    },
+    {
+      "id": "chapter11-section-82",
+      "level": 3,
+      "title": "핵심 개념",
+      "anchor": "핵심-개념",
+      "content": [
+        {
+          "id": "chapter11-block-122",
+          "type": "list",
+          "data": {
+            "ordered": true,
+            "items": [
+              {
+                "text": "Docker SwarmDocker 기본 오케스트레이션 도구클러스터 구성, 자동 배포, 복구 기능 제공Manager Node + Worker Node 구조"
+              },
+              {
+                "text": "Service / Task / StackService: 배포 단위, 원하는 상태 정의Task: Service의 최소 실행 단위 (컨테이너 1개)Stack: 여러 Service를 묶은 애플리케이션 단위"
+              },
+              {
+                "text": "배포 모드Replicated: 지정 수만큼 Task 생성Global: 모든 노드에 1개씩 Task 생성"
+              },
+              {
+                "text": "주요 기능Rolling Update: 무중단 서비스 업데이트Rollback: 이전 버전으로 복구Node Drain: 유지보수 모드Label 기반 배치: 특정 노드에 배치 제어"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-83",
+      "level": 3,
+      "title": "주요 명령어 정리",
+      "anchor": "주요-명령어-정리",
+      "content": [
+        {
+          "id": "chapter11-block-123",
+          "type": "code",
+          "data": {
+            "language": "bash",
+            "code": "# Swarm 관리\ndocker swarm init --advertise-addr <IP>\ndocker swarm join --token <token> <manager-ip>:2377\ndocker swarm leave [--force]\n\n# Node 관리\ndocker node ls\ndocker node inspect <node>\ndocker node update --availability drain/active <node>\ndocker node update --label-add <key>=<value> <node>\n\n# Service 관리\ndocker service create --name <name> --replicas <n> <image>\ndocker service ls\ndocker service ps <service>\ndocker service scale <service>=<n>\ndocker service update --image <new-image> <service>\ndocker service rollback <service>\ndocker service rm <service>\n\n# Stack 관리\ndocker stack deploy -c <yaml> <stack-name>\ndocker stack ls\ndocker stack services <stack>\ndocker stack ps <stack>\ndocker stack rm <stack>\n\n# 네트워크\ndocker network create --driver overlay <name>",
+            "copyable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-84",
+      "level": 2,
+      "title": "체크리스트 (통과 필수)",
+      "anchor": "체크리스트-통과-필수",
+      "content": [
+        {
+          "id": "chapter11-block-125",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "Docker Swarm의 개념과 구조를 설명할 수 있다"
+              },
+              {
+                "text": "Manager Node와 Worker Node의 역할을 이해한다"
+              },
+              {
+                "text": "Swarm 클러스터를 초기화하고 노드를 추가할 수 있다"
+              },
+              {
+                "text": "Service를 생성하고 스케일링할 수 있다"
+              },
+              {
+                "text": "Replicated와 Global 모드의 차이를 설명할 수 있다"
+              },
+              {
+                "text": "Rolling Update와 Rollback을 수행할 수 있다"
+              },
+              {
+                "text": "Node Drain을 사용하여 유지보수 모드로 전환할 수 있다"
+              },
+              {
+                "text": "Docker Stack을 사용하여 여러 서비스를 배포할 수 있다"
+              },
+              {
+                "text": "Overlay 네트워크를 생성하고 활용할 수 있다"
+              },
+              {
+                "text": "Node Label을 사용하여 서비스 배치를 제어할 수 있다"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter11-section-85",
+      "level": 2,
+      "title": "다음 챕터 예고",
+      "anchor": "다음-챕터-예고",
+      "content": []
+    },
+    {
+      "id": "chapter11-section-86",
+      "level": 3,
+      "title": "Chapter 12. Container CI/CD",
+      "anchor": "chapter-12-container-cicd",
+      "content": [
+        {
+          "id": "chapter11-block-127",
+          "type": "text",
+          "data": {
+            "markdown": "다음 장에서는:"
+          }
+        },
+        {
+          "id": "chapter11-block-128",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "items": [
+              {
+                "text": "CI/CD 파이프라인 개념"
+              },
+              {
+                "text": "Jenkins를 활용한 Docker 빌드 자동화"
+              },
+              {
+                "text": "GitHub Actions와 Docker Hub 연동"
+              },
+              {
+                "text": "GitOps 워크플로우"
+              }
+            ]
+          }
+        },
+        {
+          "id": "chapter11-block-129",
+          "type": "text",
+          "data": {
+            "markdown": "를 실습 중심으로 다룹니다."
+          }
+        }
+      ]
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "chapter11-diagram-1",
+      "type": "tree",
+      "asciiOriginal": "┌───────────────────────────────────────────────────────────────────┐\n│                    Docker Swarm 클러스터 개념                     │\n├───────────────────────────────────────────────────────────────────┤\n│                                                                   │\n│   단일 호스트 (Docker)              Swarm 클러스터                │\n│                                                                   │\n│   ┌──────────────┐                 ┌─────────────────────────┐    │\n│   │  Docker Host │                 │      Swarm Cluster      │    │\n│   │              │                 │                         │    │\n│   │ ┌──────────┐ │                 │  ┌────────┐ ┌────────┐  │    │\n│   │ │Container │ │      ────→      │  │Manager │ │Manager │  │    │\n│   │ └──────────┘ │                 │  └────────┘ └────────┘  │    │\n│   │ ┌──────────┐ │                 │                         │    │\n│   │ │Container │ │                 │  ┌────────┐ ┌────────┐  │    │\n│   │ └──────────┘ │                 │  │ Worker │ │ Worker │  │    │\n│   └──────────────┘                 │  └────────┘ └────────┘  │    │\n│                                    └─────────────────────────┘    │\n│                                                                   │\n│   - 수동 관리                       - 자동 배포                   │\n│   - 단일 장애점                     - 고가용성                    │\n│   - 수동 스케일링                   - 자동 스케일링               │\n│                                                                   │\n└───────────────────────────────────────────────────────────────────┘",
+      "mermaidCode": "flowchart TB\n    subgraph Swarm[\"🐝 Docker Swarm Cluster\"]\n        direction TB\n\n        subgraph Manager[\"👑 Manager Node\"]\n            API[\"API Server\"]\n            Scheduler[\"Scheduler\"]\n            Raft[\"Raft Consensus\"]\n        end\n\n        subgraph Worker1[\"⚙️ Worker Node 1\"]\n            Task1[\"📦 Task\"]\n            Task2[\"📦 Task\"]\n        end\n\n        subgraph Worker2[\"⚙️ Worker Node 2\"]\n            Task3[\"📦 Task\"]\n            Task4[\"📦 Task\"]\n        end\n    end\n\n    Manager --> Worker1\n    Manager --> Worker2\n\n    style Swarm fill:#f8fafc,stroke:#64748b\n    style Manager fill:#dbeafe,stroke:#2563eb\n    style Worker1 fill:#dcfce7,stroke:#16a34a\n    style Worker2 fill:#dcfce7,stroke:#16a34a",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "┌───────────────────────────────────────────────────────────────────┐",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "Docker Swarm 클러스터 개념                     │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┤",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "단일 호스트 (Docker)              Swarm 클러스터                │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┌──────────────┐                 ┌─────────────────────────┐    │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Docker Host │                 │      Swarm Cluster      │    │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┌──────────┐ │                 │  ┌────────┐ ┌────────┐  │    │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Container │ │      ────",
+                  "type": "branch",
+                  "targetInfo": "│  │Manager │ │Manager │  │    │",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┘ │                 │  └────────┘ └────────┘  │    │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┌──────────┐ │                 │                         │    │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Container │ │                 │  ┌────────┐ ┌────────┐  │    │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┘ │                 │  │ Worker │ │ Worker │  │    │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┘                 │  └────────┘ └────────┘  │    │",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-4",
+                      "label": "┘    │",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "id": "node-5",
+                  "label": "- 수동 관리                       - 자동 배포                   │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "- 단일 장애점                     - 고가용성                    │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "- 수동 스케일링                   - 자동 스케일링               │",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "node-4",
+              "label": "┘",
+              "type": "branch",
+              "children": []
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter11-diagram-2",
+      "type": "tree",
+      "asciiOriginal": "┌────────────────────────────────────────────────────────────────────┐\n│                        Swarm Node 역할                             │\n├────────────────────────────────────────────────────────────────────┤\n│                                                                    │\n│  ┌─────────────────────────────────────────────────────────────┐   │\n│  │                     Manager Node                            │   │\n│  │  - 클러스터 상태 관리 (Raft Consensus)                      │   │\n│  │  - 서비스 스케줄링                                          │   │\n│  │  - API 엔드포인트 제공                                      │   │\n│  │  - 워커 노드도 겸할 수 있음                                 │   │\n│  └─────────────────────────────────────────────────────────────┘   │\n│                              │                                     │\n│                              │ 관리/조정                           │\n│                              ↓                                     │\n│  ┌─────────────────────────────────────────────────────────────┐   │\n│  │                      Worker Node                            │   │\n│  │  - 실제 컨테이너(Task) 실행                                 │   │\n│  │  - Manager로부터 Task 할당 받음                             │   │\n│  │  - 상태를 Manager에게 보고                                  │   │\n│  └─────────────────────────────────────────────────────────────┘   │\n│                                                                    │\n└────────────────────────────────────────────────────────────────────┘",
+      "mermaidCode": "flowchart TB\n    subgraph Swarm[\"🐝 Docker Swarm Cluster\"]\n        direction TB\n\n        subgraph Manager[\"👑 Manager Node\"]\n            API[\"API Server\"]\n            Scheduler[\"Scheduler\"]\n            Raft[\"Raft Consensus\"]\n        end\n\n        subgraph Worker1[\"⚙️ Worker Node 1\"]\n            Task1[\"📦 Task\"]\n            Task2[\"📦 Task\"]\n        end\n\n        subgraph Worker2[\"⚙️ Worker Node 2\"]\n            Task3[\"📦 Task\"]\n            Task4[\"📦 Task\"]\n        end\n    end\n\n    Manager --> Worker1\n    Manager --> Worker2\n\n    style Swarm fill:#f8fafc,stroke:#64748b\n    style Manager fill:#dbeafe,stroke:#2563eb\n    style Worker1 fill:#dcfce7,stroke:#16a34a\n    style Worker2 fill:#dcfce7,stroke:#16a34a",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "┌────────────────────────────────────────────────────────────────────┐",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "Swarm Node 역할                             │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┤",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┌─────────────────────────────────────────────────────────────┐   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "Manager Node                            │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "- 클러스터 상태 관리 (Raft Consensus)                      │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "- 서비스 스케줄링                                          │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "- API 엔드포인트 제공                                      │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "- 워커 노드도 겸할 수 있음                                 │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┘   │",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "관리/조정                           │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "↓                                     │",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "node-4",
+              "label": "┌─────────────────────────────────────────────────────────────┐   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "Worker Node                            │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "- 실제 컨테이너(Task) 실행                                 │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "- Manager로부터 Task 할당 받음                             │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "- 상태를 Manager에게 보고                                  │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┘   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┘",
+              "type": "branch",
+              "children": []
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter11-diagram-3",
+      "type": "tree",
+      "asciiOriginal": "┌─────────────────────────────────────────────────────────────────────┐\n│                   Stack / Service / Task 계층 구조                  │\n├─────────────────────────────────────────────────────────────────────┤\n│                                                                     │\n│   Stack (애플리케이션)                                              │\n│   └── docker-stack.yaml                                             │\n│       │                                                             │\n│       ├── Service: web                                              │\n│       │   ├── Task 1 (Container) → Worker Node 1                    │\n│       │   ├── Task 2 (Container) → Worker Node 2                    │\n│       │   └── Task 3 (Container) → Worker Node 3                    │\n│       │                                                             │\n│       ├── Service: api                                              │\n│       │   ├── Task 1 (Container) → Worker Node 1                    │\n│       │   └── Task 2 (Container) → Worker Node 2                    │\n│       │                                                             │\n│       └── Service: db                                               │\n│           └── Task 1 (Container) → Worker Node 3                    │\n│                                                                     │\n└─────────────────────────────────────────────────────────────────────┘",
+      "mermaidCode": "flowchart TB\n    subgraph Swarm[\"🐝 Docker Swarm Cluster\"]\n        direction TB\n\n        subgraph Manager[\"👑 Manager Node\"]\n            API[\"API Server\"]\n            Scheduler[\"Scheduler\"]\n            Raft[\"Raft Consensus\"]\n        end\n\n        subgraph Worker1[\"⚙️ Worker Node 1\"]\n            Task1[\"📦 Task\"]\n            Task2[\"📦 Task\"]\n        end\n\n        subgraph Worker2[\"⚙️ Worker Node 2\"]\n            Task3[\"📦 Task\"]\n            Task4[\"📦 Task\"]\n        end\n    end\n\n    Manager --> Worker1\n    Manager --> Worker2\n\n    style Swarm fill:#f8fafc,stroke:#64748b\n    style Manager fill:#dbeafe,stroke:#2563eb\n    style Worker1 fill:#dcfce7,stroke:#16a34a\n    style Worker2 fill:#dcfce7,stroke:#16a34a",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "┌─────────────────────────────────────────────────────────────────────┐",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "Stack / Service / Task 계층 구조                  │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┤",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "Stack (애플리케이션)                                              │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "docker-stack.yaml                                             │",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-4",
+                      "label": "Service: web                                              │",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "Task 1 (Container)",
+                      "type": "branch",
+                      "targetInfo": "Worker Node 1                    │",
+                      "children": []
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "Task 2 (Container)",
+                      "type": "branch",
+                      "targetInfo": "Worker Node 2                    │",
+                      "children": []
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "Task 3 (Container)",
+                      "type": "branch",
+                      "targetInfo": "Worker Node 3                    │",
+                      "children": []
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "Service: api                                              │",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "Task 1 (Container)",
+                      "type": "branch",
+                      "targetInfo": "Worker Node 1                    │",
+                      "children": []
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "Task 2 (Container)",
+                      "type": "branch",
+                      "targetInfo": "Worker Node 2                    │",
+                      "children": []
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "Service: db                                               │",
+                      "type": "branch",
+                      "children": [
+                        {
+                          "id": "node-5",
+                          "label": "Task 1 (Container)",
+                          "type": "branch",
+                          "targetInfo": "Worker Node 3                    │",
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "node-6",
+              "label": "┘",
+              "type": "branch",
+              "children": []
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter11-diagram-4",
+      "type": "tree",
+      "asciiOriginal": "┌────────────────────────────────────────────────────────────────────┐\n│                        실습 환경 구성                              │\n├────────────────────────────────────────────────────────────────────┤\n│                                                                    │\n│   ┌─────────────────┐                                              │\n│   │    hostos1      │  192.168.56.201  (Manager)                   │\n│   │  Manager Node   │                                              │\n│   └────────┬────────┘                                              │\n│            │                                                       │\n│   ┌────────┴────────────────────────────────┐                      │\n│   │                 │                       │                      │\n│   ↓                 ↓                       ↓                      │\n│   ┌──────────┐  ┌──────────┐  ┌──────────┐                         │\n│   │ hostos2  │  │ hostos3  │  │ hostos4  │  (선택)                 │\n│   │  Worker  │  │  Worker  │  │  Worker  │                         │\n│   │ .56.202  │  │ .56.203  │  │ .56.204  │                         │\n│   └──────────┘  └──────────┘  └──────────┘                         │\n│                                                                    │\n└────────────────────────────────────────────────────────────────────┘",
+      "mermaidCode": "flowchart TB\n    subgraph Comparison[\"🔄 배포 모드 비교\"]\n        direction LR\n\n        subgraph Replicated[\"Replicated Mode<br/>(replicas=3)\"]\n            direction TB\n            RH1[\"🖥️ hostos1\"]\n            RH2[\"🖥️ hostos2\"]\n            RH3[\"🖥️ hostos3\"]\n            RT1[\"📦 Task1\"]\n            RT2[\"📦 Task2\"]\n            RT3[\"📦 Task3\"]\n            RH1 --- RT1\n            RH2 --- RT2\n            RH3 --- RT3\n        end\n\n        subgraph Global[\"Global Mode<br/>(노드당 1개)\"]\n            direction TB\n            GH1[\"🖥️ hostos1\"]\n            GH2[\"🖥️ hostos2\"]\n            GH3[\"🖥️ hostos3\"]\n            GT1[\"📦 Task\"]\n            GT2[\"📦 Task\"]\n            GT3[\"📦 Task\"]\n            GH1 --- GT1\n            GH2 --- GT2\n            GH3 --- GT3\n        end\n    end\n\n    R_Note[\"지정 개수만큼 배치<br/>어느 노드든 배치 가능\"]\n    G_Note[\"노드당 1개씩 자동 배치<br/>새 노드 추가 시 자동 배포\"]\n\n    Replicated -.-> R_Note\n    Global -.-> G_Note\n\n    style Comparison fill:#f8fafc,stroke:#64748b\n    style Replicated fill:#dbeafe,stroke:#2563eb\n    style Global fill:#dcfce7,stroke:#16a34a\n    style R_Note fill:#e0f2fe,stroke:#0284c7\n    style G_Note fill:#ecfdf5,stroke:#059669",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "┌────────────────────────────────────────────────────────────────────┐",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "실습 환경 구성                              │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┤",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "┌─────────────────┐                                              │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "hostos1      │  192.168.56.201  (Manager)                   │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Manager Node   │                                              │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┬────────┘                                              │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┌────────┴────────────────────────────────┐                      │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "↓                 ↓                       ↓                      │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┌──────────┐  ┌──────────┐  ┌──────────┐                         │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "hostos2  │  │ hostos3  │  │ hostos4  │  (선택)                 │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Worker  │  │  Worker  │  │  Worker  │                         │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": ".56.202  │  │ .56.203  │  │ .56.204  │                         │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┘  └──────────┘  └──────────┘                         │",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "node-4",
+              "label": "┘",
+              "type": "branch",
+              "children": []
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter11-diagram-5",
+      "type": "tree",
+      "asciiOriginal": "┌───────────────────────────────────────────────────────────────────┐\n│                      Swarm 네트워크 구조                          │\n├───────────────────────────────────────────────────────────────────┤\n│                                                                   │\n│   ┌────────────────────────────────────────────────────────────┐  │\n│   │                      ingress (overlay)                     │  │\n│   │                                                            │  │\n│   │  ┌─────────────────────────────────────────────────────┐   │  │\n│   │  │              Routing Mesh (VIP)                     │   │  │\n│   │  │                   10.0.0.x                          │   │  │\n│   │  └─────────────────────────────────────────────────────┘   │  │\n│   │                                                            │  │\n│   └──────────────────────────┬─────────────────────────────────┘  │\n│                              │                                    │\n│   ┌──────────────────────────┼──────────────────────┐             │\n│   │                          │                      │             │\n│   ↓                          ↓                      ↓             │\n│   ┌──────────┐          ┌──────────┐          ┌──────────┐        │\n│   │ hostos1  │          │ hostos2  │          │ hostos3  │        │\n│   │          │          │          │          │          │        │\n│   │ ┌──────┐ │          │ ┌──────┐ │          │ ┌──────┐ │        │\n│   │ │Task 1│ │          │ │Task 2│ │          │ │Task 3│ │        │\n│   │ └──────┘ │          │ └──────┘ │          │ └──────┘ │        │\n│   │          │          │          │          │          │        │\n│   │docker_   │          │docker_   │          │docker_   │        │\n│   │gwbridge  │          │gwbridge  │          │gwbridge  │        │\n│   └──────────┘          └──────────┘          └──────────┘        │\n│                                                                   │\n└───────────────────────────────────────────────────────────────────┘",
+      "mermaidCode": "flowchart TB\n    subgraph Comparison[\"🔄 배포 모드 비교\"]\n        direction LR\n\n        subgraph Replicated[\"Replicated Mode<br/>(replicas=3)\"]\n            direction TB\n            RH1[\"🖥️ hostos1\"]\n            RH2[\"🖥️ hostos2\"]\n            RH3[\"🖥️ hostos3\"]\n            RT1[\"📦 Task1\"]\n            RT2[\"📦 Task2\"]\n            RT3[\"📦 Task3\"]\n            RH1 --- RT1\n            RH2 --- RT2\n            RH3 --- RT3\n        end\n\n        subgraph Global[\"Global Mode<br/>(노드당 1개)\"]\n            direction TB\n            GH1[\"🖥️ hostos1\"]\n            GH2[\"🖥️ hostos2\"]\n            GH3[\"🖥️ hostos3\"]\n            GT1[\"📦 Task\"]\n            GT2[\"📦 Task\"]\n            GT3[\"📦 Task\"]\n            GH1 --- GT1\n            GH2 --- GT2\n            GH3 --- GT3\n        end\n    end\n\n    R_Note[\"지정 개수만큼 배치<br/>어느 노드든 배치 가능\"]\n    G_Note[\"노드당 1개씩 자동 배치<br/>새 노드 추가 시 자동 배포\"]\n\n    Replicated -.-> R_Note\n    Global -.-> G_Note\n\n    style Comparison fill:#f8fafc,stroke:#64748b\n    style Replicated fill:#dbeafe,stroke:#2563eb\n    style Global fill:#dcfce7,stroke:#16a34a\n    style R_Note fill:#e0f2fe,stroke:#0284c7\n    style G_Note fill:#ecfdf5,stroke:#059669",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "┌───────────────────────────────────────────────────────────────────┐",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "Swarm 네트워크 구조                          │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┤",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "┌────────────────────────────────────────────────────────────┐  │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "ingress (overlay)                     │  │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┌─────────────────────────────────────────────────────┐   │  │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Routing Mesh (VIP)                     │   │  │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "10.0.0.x                          │   │  │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┘   │  │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┬─────────────────────────────────┘  │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┌──────────────────────────┼──────────────────────┐             │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "↓                          ↓                      ↓             │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┌──────────┐          ┌──────────┐          ┌──────────┐        │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "hostos1  │          │ hostos2  │          │ hostos3  │        │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┌──────┐ │          │ ┌──────┐ │          │ ┌──────┐ │        │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Task 1│ │          │ │Task 2│ │          │ │Task 3│ │        │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┘ │          │ └──────┘ │          │ └──────┘ │        │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "docker_   │          │docker_   │          │docker_   │        │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "gwbridge  │          │gwbridge  │          │gwbridge  │        │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┘          └──────────┘          └──────────┘        │",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "node-4",
+              "label": "┘",
+              "type": "branch",
+              "children": []
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter11-diagram-6",
+      "type": "tree",
+      "asciiOriginal": "┌─────────────────────────────────────────────────────────────────────┐\n│                    Docker Swarm Visualizer                          │\n├─────────────────────────────────────────────────────────────────────┤\n│                                                                     │\n│   hostos1 (Manager)     hostos2 (Worker)     hostos3 (Worker)       │\n│   ┌─────────────┐       ┌─────────────┐      ┌─────────────┐        │\n│   │ viz_swarm   │       │ myweb.1     │      │ myweb.2     │        │\n│   │ (running)   │       │ (running)   │      │ (running)   │        │\n│   └─────────────┘       ├─────────────┤      ├─────────────┤        │\n│                         │ myweb.3     │      │             │        │\n│                         │ (running)   │      │             │        │\n│                         └─────────────┘      └─────────────┘        │\n│                                                                     │\n└─────────────────────────────────────────────────────────────────────┘",
+      "mermaidCode": "flowchart TB\n    subgraph Comparison[\"🔄 배포 모드 비교\"]\n        direction LR\n\n        subgraph Replicated[\"Replicated Mode<br/>(replicas=3)\"]\n            direction TB\n            RH1[\"🖥️ hostos1\"]\n            RH2[\"🖥️ hostos2\"]\n            RH3[\"🖥️ hostos3\"]\n            RT1[\"📦 Task1\"]\n            RT2[\"📦 Task2\"]\n            RT3[\"📦 Task3\"]\n            RH1 --- RT1\n            RH2 --- RT2\n            RH3 --- RT3\n        end\n\n        subgraph Global[\"Global Mode<br/>(노드당 1개)\"]\n            direction TB\n            GH1[\"🖥️ hostos1\"]\n            GH2[\"🖥️ hostos2\"]\n            GH3[\"🖥️ hostos3\"]\n            GT1[\"📦 Task\"]\n            GT2[\"📦 Task\"]\n            GT3[\"📦 Task\"]\n            GH1 --- GT1\n            GH2 --- GT2\n            GH3 --- GT3\n        end\n    end\n\n    R_Note[\"지정 개수만큼 배치<br/>어느 노드든 배치 가능\"]\n    G_Note[\"노드당 1개씩 자동 배치<br/>새 노드 추가 시 자동 배포\"]\n\n    Replicated -.-> R_Note\n    Global -.-> G_Note\n\n    style Comparison fill:#f8fafc,stroke:#64748b\n    style Replicated fill:#dbeafe,stroke:#2563eb\n    style Global fill:#dcfce7,stroke:#16a34a\n    style R_Note fill:#e0f2fe,stroke:#0284c7\n    style G_Note fill:#ecfdf5,stroke:#059669",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "┌─────────────────────────────────────────────────────────────────────┐",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "Docker Swarm Visualizer                          │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┤",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "hostos1 (Manager)     hostos2 (Worker)     hostos3 (Worker)       │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┌─────────────┐       ┌─────────────┐      ┌─────────────┐        │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "viz_swarm   │       │ myweb.1     │      │ myweb.2     │        │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "(running)   │       │ (running)   │      │ (running)   │        │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┘       ├─────────────┤      ├─────────────┤        │",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-4",
+                      "label": "myweb.3     │      │             │        │",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "(running)   │      │             │        │",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "┘      └─────────────┘        │",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "node-5",
+              "label": "┘",
+              "type": "branch",
+              "children": []
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter11-diagram-7",
+      "type": "tree",
+      "title": "# 스케일 업 (3 → 6)",
+      "asciiOriginal": "# 스케일 업 (3 → 6)\nkevin@hostos1:~$ docker service scale myweb=6\nmyweb scaled to 6\noverall progress: 6 out of 6 tasks\n1/6: running   [==================================================>]\n2/6: running   [==================================================>]\n3/6: running   [==================================================>]\n4/6: running   [==================================================>]\n5/6: running   [==================================================>]\n6/6: running   [==================================================>]\nverify: Service converged\n\nkevin@hostos1:~$ docker service ps myweb\nID             NAME      IMAGE                 NODE      DESIRED STATE   CURRENT STATE\npqr678stu901   myweb.1   nginx:1.25.0-alpine   hostos1   Running         Running 2 minutes ago\nstu901vwx234   myweb.2   nginx:1.25.0-alpine   hostos2   Running         Running 2 minutes ago\nvwx234yza567   myweb.3   nginx:1.25.0-alpine   hostos3   Running         Running 2 minutes ago\nyza567bcd890   myweb.4   nginx:1.25.0-alpine   hostos1   Running         Running 10 seconds ago\nbcd890efg123   myweb.5   nginx:1.25.0-alpine   hostos2   Running         Running 10 seconds ago\nefg123hij456   myweb.6   nginx:1.25.0-alpine   hostos3   Running         Running 10 seconds ago\n\n# 스케일 다운 (6 → 2)\nkevin@hostos1:~$ docker service scale myweb=2\nmyweb scaled to 2",
+      "mermaidCode": "flowchart TB\n    subgraph Comparison[\"🔄 배포 모드 비교\"]\n        direction LR\n\n        subgraph Replicated[\"Replicated Mode<br/>(replicas=3)\"]\n            direction TB\n            RH1[\"🖥️ hostos1\"]\n            RH2[\"🖥️ hostos2\"]\n            RH3[\"🖥️ hostos3\"]\n            RT1[\"📦 Task1\"]\n            RT2[\"📦 Task2\"]\n            RT3[\"📦 Task3\"]\n            RH1 --- RT1\n            RH2 --- RT2\n            RH3 --- RT3\n        end\n\n        subgraph Global[\"Global Mode<br/>(노드당 1개)\"]\n            direction TB\n            GH1[\"🖥️ hostos1\"]\n            GH2[\"🖥️ hostos2\"]\n            GH3[\"🖥️ hostos3\"]\n            GT1[\"📦 Task\"]\n            GT2[\"📦 Task\"]\n            GT3[\"📦 Task\"]\n            GH1 --- GT1\n            GH2 --- GT2\n            GH3 --- GT3\n        end\n    end\n\n    R_Note[\"지정 개수만큼 배치<br/>어느 노드든 배치 가능\"]\n    G_Note[\"노드당 1개씩 자동 배치<br/>새 노드 추가 시 자동 배포\"]\n\n    Replicated -.-> R_Note\n    Global -.-> G_Note\n\n    style Comparison fill:#f8fafc,stroke:#64748b\n    style Replicated fill:#dbeafe,stroke:#2563eb\n    style Global fill:#dcfce7,stroke:#16a34a\n    style R_Note fill:#e0f2fe,stroke:#0284c7\n    style G_Note fill:#ecfdf5,stroke:#059669",
+      "data": {
+        "root": {
+          "id": "root",
+          "label": "Root",
+          "type": "root",
+          "children": [
+            {
+              "id": "node-1",
+              "label": "# 스케일 업 (3",
+              "type": "branch",
+              "targetInfo": "6)",
+              "children": []
+            },
+            {
+              "id": "node-2",
+              "label": "kevin@hostos1:~$ docker service scale myweb=6",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-2",
+              "label": "myweb scaled to 6",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-2",
+              "label": "overall progress: 6 out of 6 tasks",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-2",
+              "label": "1/6: running   [==================================================>]",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-2",
+              "label": "2/6: running   [==================================================>]",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-2",
+              "label": "3/6: running   [==================================================>]",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-2",
+              "label": "4/6: running   [==================================================>]",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-2",
+              "label": "5/6: running   [==================================================>]",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-2",
+              "label": "6/6: running   [==================================================>]",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-2",
+              "label": "verify: Service converged",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-2",
+              "label": "kevin@hostos1:~$ docker service ps myweb",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-2",
+              "label": "ID             NAME      IMAGE                 NODE      DESIRED STATE   CURRENT STATE",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-2",
+              "label": "pqr678stu901   myweb.1   nginx:1.25.0-alpine   hostos1   Running         Running 2 minutes ago",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-2",
+              "label": "stu901vwx234   myweb.2   nginx:1.25.0-alpine   hostos2   Running         Running 2 minutes ago",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-2",
+              "label": "vwx234yza567   myweb.3   nginx:1.25.0-alpine   hostos3   Running         Running 2 minutes ago",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-2",
+              "label": "yza567bcd890   myweb.4   nginx:1.25.0-alpine   hostos1   Running         Running 10 seconds ago",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-2",
+              "label": "bcd890efg123   myweb.5   nginx:1.25.0-alpine   hostos2   Running         Running 10 seconds ago",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-2",
+              "label": "efg123hij456   myweb.6   nginx:1.25.0-alpine   hostos3   Running         Running 10 seconds ago",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-2",
+              "label": "# 스케일 다운 (6",
+              "type": "branch",
+              "targetInfo": "2)",
+              "children": []
+            },
+            {
+              "id": "node-2",
+              "label": "kevin@hostos1:~$ docker service scale myweb=2",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-2",
+              "label": "myweb scaled to 2",
+              "type": "branch",
+              "children": []
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter11-diagram-8",
+      "type": "tree",
+      "asciiOriginal": "┌─────────────────────────────────────────────────────────────────────┐\n│                  Replicated vs Global Mode                          │\n├─────────────────────────────────────────────────────────────────────┤\n│                                                                     │\n│   Replicated Mode (replicas=3)       Global Mode                   │\n│                                                                     │\n│   hostos1   hostos2   hostos3        hostos1   hostos2   hostos3   │\n│   ┌─────┐   ┌─────┐   ┌─────┐        ┌─────┐   ┌─────┐   ┌─────┐  │\n│   │Task1│   │Task2│   │Task3│        │Task │   │Task │   │Task │  │\n│   └─────┘   └─────┘   └─────┘        └─────┘   └─────┘   └─────┘  │\n│                                                                     │\n│   - 지정 개수만큼 배치               - 노드당 1개씩 자동 배치        │\n│   - 어느 노드든 배치 가능            - 새 노드 추가 시 자동 배포     │\n│                                                                     │\n└─────────────────────────────────────────────────────────────────────┘",
+      "mermaidCode": "flowchart TB\n    subgraph Comparison[\"🔄 배포 모드 비교\"]\n        direction LR\n\n        subgraph Replicated[\"Replicated Mode<br/>(replicas=3)\"]\n            direction TB\n            RH1[\"🖥️ hostos1\"]\n            RH2[\"🖥️ hostos2\"]\n            RH3[\"🖥️ hostos3\"]\n            RT1[\"📦 Task1\"]\n            RT2[\"📦 Task2\"]\n            RT3[\"📦 Task3\"]\n            RH1 --- RT1\n            RH2 --- RT2\n            RH3 --- RT3\n        end\n\n        subgraph Global[\"Global Mode<br/>(노드당 1개)\"]\n            direction TB\n            GH1[\"🖥️ hostos1\"]\n            GH2[\"🖥️ hostos2\"]\n            GH3[\"🖥️ hostos3\"]\n            GT1[\"📦 Task\"]\n            GT2[\"📦 Task\"]\n            GT3[\"📦 Task\"]\n            GH1 --- GT1\n            GH2 --- GT2\n            GH3 --- GT3\n        end\n    end\n\n    R_Note[\"지정 개수만큼 배치<br/>어느 노드든 배치 가능\"]\n    G_Note[\"노드당 1개씩 자동 배치<br/>새 노드 추가 시 자동 배포\"]\n\n    Replicated -.-> R_Note\n    Global -.-> G_Note\n\n    style Comparison fill:#f8fafc,stroke:#64748b\n    style Replicated fill:#dbeafe,stroke:#2563eb\n    style Global fill:#dcfce7,stroke:#16a34a\n    style R_Note fill:#e0f2fe,stroke:#0284c7\n    style G_Note fill:#ecfdf5,stroke:#059669",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "┌─────────────────────────────────────────────────────────────────────┐",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "Replicated vs Global Mode                          │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┤",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "Replicated Mode (replicas=3)       Global Mode                   │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "hostos1   hostos2   hostos3        hostos1   hostos2   hostos3   │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┌─────┐   ┌─────┐   ┌─────┐        ┌─────┐   ┌─────┐   ┌─────┐  │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Task1│   │Task2│   │Task3│        │Task │   │Task │   │Task │  │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┘   └─────┘   └─────┘        └─────┘   └─────┘   └─────┘  │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "- 지정 개수만큼 배치               - 노드당 1개씩 자동 배치        │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "- 어느 노드든 배치 가능            - 새 노드 추가 시 자동 배포     │",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "node-4",
+              "label": "┘",
+              "type": "branch",
+              "children": []
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter11-diagram-9",
+      "type": "tree",
+      "asciiOriginal": "┌─────────────────────────────────────────────────────────────────────┐\n│                      Rolling Update 과정                             │\n├─────────────────────────────────────────────────────────────────────┤\n│                                                                     │\n│   Step 1: 초기 상태 (nginx:1.24)                                    │\n│   ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐                             │\n│   │v1.24 │ │v1.24 │ │v1.24 │ │v1.24 │                             │\n│   └──────┘ └──────┘ └──────┘ └──────┘                             │\n│                                                                     │\n│   Step 2: 첫 번째 Task 업데이트                                     │\n│   ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐                             │\n│   │v1.25 │ │v1.24 │ │v1.24 │ │v1.24 │  ← 1개씩 순차 업데이트       │\n│   └──────┘ └──────┘ └──────┘ └──────┘                             │\n│                                                                     │\n│   Step 3: 두 번째 Task 업데이트                                     │\n│   ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐                             │\n│   │v1.25 │ │v1.25 │ │v1.24 │ │v1.24 │                             │\n│   └──────┘ └──────┘ └──────┘ └──────┘                             │\n│                                                                     │\n│   Step 4: 완료                                                      │\n│   ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐                             │\n│   │v1.25 │ │v1.25 │ │v1.25 │ │v1.25 │  ← 무중단 업데이트 완료      │\n│   └──────┘ └──────┘ └──────┘ └──────┘                             │\n│                                                                     │\n└─────────────────────────────────────────────────────────────────────┘",
+      "mermaidCode": "flowchart TB\n    subgraph Rolling[\"🔄 Rolling Update 과정\"]\n        direction TB\n\n        subgraph Step1[\"Step 1: 초기 상태\"]\n            direction LR\n            S1T1[\"📦 v1.24\"]\n            S1T2[\"📦 v1.24\"]\n            S1T3[\"📦 v1.24\"]\n            S1T4[\"📦 v1.24\"]\n        end\n\n        subgraph Step2[\"Step 2: 첫 번째 업데이트\"]\n            direction LR\n            S2T1[\"📦 v1.25\"]\n            S2T2[\"📦 v1.24\"]\n            S2T3[\"📦 v1.24\"]\n            S2T4[\"📦 v1.24\"]\n        end\n\n        subgraph Step3[\"Step 3: 두 번째 업데이트\"]\n            direction LR\n            S3T1[\"📦 v1.25\"]\n            S3T2[\"📦 v1.25\"]\n            S3T3[\"📦 v1.24\"]\n            S3T4[\"📦 v1.24\"]\n        end\n\n        subgraph Step4[\"Step 4: 완료\"]\n            direction LR\n            S4T1[\"📦 v1.25\"]\n            S4T2[\"📦 v1.25\"]\n            S4T3[\"📦 v1.25\"]\n            S4T4[\"📦 v1.25\"]\n        end\n    end\n\n    Step1 -->|\"1개씩 순차 업데이트\"| Step2\n    Step2 --> Step3\n    Step3 -->|\"무중단 업데이트\"| Step4\n\n    style Rolling fill:#f8fafc,stroke:#64748b\n    style Step1 fill:#fee2e2,stroke:#dc2626\n    style Step2 fill:#fef3c7,stroke:#d97706\n    style Step3 fill:#fef3c7,stroke:#d97706\n    style Step4 fill:#dcfce7,stroke:#16a34a",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "┌─────────────────────────────────────────────────────────────────────┐",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "Rolling Update 과정                             │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┤",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "Step 1: 초기 상태 (nginx:1.24)                                    │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐                             │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "v1.24 │ │v1.24 │ │v1.24 │ │v1.24 │                             │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┘ └──────┘ └──────┘ └──────┘                             │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Step 2: 첫 번째 Task 업데이트                                     │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐                             │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "v1.25 │ │v1.24 │ │v1.24 │ │v1.24 │  ← 1개씩 순차 업데이트       │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┘ └──────┘ └──────┘ └──────┘                             │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Step 3: 두 번째 Task 업데이트                                     │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐                             │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "v1.25 │ │v1.25 │ │v1.24 │ │v1.24 │                             │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┘ └──────┘ └──────┘ └──────┘                             │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Step 4: 완료                                                      │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐                             │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "v1.25 │ │v1.25 │ │v1.25 │ │v1.25 │  ← 무중단 업데이트 완료      │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┘ └──────┘ └──────┘ └──────┘                             │",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "node-4",
+              "label": "┘",
+              "type": "branch",
+              "children": []
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter11-diagram-10",
+      "type": "tree",
+      "asciiOriginal": "┌─────────────────────────────────────────────────────────────────────┐\n│                      Swarm 장애 복구 과정                            │\n├─────────────────────────────────────────────────────────────────────┤\n│                                                                     │\n│   정상 상태                          장애 발생                       │\n│   hostos1   hostos2   hostos3        hostos1   hostos2   hostos3   │\n│   ┌─────┐   ┌─────┐   ┌─────┐        ┌─────┐   ┌─────┐   ┌─────┐  │\n│   │Task1│   │Task2│   │Task3│        │Task1│   │  X  │   │Task3│  │\n│   └─────┘   └─────┘   └─────┘        └─────┘   └─────┘   └─────┘  │\n│                                           (hostos2 장애)            │\n│                                                 │                   │\n│                                                 ↓                   │\n│                                      자동 재배치                     │\n│                                      hostos1   hostos2   hostos3   │\n│                                      ┌─────┐   ┌─────┐   ┌─────┐  │\n│                                      │Task1│   │  X  │   │Task3│  │\n│                                      │Task2│   │     │   │     │  │\n│                                      └─────┘   └─────┘   └─────┘  │\n│                                           (Task2 자동 복구)         │\n│                                                                     │\n└─────────────────────────────────────────────────────────────────────┘",
+      "mermaidCode": "flowchart TB\n    subgraph Comparison[\"🔄 배포 모드 비교\"]\n        direction LR\n\n        subgraph Replicated[\"Replicated Mode<br/>(replicas=3)\"]\n            direction TB\n            RH1[\"🖥️ hostos1\"]\n            RH2[\"🖥️ hostos2\"]\n            RH3[\"🖥️ hostos3\"]\n            RT1[\"📦 Task1\"]\n            RT2[\"📦 Task2\"]\n            RT3[\"📦 Task3\"]\n            RH1 --- RT1\n            RH2 --- RT2\n            RH3 --- RT3\n        end\n\n        subgraph Global[\"Global Mode<br/>(노드당 1개)\"]\n            direction TB\n            GH1[\"🖥️ hostos1\"]\n            GH2[\"🖥️ hostos2\"]\n            GH3[\"🖥️ hostos3\"]\n            GT1[\"📦 Task\"]\n            GT2[\"📦 Task\"]\n            GT3[\"📦 Task\"]\n            GH1 --- GT1\n            GH2 --- GT2\n            GH3 --- GT3\n        end\n    end\n\n    R_Note[\"지정 개수만큼 배치<br/>어느 노드든 배치 가능\"]\n    G_Note[\"노드당 1개씩 자동 배치<br/>새 노드 추가 시 자동 배포\"]\n\n    Replicated -.-> R_Note\n    Global -.-> G_Note\n\n    style Comparison fill:#f8fafc,stroke:#64748b\n    style Replicated fill:#dbeafe,stroke:#2563eb\n    style Global fill:#dcfce7,stroke:#16a34a\n    style R_Note fill:#e0f2fe,stroke:#0284c7\n    style G_Note fill:#ecfdf5,stroke:#059669",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "┌─────────────────────────────────────────────────────────────────────┐",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "Swarm 장애 복구 과정                            │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┤",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "정상 상태                          장애 발생                       │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "hostos1   hostos2   hostos3        hostos1   hostos2   hostos3   │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┌─────┐   ┌─────┐   ┌─────┐        ┌─────┐   ┌─────┐   ┌─────┐  │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Task1│   │Task2│   │Task3│        │Task1│   │  X  │   │Task3│  │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┘   └─────┘   └─────┘        └─────┘   └─────┘   └─────┘  │",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-4",
+                      "label": "(hostos2 장애)            │",
+                      "type": "branch",
+                      "children": [
+                        {
+                          "id": "node-5",
+                          "label": "↓                   │",
+                          "type": "branch",
+                          "children": []
+                        }
+                      ]
+                    },
+                    {
+                      "id": "node-6",
+                      "label": "자동 재배치                     │",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "hostos1   hostos2   hostos3   │",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "┌─────┐   ┌─────┐   ┌─────┐  │",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "Task1│   │  X  │   │Task3│  │",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "Task2│   │     │   │     │  │",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "┘   └─────┘   └─────┘  │",
+                      "type": "branch",
+                      "children": [
+                        {
+                          "id": "node-5",
+                          "label": "(Task2 자동 복구)         │",
+                          "type": "branch",
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "node-6",
+              "label": "┘",
+              "type": "branch",
+              "children": []
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter11-diagram-11",
+      "type": "tree",
+      "asciiOriginal": "┌─────────────────────────────────────────────────────────────────────┐\n│                    HAProxy + Nginx Stack 아키텍처                    │\n├─────────────────────────────────────────────────────────────────────┤\n│                                                                     │\n│                         ┌──────────────┐                           │\n│                         │    Client    │                           │\n│                         └──────┬───────┘                           │\n│                                │ :80                               │\n│                                ↓                                   │\n│  ┌─────────────────────────────────────────────────────────────┐   │\n│  │                      Swarm Cluster                           │   │\n│  │                                                             │   │\n│  │   ┌─────────────────────────────────────────────────────┐   │   │\n│  │   │                  haproxy-web (overlay)               │   │   │\n│  │   │                                                     │   │   │\n│  │   │  ┌─────────────────────────────────────────────┐   │   │   │\n│  │   │  │              HAProxy (Global)                │   │   │   │\n│  │   │  │           Manager Node에만 배치              │   │   │   │\n│  │   │  └────────────────────┬────────────────────────┘   │   │   │\n│  │   │                       │                             │   │   │\n│  │   │        ┌──────────────┼──────────────┐             │   │   │\n│  │   │        ↓              ↓              ↓             │   │   │\n│  │   │  ┌──────────┐   ┌──────────┐   ┌──────────┐       │   │   │\n│  │   │  │  Nginx   │   │  Nginx   │   │  Nginx   │       │   │   │\n│  │   │  │ (Task 1) │   │ (Task 2) │   │ (Task 3) │       │   │   │\n│  │   │  └──────────┘   └──────────┘   └──────────┘       │   │   │\n│  │   │     Worker         Worker         Worker          │   │   │\n│  │   │                                                     │   │   │\n│  │   └─────────────────────────────────────────────────────┘   │   │\n│  │                                                             │   │\n│  └─────────────────────────────────────────────────────────────┘   │\n│                                                                     │\n└─────────────────────────────────────────────────────────────────────┘",
+      "mermaidCode": "flowchart LR\n    subgraph Proxy[\"🔀 Proxy 구조\"]\n        direction LR\n\n        Client[\"👤 Client\"]\n        Proxy1[\"🌐 Proxy<br/>(Nginx)\"]\n        Web1[\"📦 Web1\"]\n        Web2[\"📦 Web2\"]\n        DB[\"🗄️ DB\"]\n    end\n\n    Client --> Proxy1\n    Proxy1 --> Web1\n    Proxy1 --> Web2\n    Web1 --> DB\n    Web2 --> DB\n\n    style Proxy fill:#f8fafc,stroke:#64748b\n    style Client fill:#dbeafe,stroke:#2563eb\n    style Proxy1 fill:#dcfce7,stroke:#16a34a\n    style Web1 fill:#fef3c7,stroke:#d97706\n    style Web2 fill:#fef3c7,stroke:#d97706\n    style DB fill:#fee2e2,stroke:#dc2626",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "┌─────────────────────────────────────────────────────────────────────┐",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "HAProxy + Nginx Stack 아키텍처                    │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┤",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "┌──────────────┐                           │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Client    │                           │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┬───────┘                           │",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-4",
+                      "label": ":80                               │",
+                      "type": "branch",
+                      "children": []
+                    },
+                    {
+                      "id": "node-5",
+                      "label": "↓                                   │",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "node-5",
+              "label": "┌─────────────────────────────────────────────────────────────┐   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "Swarm Cluster                           │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┌─────────────────────────────────────────────────────┐   │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "haproxy-web (overlay)               │   │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┌─────────────────────────────────────────────┐   │   │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "HAProxy (Global)                │   │   │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "Manager Node에만 배치              │   │   │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┬────────────────────────┘   │   │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┌──────────────┼──────────────┐             │   │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "↓              ↓              ↓             │   │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┌──────────┐   ┌──────────┐   ┌──────────┐       │   │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "Nginx   │   │  Nginx   │   │  Nginx   │       │   │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "(Task 1) │   │ (Task 2) │   │ (Task 3) │       │   │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┘   └──────────┘   └──────────┘       │   │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "Worker         Worker         Worker          │   │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┘   │   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┘   │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┘",
+              "type": "branch",
+              "children": []
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": "chapter11-diagram-12",
+      "type": "tree",
+      "asciiOriginal": "┌─────────────────────────────────────────────────────────────────────┐\n│                      Node Label 기반 배치                            │\n├─────────────────────────────────────────────────────────────────────┤\n│                                                                     │\n│   hostos1              hostos2              hostos3                 │\n│   (Manager)            (Worker)             (Worker)                │\n│                                                                     │\n│   Labels:              Labels:              Labels:                 │\n│   - role=manager       - zone=fastzone1     - zone=fastzone2       │\n│                        - tier=frontend      - tier=backend         │\n│                                                                     │\n│   ┌─────────────────────────────────────────────────────────────┐  │\n│   │  constraint: node.labels.zone == fastzone1                  │  │\n│   │  → hostos2에만 배치                                          │  │\n│   └─────────────────────────────────────────────────────────────┘  │\n│                                                                     │\n│   ┌─────────────────────────────────────────────────────────────┐  │\n│   │  constraint: node.labels.tier == backend                    │  │\n│   │  → hostos3에만 배치                                          │  │\n│   └─────────────────────────────────────────────────────────────┘  │\n│                                                                     │\n└─────────────────────────────────────────────────────────────────────┘",
+      "mermaidCode": "flowchart TB\n    subgraph Comparison[\"🔄 배포 모드 비교\"]\n        direction LR\n\n        subgraph Replicated[\"Replicated Mode<br/>(replicas=3)\"]\n            direction TB\n            RH1[\"🖥️ hostos1\"]\n            RH2[\"🖥️ hostos2\"]\n            RH3[\"🖥️ hostos3\"]\n            RT1[\"📦 Task1\"]\n            RT2[\"📦 Task2\"]\n            RT3[\"📦 Task3\"]\n            RH1 --- RT1\n            RH2 --- RT2\n            RH3 --- RT3\n        end\n\n        subgraph Global[\"Global Mode<br/>(노드당 1개)\"]\n            direction TB\n            GH1[\"🖥️ hostos1\"]\n            GH2[\"🖥️ hostos2\"]\n            GH3[\"🖥️ hostos3\"]\n            GT1[\"📦 Task\"]\n            GT2[\"📦 Task\"]\n            GT3[\"📦 Task\"]\n            GH1 --- GT1\n            GH2 --- GT2\n            GH3 --- GT3\n        end\n    end\n\n    R_Note[\"지정 개수만큼 배치<br/>어느 노드든 배치 가능\"]\n    G_Note[\"노드당 1개씩 자동 배치<br/>새 노드 추가 시 자동 배포\"]\n\n    Replicated -.-> R_Note\n    Global -.-> G_Note\n\n    style Comparison fill:#f8fafc,stroke:#64748b\n    style Replicated fill:#dbeafe,stroke:#2563eb\n    style Global fill:#dcfce7,stroke:#16a34a\n    style R_Note fill:#e0f2fe,stroke:#0284c7\n    style G_Note fill:#ecfdf5,stroke:#059669",
+      "data": {
+        "root": {
+          "id": "node-1",
+          "label": "┌─────────────────────────────────────────────────────────────────────┐",
+          "type": "branch",
+          "children": [
+            {
+              "id": "node-2",
+              "label": "Node Label 기반 배치                            │",
+              "type": "branch",
+              "children": []
+            },
+            {
+              "id": "node-3",
+              "label": "┤",
+              "type": "branch",
+              "children": [
+                {
+                  "id": "node-3",
+                  "label": "hostos1              hostos2              hostos3                 │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "(Manager)            (Worker)             (Worker)                │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "Labels:              Labels:              Labels:                 │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "- role=manager       - zone=fastzone1     - zone=fastzone2       │",
+                  "type": "branch",
+                  "children": [
+                    {
+                      "id": "node-4",
+                      "label": "- tier=frontend      - tier=backend         │",
+                      "type": "branch",
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "id": "node-5",
+                  "label": "┌─────────────────────────────────────────────────────────────┐  │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "constraint: node.labels.zone == fastzone1                  │  │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "→ hostos2에만 배치                                          │  │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┘  │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┌─────────────────────────────────────────────────────────────┐  │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "constraint: node.labels.tier == backend                    │  │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "→ hostos3에만 배치                                          │  │",
+                  "type": "branch",
+                  "children": []
+                },
+                {
+                  "id": "node-4",
+                  "label": "┘  │",
+                  "type": "branch",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "node-4",
+              "label": "┘",
+              "type": "branch",
+              "children": []
+            }
+          ]
+        },
+        "orientation": "vertical"
+      }
+    }
+  ],
+  "tables": [
+    {
+      "id": "chapter11-table-1",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "특징",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "설명",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "기본 내장",
+          "col1": "Docker Engine에 포함, 별도 설치 불필요"
+        },
+        {
+          "col0": "선언적 서비스",
+          "col1": "원하는 상태(Desired State)를 정의"
+        },
+        {
+          "col0": "자동 복구",
+          "col1": "컨테이너/노드 장애 시 자동 재배치"
+        },
+        {
+          "col0": "로드밸런싱",
+          "col1": "내장 로드밸런서 제공"
+        },
+        {
+          "col0": "롤링 업데이트",
+          "col1": "무중단 서비스 업데이트 지원"
+        },
+        {
+          "col0": "보안 통신",
+          "col1": "TLS를 통한 노드 간 암호화 통신"
+        }
+      ]
+    },
+    {
+      "id": "chapter11-table-2",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "항목",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "Docker Swarm",
+          "align": "left"
+        },
+        {
+          "key": "col2",
+          "label": "Kubernetes",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "설치 복잡도",
+          "col1": "간단",
+          "col2": "복잡"
+        },
+        {
+          "col0": "학습 곡선",
+          "col1": "낮음",
+          "col2": "높음"
+        },
+        {
+          "col0": "기능",
+          "col1": "기본적",
+          "col2": "풍부함"
+        },
+        {
+          "col0": "확장성",
+          "col1": "중소규모",
+          "col2": "대규모"
+        },
+        {
+          "col0": "커뮤니티",
+          "col1": "작음",
+          "col2": "큼"
+        },
+        {
+          "col0": "사용 목적",
+          "col1": "빠른 구축, 학습",
+          "col2": "프로덕션, 엔터프라이즈"
+        }
+      ]
+    },
+    {
+      "id": "chapter11-table-3",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "용어",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "설명",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "Node",
+          "col1": "Swarm 클러스터를 구성하는 Docker Host"
+        },
+        {
+          "col0": "Manager Node",
+          "col1": "클러스터 관리, 스케줄링, 상태 유지 담당"
+        },
+        {
+          "col0": "Worker Node",
+          "col1": "실제 컨테이너(Task)가 실행되는 노드"
+        },
+        {
+          "col0": "Service",
+          "col1": "배포 단위, 실행할 작업의 정의"
+        },
+        {
+          "col0": "Task",
+          "col1": "Service에 의해 생성되는 최소 실행 단위 (컨테이너 1개)"
+        },
+        {
+          "col0": "Stack",
+          "col1": "여러 Service를 묶은 애플리케이션 단위"
+        },
+        {
+          "col0": "Scheduling",
+          "col1": "Service 명세에 따라 Task를 노드에 분배"
+        }
+      ]
+    },
+    {
+      "id": "chapter11-table-4",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "포트",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "프로토콜",
+          "align": "left"
+        },
+        {
+          "key": "col2",
+          "label": "용도",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "2377",
+          "col1": "TCP",
+          "col2": "클러스터 관리 통신"
+        },
+        {
+          "col0": "7946",
+          "col1": "TCP/UDP",
+          "col2": "노드 간 통신 (Control Plane)"
+        },
+        {
+          "col0": "4789",
+          "col1": "UDP",
+          "col2": "Overlay 네트워크 트래픽"
+        }
+      ]
+    },
+    {
+      "id": "chapter11-table-5",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "네트워크",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "드라이버",
+          "align": "left"
+        },
+        {
+          "key": "col2",
+          "label": "용도",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "ingress",
+          "col1": "overlay",
+          "col2": "Service 외부 노출, 로드밸런싱"
+        },
+        {
+          "col0": "docker_gwbridge",
+          "col1": "bridge",
+          "col2": "컨테이너와 호스트 간 통신"
+        }
+      ]
+    },
+    {
+      "id": "chapter11-table-6",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "기능",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "설명",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "Dashboard",
+          "col1": "클러스터 전체 상태 요약"
+        },
+        {
+          "col0": "Services",
+          "col1": "서비스 생성/수정/삭제"
+        },
+        {
+          "col0": "Stacks",
+          "col1": "Stack 배포 및 관리"
+        },
+        {
+          "col0": "Tasks",
+          "col1": "Task 상태 모니터링"
+        },
+        {
+          "col0": "Nodes",
+          "col1": "노드 관리 및 상태 확인"
+        },
+        {
+          "col0": "Networks",
+          "col1": "네트워크 관리"
+        },
+        {
+          "col0": "Volumes",
+          "col1": "볼륨 관리"
+        }
+      ]
+    },
+    {
+      "id": "chapter11-table-7",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "모드",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "설명",
+          "align": "left"
+        },
+        {
+          "key": "col2",
+          "label": "사용 사례",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "Replicated",
+          "col1": "지정된 수의 replica 생성 (기본값)",
+          "col2": "웹 애플리케이션, API 서버"
+        },
+        {
+          "col0": "Global",
+          "col1": "모든 노드에 하나씩 Task 배치",
+          "col2": "모니터링 에이전트, 로그 수집기"
+        }
+      ]
+    },
+    {
+      "id": "chapter11-table-8",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "옵션",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "설명",
+          "align": "left"
+        },
+        {
+          "key": "col2",
+          "label": "기본값",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "--update-parallelism",
+          "col1": "동시에 업데이트할 Task 수",
+          "col2": "1"
+        },
+        {
+          "col0": "--update-delay",
+          "col1": "Task 업데이트 간 대기 시간",
+          "col2": "0s"
+        },
+        {
+          "col0": "--update-failure-action",
+          "col1": "실패 시 동작 (pause/continue/rollback)",
+          "col2": "pause"
+        },
+        {
+          "col0": "--update-order",
+          "col1": "업데이트 순서 (start-first/stop-first)",
+          "col2": "stop-first"
+        }
+      ]
+    },
+    {
+      "id": "chapter11-table-9",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "옵션",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "설명",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "active",
+          "col1": "새로운 Task 할당 가능 (기본값)"
+        },
+        {
+          "col0": "pause",
+          "col1": "새로운 Task 할당 불가, 기존 Task 유지"
+        },
+        {
+          "col0": "drain",
+          "col1": "모든 Task를 다른 노드로 이동, 새 Task 할당 불가"
+        }
+      ]
+    },
+    {
+      "id": "chapter11-table-10",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "구분",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "docker-compose",
+          "align": "left"
+        },
+        {
+          "key": "col2",
+          "label": "docker stack",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "실행 환경",
+          "col1": "단일 호스트",
+          "col2": "Swarm 클러스터"
+        },
+        {
+          "col0": "관리 대상",
+          "col1": "멀티 컨테이너",
+          "col2": "멀티 서비스"
+        },
+        {
+          "col0": "기능",
+          "col1": "개발/테스트용",
+          "col2": "프로덕션 배포"
+        },
+        {
+          "col0": "deploy 섹션",
+          "col1": "무시됨",
+          "col2": "적용됨"
+        },
+        {
+          "col0": "build",
+          "col1": "지원",
+          "col2": "미지원 (이미지 필요)"
+        }
+      ]
+    },
+    {
+      "id": "chapter11-table-11",
+      "headers": [
+        {
+          "key": "col0",
+          "label": "명령어",
+          "align": "left"
+        },
+        {
+          "key": "col1",
+          "label": "설명",
+          "align": "left"
+        }
+      ],
+      "rows": [
+        {
+          "col0": "docker stack deploy",
+          "col1": "Stack 배포"
+        },
+        {
+          "col0": "docker stack ls",
+          "col1": "Stack 목록 조회"
+        },
+        {
+          "col0": "docker stack ps",
+          "col1": "Stack의 Task 목록"
+        },
+        {
+          "col0": "docker stack services",
+          "col1": "Stack의 Service 목록"
+        },
+        {
+          "col0": "docker stack rm",
+          "col1": "Stack 삭제"
+        }
+      ]
+    }
+  ]
+}
