@@ -1054,7 +1054,7 @@
           "type": "code",
           "data": {
             "language": "bash",
-            "code": "vi .access_token\n# dckr_pat_XXX\n\ncat .access_token | docker login --username 본인계정 --password-stdin\n# Login Succeeded\n\ndocker info | grep Username\n# Username: (본인계정확인)",
+            "code": "vi .access_token\n# DOCKER_TOKEN\n\ncat .access_token | docker login --username 본인계정 --password-stdin\n# Login Succeeded\n\ndocker info | grep Username\n# Username: (본인계정확인)",
             "copyable": true
           }
         }
