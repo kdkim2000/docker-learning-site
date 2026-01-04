@@ -514,10 +514,6 @@ docker info | grep Username
 Docker Hub > Account Settings > Security > New Access Token에서 토큰 생성 후:
 
 ```bash
-vi .access_token
-# DOCKER_TOKEN=<YOUR_DOCKER_TOKEN>
-
-
 cat .access_token | docker login --username 본인계정 --password-stdin
 # Login Succeeded
 
