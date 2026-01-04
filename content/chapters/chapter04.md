@@ -515,7 +515,7 @@ Docker Hub > Account Settings > Security > New Access Token에서 토큰 생성 
 
 ```bash
 vi .access_token
-# dckr_pat_wjXAeTK1x2mbQr2qseWW_LXNdZs
+# dckr_pat_...
 
 cat .access_token | docker login --username 본인계정 --password-stdin
 # Login Succeeded
