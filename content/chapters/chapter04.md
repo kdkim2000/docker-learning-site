@@ -301,7 +301,6 @@ cd /var/lib/docker/image/overlay2/distribution/diffid-by-digest/sha256/
 
 # 이 경로에는 docker pull 된 각 layer들이 각각 저장된다.
 ls 49d*
-# 49d8a68fd903c4c5786f34b8510d9cc221f6229ba9921f526afa7fbeb9cf91c5
 ```
 
 ---
