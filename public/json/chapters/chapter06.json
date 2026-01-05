@@ -2043,154 +2043,12 @@
     },
     {
       "id": "chapter06-diagram-5",
-      "type": "tree",
+      "type": "mermaid",
       "asciiOriginal": "                                    ┌─────────────┐\n                                    │  Container  │\n                    ┌─────────────┐ └─────────────┘\n                    │   Docker    │     │\n                    │   Engine    │     │     ┌─────────────┐\n                    └──────┬──────┘     │     │  Container  │\n                           │            │     └─────────────┘\n              overlay network           │           │\n                           │            │   bridge network\n    ┌──────────┐   ┌───────┴───────┐    │           │        ┌─────────────┐\n    │ Internet │───│    Switch     │────┼───────────┼────────│  Container  │\n    └──────────┘   └───────┬───────┘    │           │        └─────────────┘\n                           │            │    Docker Engine\n              overlay network           │           │\n                           │            │           │\n                    ┌──────┴──────┐     │     ┌─────────────┐\n                    │   Docker    │     │     │  Container  │\n                    │   HostOS    │     │     └─────────────┘\n                    └─────────────┘     │\n                                    ┌───┴─────────┐\n                                    │  Container  │\n                                    └─────────────┘",
+      "mermaidCode": "flowchart TB\n    Internet[\"☁️ Internet\"]\n    Switch[\"🔀 Switch\"]\n    \n    subgraph DockerHost[\"🖥️ Docker Host\"]\n        direction TB\n        \n        DockerEngine[\"⚙️ Docker Engine\"]\n        DockerHostOS[\"💻 Docker HostOS\"]\n        \n        subgraph Containers[\"📦 Containers\"]\n            direction LR\n            C1[\"Container 1\"]\n            C2[\"Container 2\"]\n            C3[\"Container 3\"]\n            C4[\"Container 4\"]\n        end\n    end\n    \n    Internet -->|\"overlay network\"| Switch\n    Switch -->|\"overlay network\"| DockerEngine\n    Switch -->|\"bridge network\"| C1\n    Switch -->|\"bridge network\"| C2\n    Switch -->|\"bridge network\"| C3\n    Switch -->|\"bridge network\"| C4\n    DockerEngine --> C1\n    DockerEngine --> C2\n    DockerEngine --> C3\n    DockerEngine --> C4\n    DockerHostOS --> DockerEngine\n    \n    style Internet fill:#e0f2fe,stroke:#0284c7\n    style Switch fill:#dcfce7,stroke:#16a34a\n    style DockerHost fill:#f8fafc,stroke:#64748b\n    style DockerEngine fill:#dbeafe,stroke:#2563eb\n    style DockerHostOS fill:#fef3c7,stroke:#d97706\n    style Containers fill:#fce7f3,stroke:#db2777",
       "data": {
-        "root": {
-          "id": "root",
-          "label": "Root",
-          "type": "root",
-          "children": [
-            {
-              "id": "node-1",
-              "label": "┌─────────────┐",
-              "type": "branch",
-              "children": [
-                {
-                  "id": "node-2",
-                  "label": "Container  │",
-                  "type": "branch",
-                  "children": []
-                }
-              ]
-            },
-            {
-              "id": "node-3",
-              "label": "┌─────────────┐ └─────────────┘",
-              "type": "branch",
-              "children": [
-                {
-                  "id": "node-2",
-                  "label": "Docker    │     │",
-                  "type": "branch",
-                  "children": []
-                },
-                {
-                  "id": "node-3",
-                  "label": "Engine    │     │     ┌─────────────┐",
-                  "type": "branch",
-                  "children": []
-                },
-                {
-                  "id": "node-3",
-                  "label": "┬──────┘     │     │  Container  │",
-                  "type": "branch",
-                  "children": [
-                    {
-                      "id": "node-3",
-                      "label": "┘",
-                      "type": "branch",
-                      "children": []
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "node-4",
-              "label": "overlay network           │           │",
-              "type": "branch",
-              "children": [
-                {
-                  "id": "node-2",
-                  "label": "bridge network",
-                  "type": "branch",
-                  "children": []
-                }
-              ]
-            },
-            {
-              "id": "node-3",
-              "label": "┌──────────┐   ┌───────┴───────┐    │           │        ┌─────────────┐",
-              "type": "branch",
-              "children": [
-                {
-                  "id": "node-2",
-                  "label": "Internet │───│    Switch     │────┼───────────┼────────│  Container  │",
-                  "type": "branch",
-                  "children": [
-                    {
-                      "id": "node-3",
-                      "label": "┘   └───────┬───────┘    │           │        └─────────────┘",
-                      "type": "branch",
-                      "children": [
-                        {
-                          "id": "node-4",
-                          "label": "Docker Engine",
-                          "type": "branch",
-                          "children": []
-                        },
-                        {
-                          "id": "node-5",
-                          "label": "overlay network           │           │",
-                          "type": "branch",
-                          "children": [
-                            {
-                              "id": "node-5",
-                              "label": "┌──────┴──────┐     │     ┌─────────────┐",
-                              "type": "branch",
-                              "children": [
-                                {
-                                  "id": "node-6",
-                                  "label": "Docker    │     │     │  Container  │",
-                                  "type": "branch",
-                                  "children": []
-                                },
-                                {
-                                  "id": "node-7",
-                                  "label": "HostOS    │     │     └─────────────┘",
-                                  "type": "branch",
-                                  "children": []
-                                },
-                                {
-                                  "id": "node-7",
-                                  "label": "┘     │",
-                                  "type": "branch",
-                                  "children": [
-                                    {
-                                      "id": "node-7",
-                                      "label": "┌───┴─────────┐",
-                                      "type": "branch",
-                                      "children": [
-                                        {
-                                          "id": "node-8",
-                                          "label": "Container  │",
-                                          "type": "branch",
-                                          "children": []
-                                        },
-                                        {
-                                          "id": "node-9",
-                                          "label": "┘",
-                                          "type": "branch",
-                                          "children": []
-                                        }
-                                      ]
-                                    }
-                                  ]
-                                }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        "orientation": "vertical"
+        "nodes": [],
+        "connections": []
       }
     },
     {
@@ -2452,76 +2310,12 @@
     },
     {
       "id": "chapter06-diagram-9",
-      "type": "tree",
+      "type": "mermaid",
       "asciiOriginal": "                    ┌────────────────────────────────────────────────┐\n                    │                   Container                      │\n    ┌─────────┐     │                                                  │\n    │ Docker  │     │  root@f327d40f9a60:/# ping net1-container ───────┤\n    │ Engine  │ ←───┤                         │                        │\n    │(DNS     │     │                         ↓                        │\n    │ server) │     │              DNS resolver (into container)       │\n    └─────────┘     │                                                  │\n                    └──────────────────────────────────────────────────┘",
+      "mermaidCode": "flowchart TB\n    subgraph Container[\"📦 Container\"]\n        direction TB\n        PingCmd[\"💻 ping net1-container<br/>root@f327d40f9a60:/#\"]\n        DNSResolver[\"🔍 DNS resolver<br/>(into container)\"]\n    end\n    \n    DockerEngine[\"⚙️ Docker Engine<br/>(DNS server)\"]\n    \n    PingCmd -->|\"DNS query\"| DNSResolver\n    DNSResolver -->|\"DNS request\"| DockerEngine\n    DockerEngine -->|\"DNS response\"| DNSResolver\n    \n    style Container fill:#dbeafe,stroke:#2563eb\n    style PingCmd fill:#fce7f3,stroke:#db2777\n    style DNSResolver fill:#e0f2fe,stroke:#0284c7\n    style DockerEngine fill:#dcfce7,stroke:#16a34a",
       "data": {
-        "root": {
-          "id": "root",
-          "label": "Root",
-          "type": "root",
-          "children": [
-            {
-              "id": "node-1",
-              "label": "┌────────────────────────────────────────────────┐",
-              "type": "branch",
-              "children": [
-                {
-                  "id": "node-2",
-                  "label": "Container                      │",
-                  "type": "branch",
-                  "children": []
-                }
-              ]
-            },
-            {
-              "id": "node-3",
-              "label": "┌─────────┐     │                                                  │",
-              "type": "branch",
-              "children": [
-                {
-                  "id": "node-2",
-                  "label": "Docker  │     │  root@f327d40f9a60:/# ping net1-container ───────┤",
-                  "type": "branch",
-                  "children": []
-                },
-                {
-                  "id": "node-3",
-                  "label": "Engine  │ ←───┤                         │                        │",
-                  "type": "branch",
-                  "children": []
-                },
-                {
-                  "id": "node-3",
-                  "label": "(DNS     │     │                         ↓                        │",
-                  "type": "branch",
-                  "children": [
-                    {
-                      "id": "node-3",
-                      "label": "server) │     │              DNS resolver (into container)       │",
-                      "type": "branch",
-                      "children": [
-                        {
-                          "id": "node-4",
-                          "label": "┘     │                                                  │",
-                          "type": "branch",
-                          "children": [
-                            {
-                              "id": "node-5",
-                              "label": "┘",
-                              "type": "branch",
-                              "children": []
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        "orientation": "vertical"
+        "nodes": [],
+        "connections": []
       }
     },
     {

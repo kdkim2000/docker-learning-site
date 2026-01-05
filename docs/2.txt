@@ -2,7 +2,8 @@
 pid: 44548
 cwd: |
   E:/apps/docker/docker-learning-site
-last_command: git status
+active_command: npm run dev
+last_command: git push
 last_exit_code: 0
 ---
 
@@ -24,4 +25,107 @@ Untracked files:
 no changes added to commit (use "git add" and/or "git commit -a")
 
 kdkim2000@DESKTOP-E91TQ0N MINGW64 /e/apps/docker/docker-learning-site (main)
-$
+$ git add .
+
+kdkim2000@DESKTOP-E91TQ0N MINGW64 /e/apps/docker/docker-learning-site (main)
+$ git commit -m "github pages"
+[main 0589394] github pages
+ 4 files changed, 94 insertions(+)
+ create mode 100644 .github/workflows/deploy.yml
+ create mode 100644 docs/2.txt
+ create mode 100644 public/sw-simple.js
+
+kdkim2000@DESKTOP-E91TQ0N MINGW64 /e/apps/docker/docker-learning-site (main)
+$ git push
+Enumerating objects: 13, done.
+Counting objects: 100% (13/13), done.
+Delta compression using up to 6 threads
+Compressing objects: 100% (6/6), done.
+Writing objects: 100% (10/10), 1.99 KiB | 185.00 KiB/s, done.
+Total 10 (delta 2), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (2/2), completed with 2 local objects.
+To https://github.com/kdkim2000/docker-learning-site.git
+   5e9e08a..0589394  main -> main
+
+kdkim2000@DESKTOP-E91TQ0N MINGW64 /e/apps/docker/docker-learning-site (main)
+$ npm run dev
+
+> docker-learning-site@1.0.0 dev
+> nuxt dev
+
+│                                                                                                                                                         오전 12:44:35
+●  Nuxt 3.20.2 (with Nitro 2.12.9, Vite 7.3.0 and Vue 3.5.26)
+  오전 12:44:35
+  ➜ Local:    http://localhost:3000/
+  ➜ Network:  use --host to expose
+
+ℹ Using Tailwind CSS from ~/assets/css/main.css                                                                                         nuxt:tailwindcss 오전 12:44:40
+  ➜ DevTools: press Shift + Alt + D in the browser (v3.1.1)  오전 12:44:45
+
+
+ WARN  Slow module @nuxt/devtools took 5288.01ms to setup.  오전 12:44:45  
+
+✔ Vite client built in 192ms 오전 12:45:36
+
+[오전 12:45:39]  ERROR  Pre-transform error: Failed to resolve import "#app-manifest" from "node_modules/nuxt/dist/app/composables/manifest.js?v=a2662bd7". Does the file exist?
+  Plugin: vite:import-analysis
+  File: E:/apps/docker/docker-learning-site/node_modules/nuxt/dist/app/composables/manifest.js?v=a2662bd7:13:22
+  11 |    }
+  12 |    if (false) {
+  13 |      manifest = import("#app-manifest");
+     |                        ^
+  14 |    } else {
+  15 |      manifest = $fetch(buildAssetsURL(builds/meta/${useRuntimeConfig().app.buildId}.json), {
+
+
+[오전 12:45:39]  ERROR  Pre-transform error: Failed to resolve import "#app-manifest" from "node_modules/nuxt/dist/app/composables/manifest.js?v=a2662bd7". Does the file exist?
+  Plugin: vite:import-analysis
+  File: E:/apps/docker/docker-learning-site/node_modules/nuxt/dist/app/composables/manifest.js?v=a2662bd7:13:22
+  11 |    }
+  12 |    if (false) {
+  13 |      manifest = import("#app-manifest");
+     |                        ^
+  14 |    } else {
+  15 |      manifest = $fetch(buildAssetsURL(builds/meta/${useRuntimeConfig().app.buildId}.json), { (x2)
+
+✔ Vite server built in 2840ms 오전 12:45:39
+
+[오전 12:45:40]  ERROR  Pre-transform error: Failed to resolve import "#app-manifest" from "node_modules/nuxt/dist/app/composables/manifest.js?v=a2662bd7". Does the file exist?
+  Plugin: vite:import-analysis
+  File: E:/apps/docker/docker-learning-site/node_modules/nuxt/dist/app/composables/manifest.js?v=a2662bd7:13:22
+  11 |    }
+  12 |    if (false) {
+  13 |      manifest = import("#app-manifest");
+     |                        ^
+  14 |    } else {
+  15 |      manifest = $fetch(buildAssetsURL(builds/meta/${useRuntimeConfig().app.buildId}.json), { (x3)
+
+
+[오전 12:45:40]  ERROR  Pre-transform error: Failed to resolve import "#app-manifest" from "node_modules/nuxt/dist/app/composables/manifest.js?v=a2662bd7". Does the file exist?
+  Plugin: vite:import-analysis
+  File: E:/apps/docker/docker-learning-site/node_modules/nuxt/dist/app/composables/manifest.js?v=a2662bd7:13:22
+  11 |    }
+  12 |    if (false) {
+  13 |      manifest = import("#app-manifest");
+     |                        ^
+  14 |    } else {
+  15 |      manifest = $fetch(buildAssetsURL(builds/meta/${useRuntimeConfig().app.buildId}.json), { (x4)
+
+
+[오전 12:45:41]  ERROR  Pre-transform error: Failed to resolve import "#app-manifest" from "node_modules/nuxt/dist/app/composables/manifest.js?v=a2662bd7". Does the file exist?
+  Plugin: vite:import-analysis
+  File: E:/apps/docker/docker-learning-site/node_modules/nuxt/dist/app/composables/manifest.js?v=a2662bd7:13:22
+  11 |    }
+  12 |    if (false) {
+  13 |      manifest = import("#app-manifest");
+     |                        ^
+  14 |    } else {
+  15 |      manifest = $fetch(buildAssetsURL(builds/meta/${useRuntimeConfig().app.buildId}.json), { (x5)
+
+✔ Nuxt Nitro server built in 4592ms                                                                                                                nitro 오전 12:45:49
+ℹ Vite server warmed up in 1ms5:49
+ℹ Vite client warmed up in 4ms                                                                                                                           오전 12:45:49
+ WARN  [Vue Router warn]: No match found for location with path "/schedule?day=1"                                                                         오전 12:47:42
+ WARN  [Vue Router warn]: No match found for location with path "/schedule"                                                                               오전 12:47:42
+ WARN  [Vue Router warn]: No match found for location with path "/schedule?day=1"                                                                         오전 12:47:42
+ WARN  [Vue Router warn]: No match found for location with path "/schedule"                                                                               오전 12:47:42
