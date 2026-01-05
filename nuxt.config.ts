@@ -45,7 +45,13 @@ export default defineNuxtConfig({
     }
   },
 
+  // GitHub Pages 배포를 위한 base URL 설정
+  // 환경 변수 NUXT_APP_BASE_URL이 설정되어 있으면 사용, 없으면 기본값 '/'
+  // GitHub Pages에서 repository 이름을 base로 사용하려면:
+  // 예: repository 이름이 'docker-learning-site'인 경우 '/docker-learning-site/'
   app: {
+    baseURL: process.env.NUXT_APP_BASE_URL || '/',
+    buildAssetsDir: '/_nuxt/',
     head: {
       title: 'Docker 학습 사이트',
       meta: [
